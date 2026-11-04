@@ -1,0 +1,1482 @@
+# =============================================================================
+# TodoList API 명세 (OpenAPI 3.0.3)
+# -----------------------------------------------------------------------------
+# 현재 버전   : 0.1.0
+# 작성자      : MinjeYu
+# 최종 수정일 : 2026-11-04
+#
+# 근거 문서 (단일 출처, docs/ 아래. 규칙 원문은 복사하지 않고 ID로 참조한다, PR-01)
+#   - 1-domain-definition.md  v0.10  (엔티티, 상태 판정, BR, UC, AC)
+#   - 2-prd.md                v0.9   (FR 우선순위, VR, ERR, NFR, 11장 후속 설계 항목)
+#   - 3-user-scenario.md      v0.6   (SC)
+#   - 4-wireframe.md          v0.5   (WF, 화면이 요구하는 데이터)
+#   - 5-project-principle.md  v0.6   (/api 접두사, CN-04~09, DL-05, SO-07, SO-12, SO-14)
+#   - 6-arch-diagram.md       v0.6   (AD-06~AD-14 시퀀스)
+#   - 7-erd.md                v0.5, schema.sql (필드 이름·타입·NULL·길이)
+#   - 8-plan.md               v0.4   (COM-01 범위, BE-12~BE-24 완료 조건)
+#
+# 이력 갱신 규칙: 이력을 추가할 때 이 주석 표와 info.description의 '변경 이력' 표를 둘 다 갱신하고, info.version은 SemVer로 올린다(호환 깨짐 major, 엔드포인트·필드 추가 minor, 설명 수정 patch).
+#
+# 변경 이력
+# | 버전  | 일자       | 작성자  | 변경 내용                                                                                   |
+# |-------|------------|---------|---------------------------------------------------------------------------------------------|
+# | 0.1.0 | 2026-11-04 | MinjeYu | docs v(도메인 0.10, PRD 0.9, 시나리오 0.6, 와이어프레임 0.5, 구조 원칙 0.6, 아키텍처 0.6, ERD 0.5, 계획 0.4) 기반 초안 |
+#
+# 표기: description의 '가정 (설계서 COM-01에서 확정)'은 문서가 정하지 않아 이 명세에서 새로 둔 값이다.
+# =============================================================================
+openapi: 3.0.3
+info:
+  title: TodoList API
+  version: 0.1.0
+  contact:
+    name: MinjeYu
+  description: |
+    TodoList 웹 앱의 REST API 명세다. 근거 문서는 파일 상단 주석에 있다.
+    이 명세는 PRD 11장과 8-plan.md COM-01이 설계서로 넘긴 API 경로·필드·쿠키 이름의 초안이며,
+    문서가 정하지 않은 값은 각 operation에 '가정 (설계서 COM-01에서 확정)'으로 표시한다.
+
+    ## 변경 이력
+
+    | 버전 | 일자 | 작성자 | 변경 내용 |
+    |------|------|--------|-----------|
+    | 0.1.0 | 2026-11-04 | MinjeYu | docs v(도메인 0.10, PRD 0.9, 시나리오 0.6, 와이어프레임 0.5, 구조 원칙 0.6, 아키텍처 0.6, ERD 0.5, 계획 0.4) 기반 초안 |
+
+    이력 갱신 규칙: 파일 상단 주석 표와 이 표를 함께 갱신한다. SemVer(호환 깨짐 major, 엔드포인트·필드 추가 minor, 설명 수정 patch).
+
+    ## 공통 규약
+
+    - **경로**: 모든 경로는 `/api` 접두사 아래다(PQ-05, SO-14). `servers[].url`에 `/api`를 포함하고 `paths`에는 접두사를 쓰지 않는다.
+    - **JSON 필드**: camelCase(CN-04). `*Date`는 `YYYY-MM-DD` 문자열이고 시간대 변환을 하지 않는다. `*At`은 ISO 8601 UTC 문자열이다(CN-06, PRD 4.2, 6장).
+    - **ID**: 모두 uuid. uuid 형식이 아닌 경로·본문·쿼리의 ID는 DB에 보내기 전에 404 `NOT_FOUND`(ERR-05)로 응답한다(SO-07). 다른 사용자의 리소스와 없는 리소스는 구분하지 않고 같은 404다(BR-02).
+    - **문자열 검증**: 앞뒤 공백을 제거한 뒤 검증한다(PRD 4.1). 길이 제약(`minLength`·`maxLength`)도 공백 제거 뒤 기준이다. **비밀번호는 어떤 공백 제거도 하지 않는다.** 서버 검증이 최종 판정이다(PR-05).
+    - **오류**: 모든 오류는 `{ "error": { "code", "message", "fields?" } }`(PRD 4.3). 클라이언트는 `error.code`로만 분기한다(PR-08). `message`·`fields[].message`는 한국어다(CN-08).
+    - **목록**: 페이지네이션 없이 전체를 `{ "items": [...] }`로 돌려준다(OI-15). 필드로 감싼 이유는 나중에 페이지 정보를 하위 호환으로 추가하기 위함이다(가정).
+    - **인증**: 액세스 토큰(JWT HS384, 15분)은 HttpOnly 쿠키, 리프레시 토큰(불투명 값, 7일 슬라이딩, 회전·재사용 감지·폐기 후 10초 유예)은 경로 한정 HttpOnly 쿠키다(NFR-07). 요청 헤더 `Authorization`은 쓰지 않는다.
+    - **CSRF**: POST·PUT·PATCH·DELETE는 Signed Double-Submit(쿠키 값 = 헤더 값, HMAC 서명, 현재 JWT `jti` 연계)을 요구한다(NFR-15). 예외: 회원가입·로그인·토큰 갱신·로그아웃.
+    - **검사 순서**: 인증(401 ERR-02) → CSRF(403 ERR-08) → 검증(400) → 소유권(404)(DL-05, AD-08). 액세스 토큰이 만료된 상태 변경 요청은 ERR-02이고 저장되지 않으므로, 클라이언트는 `POST /auth/refresh` 뒤 원 요청을 한 번만 재전송한다(DL-14).
+    - **ERR-02 클라이언트 처리**: 보호 API가 401을 받으면 갱신을 한 번(single-flight) 시도하고, 성공·실패와 관계없이 원 요청을 한 번만 재전송한 뒤에도 401이면 로그인을 요구한다(PRD 4.3 ERR-02, NFR-07, DL-14).
+
+    ## 할일 상태(status)
+
+    저장하지 않고 조회 때 서버가 `User.timezone` 기준 오늘로 계산한다(도메인 4장, PR-06, DL-09). 판정 순서: 완료 → 기한 초과 → 시작 전 → 진행 중.
+
+    | 값 | 도메인 4장 상태 | 조건 |
+    |----|----------------|------|
+    | `COMPLETED` | 완료 | `completed = true` |
+    | `OVERDUE` | 기한 초과 | `completed = false` 이고 오늘 > `endDate` |
+    | `NOT_STARTED` | 시작 전 | `completed = false` 이고 오늘 < `startDate` |
+    | `IN_PROGRESS` | 진행 중 | `completed = false` 이고 `startDate` ≤ 오늘 ≤ `endDate` |
+
+    값 이름은 CN-09·8-plan.md BE-19의 상수를 따랐다(가정, 설계서 COM-01에서 확정).
+
+    ## 오류 코드 카탈로그 (PRD 4.3)
+
+    | ID | code | HTTP | 대표 상황 |
+    |----|------|------|-----------|
+    | ERR-01 | `VALIDATION_ERROR` | 400 | 입력 검증 실패, 기본 카테고리 삭제·이름 변경, 현재 비밀번호 불일치, 로그인 형식 위반, 잘못된 시간대·필터·기간 |
+    | ERR-02 | `UNAUTHORIZED` | 401 | 액세스 토큰 없음·만료·위조, 갱신 시 리프레시 토큰 없음·만료·폐기·재사용 |
+    | ERR-03 | `INVALID_CREDENTIALS` | 401 | 로그인 실패(email 존재 여부와 무관하게 같은 문구) |
+    | ERR-04 | `CONFLICT` | 409 | email 중복, 같은 사용자 안 카테고리 이름 중복 |
+    | ERR-05 | `NOT_FOUND` | 404 | 없는 리소스, 다른 사용자의 리소스, 다른 사용자의(또는 없는) categoryId, uuid 형식 오류 |
+    | ERR-06 | `TOO_MANY_REQUESTS` | 429 | 로그인 실패 제한 중의 로그인 시도 |
+    | ERR-07 | `INTERNAL_ERROR` | 500 | 서버 내부 오류(내부 정보 미포함) |
+    | ERR-08 | `CSRF_FAILED` | 403 | 상태 변경 요청의 CSRF 검증 실패 |
+
+    ## 새로 둔 가정 (설계서 COM-01에서 확정)
+
+    | 항목 | 이 명세의 값 | 근거 |
+    |------|--------------|------|
+    | 개발 서버 주소 | `http://localhost:5173/api` (Vite 기본 포트, 문서에 포트 없음) | PRD 6장, SO-08 |
+    | 경로 | `/auth/*`, `/users/me`, `/users/me/password`, `/categories`, `/todos`, `/calendar/todos`, `/health` | PQ-05, SO-14 |
+    | 쿠키 이름 | `access_token`, `refresh_token`, `csrf_token` | PRD 11장, SO-12 |
+    | CSRF 헤더 이름 | `X-CSRF-Token` | PRD 11장 |
+    | 쿠키 `Path` | 액세스 `/api`, 리프레시 `/api/auth`(인증 API 공통 접두사, OI-19), CSRF `/`(화면 스크립트가 읽어야 함) | NFR-07, OI-19 |
+    | CSRF 쿠키 `SameSite` | `Lax` | 문서 없음 |
+    | 캘린더 파라미터 이름 | `from`, `to` (8-plan.md BE-20) | PRD 11장, AQ-07 |
+    | 오류 `fields` 형태 | `[{ "field", "message" }]` | PRD 4.3, CN-08 |
+    | 성공 본문 | 로그아웃·갱신·비밀번호 변경은 200 `{ "status": "ok" }`, 삭제는 204 | 8-plan.md BE-13·BE-24(200) |
+    | 완료 표시·해제 | 별도 엔드포인트 없이 `PATCH /todos/{todoId}`의 `completed` | OI-07, FR-07, BE-18 |
+    | 카테고리 목록 정렬 | 기본 카테고리 먼저, 그다음 `createdAt` 오름차순 | 문서 없음 |
+
+    ## 확인 필요 (SQ)
+
+    - **SQ-01 캘린더 파라미터 이름**: 8-plan.md BE-20은 `from`·`to`를 쓰고, CN-06은 'YYYY-MM-DD 문자열은 `*Date`(캘린더 범위 포함)'라고 한다. 추천: BE-20을 따라 `from`·`to`로 두고 CN-06의 `*Date` 규칙은 JSON 필드에만 적용한다고 명시한다. (반대로 정하면 `fromDate`·`toDate`.)
+    - **SQ-02 기간 42일 계산 기준**: PRD 11장 '기간이 42일을 넘는 경우 ERR-01'이 양 끝 포함 일수인지 불명하다. 월간 그리드 6주 = 42칸이므로 추천: 양 끝 포함 42일 이하 허용(`to - from ≤ 41일`). 8-plan.md BE-20 완료 조건에는 42일 검사가 없어 테스트 추가가 필요하다.
+    - **SQ-03 로그인 제한 응답의 Retry-After**: NFR-10·ERR-06·WF-01(남은 시간 미표시)은 `Retry-After` 헤더를 정하지 않았다. 추천: MVP에서는 보내지 않는다(화면이 쓰지 않고 제한기 상태를 드러내지 않음). 필요해지면 minor 버전으로 추가한다.
+    - **SQ-04 로그아웃·갱신 성공 상태 코드**: 8-plan.md BE-13·BE-24 완료 조건이 200을 적어 200 `{ "status": "ok" }`로 두었다. 본문이 필요 없으므로 204도 가능하다. 추천: 계획서와 맞춰 200 유지.
+    - **SQ-05 할일 수정의 categoryId=null**: BR-04(미지정 시 기본)는 UC-05·UC-07 모두 적용이라고 하나, 부분 수정(PATCH)에서 '미지정'이 '생략(유지)'인지 'null(기본으로 이동)'인지 문서에 없다. 추천: 생략은 유지, null은 허용하지 않음(400). 화면 드롭다운은 빈 선택지가 없다(PRD 7장).
+    - **SQ-06 카테고리 목록 정렬**: WF-08·WF-04 드롭다운·WF-03 필터의 순서가 문서에 없다. 추천: 기본 카테고리 먼저, 그다음 `createdAt` 오름차순.
+    - **SQ-07 헬스 실패 응답**: SO-14는 성공 응답만 정한다. DB 연결 실패 시 500 `INTERNAL_ERROR`(ERR-07)로 두었다. 추천: 그대로 두되 compose healthcheck가 2xx만 성공으로 본다는 점을 설계서에 적는다(503은 ERR 표에 없음).
+    - **SQ-08 CSRF·액세스 쿠키의 Path·SameSite**: NFR-07·SO-12는 리프레시 쿠키 Path만 한정하고 CSRF 쿠키의 `SameSite`·`Path`는 정하지 않았다. 추천: 표의 가정값.
+    - **SQ-09 PRD 4.3 표의 구분**: ERR 표 전체가 '가정'이지만 8-plan.md의 테스트가 code·HTTP 값에 의존한다. 추천: 설계서에서 확정으로 전환.
+  license:
+    name: Proprietary
+    url: https://example.invalid/license
+servers:
+  - url: http://localhost:5173/api
+    description: 로컬 개발 - Vite 개발 서버 프록시 경유 같은 출처 호출(PRD 6장, SO-08). 포트 5173은 Vite 기본값 가정.
+tags:
+  - name: auth
+    description: 회원가입·로그인·로그아웃·토큰 갱신 (FR-01, UC-01, UC-02, BR-01, BR-16). 모두 공개 라우트(DL-05).
+  - name: users
+    description: 현재 사용자 조회·내 정보 수정 (FR-03, UC-03)
+  - name: categories
+    description: 카테고리 (FR-02, UC-04)
+  - name: todos
+    description: 할일 등록·조회·수정·삭제·목록 필터 (FR-02, FR-04~FR-07, UC-05~UC-08)
+  - name: calendar
+    description: 캘린더 기간 조회 (FR-08, UC-09)
+  - name: health
+    description: 헬스 체크 (SO-14)
+security:
+  - accessTokenCookie: []
+
+paths:
+  /auth/signup:
+    post:
+      tags: [auth]
+      operationId: signUp
+      summary: 회원가입 (자동 로그인)
+      description: |
+        회원가입 후 로그인과 같이 액세스·리프레시·CSRF 쿠키를 발급해 자동 로그인한다(NFR-07 (5)).
+        User + 기본 카테고리 + 리프레시 토큰 행을 한 트랜잭션으로 만든다(BR-03, DL-08, AQ-12).
+        - 인증·CSRF 대상이 아니다(NFR-15, DL-05). 요청 횟수 제한 없음(R-11).
+        - email은 소문자로 정규화해 저장하고 대소문자 무시로 중복 검사한다(VR-01). 중복은 409.
+        - `timezone`이 없거나 VR-04를 통과하지 못하면 오류 없이 `Asia/Seoul`로 저장한다(PRD 4.2, 가입 때만).
+        - 응답 본문은 사용자 정보이고 `passwordHash`는 없다(PRD 11장 현재 사용자 조회).
+
+        경로는 가정 (설계서 COM-01에서 확정). 근거: FR-01, UC-01, AC-01, BR-03, VR-01~04, NFR-06, NFR-07, NFR-15, AD-06, BE-12.
+      x-priority: P0
+      x-source-ids: [FR-01, UC-01, AC-01, BR-03, VR-01, VR-02, VR-03, VR-04, NFR-06, NFR-07, NFR-15, ERR-01, ERR-04, OI-10, R-11, AD-06, AQ-12, BE-12]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+            examples:
+              signUp:
+                value:
+                  email: a@example.com
+                  password: correct horse battery
+                  name: 김민수
+                  timezone: Asia/Seoul
+      responses:
+        '201':
+          description: 가입 성공. 세션 쿠키 3종을 발급한다.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetCookieSession'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              examples:
+                created:
+                  $ref: '#/components/examples/UserExample'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /auth/login:
+    post:
+      tags: [auth]
+      operationId: logIn
+      summary: 로그인
+      description: |
+        처리 순서(AD-07): 입력 형식 검사 → 로그인 제한 확인 → 사용자 조회·비밀번호 비교 → 세션 발급.
+        - 형식 검사(PRD 4.1 로그인 입력 검증): email 필수·형식·254자, 비밀번호 필수·128자 이하. 위반은 400이고 실패 횟수에 넣지 않는다. 15자 하한은 적용하지 않는다(AQ-04).
+        - IP별(15분 10회)·계정별(15분 5회) 실패가 한도에 이르면 다음 시도부터 429. 제한 중에는 비밀번호를 검증하지 않으므로 올바른 비밀번호도 거부된다(NFR-10, AC-15). 수치는 가정.
+        - 없는 email과 틀린 비밀번호는 같은 401 `INVALID_CREDENTIALS`와 같은 문구다(ERR-03, AC-14).
+        - 성공하면 새 계열의 리프레시 토큰을 발급하고 그 사용자의 만료 행을 정리한다(OI-21). 성공은 실패 횟수에 넣지 않는다.
+        - 인증·CSRF 대상이 아니다(NFR-15).
+
+        경로는 가정 (설계서 COM-01에서 확정). 근거: FR-01, UC-02, AC-14, AC-15, NFR-07, NFR-10, NFR-16, AD-07, BE-13.
+      x-priority: P0
+      x-source-ids: [FR-01, UC-02, AC-14, AC-15, BR-16, NFR-06, NFR-07, NFR-10, NFR-15, NFR-16, ERR-01, ERR-03, ERR-06, AQ-04, OI-21, AD-07, BE-13]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              login:
+                value:
+                  email: a@example.com
+                  password: correct horse battery
+      responses:
+        '200':
+          description: 로그인 성공. 세션 쿠키 3종을 발급한다.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetCookieSession'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              examples:
+                ok:
+                  $ref: '#/components/examples/UserExample'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/InvalidCredentials'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      operationId: logOut
+      summary: 로그아웃
+      description: |
+        토큰이 없거나 만료돼도 항상 성공하고 액세스·리프레시·CSRF 쿠키를 모두 삭제한다(BR-01, AC-16).
+        리프레시 쿠키가 있으면 그 토큰 계열을 서버에서 폐기한다. 폐기에 실패해도 서버 로그만 남기고 쿠키는 지우며 성공으로 응답한다.
+        - 공개 라우트이고 CSRF 대상이 아니다(NFR-15, DL-05). 강제 로그아웃 CSRF는 수용한다.
+        - 잔여 위험: 액세스 토큰은 서버가 즉시 무효화하지 않으므로 탈취된 경우 만료(최대 15분) 전까지 쓰일 수 있다(R-08).
+
+        경로는 가정 (설계서 COM-01에서 확정). 근거: UC-02, BR-01, BR-16, AC-16, NFR-07, NFR-15, AD-13, BE-13.
+      x-priority: P0
+      x-source-ids: [FR-01, UC-02, BR-01, BR-16, AC-16, NFR-07, NFR-15, R-08, AD-13, BE-13]
+      security:
+        - refreshTokenCookie: []
+        - {}
+      responses:
+        '200':
+          description: 항상 성공. 세 쿠키를 삭제한다.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetCookieClear'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponse'
+              examples:
+                ok:
+                  $ref: '#/components/examples/OkExample'
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      operationId: refreshSession
+      summary: 토큰 갱신 (리프레시 토큰 회전)
+      description: |
+        액세스 토큰 없이 리프레시 쿠키만으로 호출한다. 인증 미들웨어 앞의 공개 라우트이고 CSRF 대상이 아니다(NFR-07 (4), NFR-15, DL-05).
+        - 성공: 이전 리프레시 토큰을 폐기하고 같은 계열의 새 토큰(만료 지금부터 7일)과 새 액세스 토큰, 새 `jti`에 묶은 새 CSRF 토큰을 쿠키로 발급한다(BR-16, OI-18). 응답 본문에는 토큰을 넣지 않는다.
+        - 401 `UNAUTHORIZED`(ERR-02): 쿠키 없음, 모르는 값, 만료, 폐기. 회전으로 폐기된 지 10초(설정값) 이내의 값은 계열을 유지한 채 거부만 하고, 10초를 넘긴 값은 재사용으로 보고 계열 전체를 폐기한 뒤 거부한다(OI-20, AC-24). 실패 응답에서 리프레시 쿠키는 지우지 않는다(AD-14).
+        - 같은 값의 동시 갱신은 하나만 성공하고 나머지는 401이다. 클라이언트는 갱신 요청 자체를 재시도하지 않는다(DL-14).
+        - 로그인 실패 제한(NFR-10) 대상이 아니다.
+
+        경로는 가정 (설계서 COM-01에서 확정). 근거: UC-02, BR-16, AC-22, AC-23, AC-24, NFR-07, NFR-15, OI-18~OI-20, AD-14, BE-24.
+      x-priority: P0
+      x-source-ids: [FR-01, UC-02, BR-16, AC-22, AC-23, AC-24, NFR-07, NFR-15, OI-18, OI-19, OI-20, R-14, AD-14, AQ-11, AQ-13, BE-24]
+      security:
+        - refreshTokenCookie: []
+      responses:
+        '200':
+          description: 갱신 성공. 세 쿠키를 새 값으로 재발급한다.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetCookieSession'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponse'
+              examples:
+                ok:
+                  $ref: '#/components/examples/OkExample'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /users/me:
+    get:
+      tags: [users]
+      operationId: getCurrentUser
+      summary: 현재 사용자 조회
+      description: |
+        프런트의 인증 여부 판정(`RequireAuth`)과 name·email·timezone 읽기용이다(PRD 11장, AQ-03). 인증 실패는 401.
+
+        경로는 가정 (설계서 COM-01에서 확정). 근거: FR-01, FR-03, PRD 4.2, PRD 11장, AQ-03, BE-15.
+      x-priority: P0
+      x-source-ids: [FR-01, FR-03, UC-03, AQ-03, DL-06, BE-15]
+      responses:
+        '200':
+          description: 현재 사용자
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              examples:
+                me:
+                  $ref: '#/components/examples/UserExample'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags: [users]
+      operationId: updateCurrentUser
+      summary: 내 정보 수정 (시간대 P0, name P1)
+      description: |
+        보낸 필드만 바꾼다. email은 바꿀 수 없다(OI-03).
+        - `timezone`(P0, AC-13): VR-04를 통과하지 못하면 대체하지 않고 400(PRD 4.2). 오프셋 형식(`+09:00`) 거부, `UTC` 허용, 정규형으로 저장(PQ-06). 바꾸면 이후 오늘·상태 판정이 새 시간대 기준이며 할일 날짜 값은 바뀌지 않는다(AD-12).
+        - `name`(P1, AC-19): VR-03. 컷 라인 1에 따라 빠지면 이 필드를 보내도 400으로 거부한다(가정).
+        - 클라이언트는 성공 뒤 사용자·할일 목록·캘린더 쿼리를 무효화한다(DL-12).
+
+        경로·메서드는 가정 (설계서 COM-01에서 확정). 근거: FR-03, UC-03, AC-13, AC-19, VR-03, VR-04, PRD 4.2, AD-12, BE-15, BE-23.
+      x-priority: P0
+      x-source-ids: [FR-03, UC-03, AC-13, AC-19, BR-15, VR-03, VR-04, OI-03, PQ-06, AD-12, BE-15, BE-23]
+      security:
+        - accessTokenCookie: []
+          csrfCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+            examples:
+              timezone:
+                summary: 시간대 변경 (P0)
+                value:
+                  timezone: UTC
+              name:
+                summary: name 변경 (P1)
+                value:
+                  name: 김민지
+      responses:
+        '200':
+          description: 수정된 사용자
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              examples:
+                updated:
+                  value:
+                    id: 3f2b8c1e-9a4d-4b7e-8f21-6c5d4e3a2b10
+                    email: a@example.com
+                    name: 김민수
+                    timezone: UTC
+                    createdAt: '2026-11-03T09:00:00.000Z'
+                    updatedAt: '2026-11-04T05:10:00.000Z'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/CsrfFailed'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /users/me/password:
+    put:
+      tags: [users]
+      operationId: changePassword
+      summary: 비밀번호 변경 (P1)
+      description: |
+        PRD 4.4. FR-03의 P1 부분이며 컷 라인 1에서 가장 먼저 빠진다(PRD 8장).
+        - 현재 비밀번호가 틀리면 400 `VALIDATION_ERROR`이고 `fields`의 필드는 `currentPassword`다(AC-21). 이 실패는 로그인 실패 횟수에 넣지 않는다.
+        - 새 비밀번호는 VR-02(15~128자, 문자 종류 조합 강제 없음). 두 값 모두 공백을 제거하지 않는다.
+        - 성공하면 그 사용자의 모든 리프레시 토큰을 폐기하고 현재 세션에 새 액세스·리프레시·CSRF 쿠키를 발급해 현재 기기의 로그인을 유지한다(AC-20, BR-16). 다른 기기는 액세스 토큰 만료(최대 15분) 뒤 로그인을 요구받는다(R-08).
+
+        경로·메서드는 가정 (설계서 COM-01에서 확정). 근거: FR-03, UC-03, AC-20, AC-21, PRD 4.4, VR-02, NFR-06, BR-16, BE-23.
+      x-priority: P1
+      x-source-ids: [FR-03, UC-03, AC-20, AC-21, OI-03, VR-02, NFR-06, NFR-07, BR-16, R-08, BE-23]
+      security:
+        - accessTokenCookie: []
+          csrfCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+            examples:
+              change:
+                value:
+                  currentPassword: correct horse battery
+                  newPassword: 'new  passphrase with spaces '
+      responses:
+        '200':
+          description: 변경 성공. 현재 세션에 새 쿠키 3종을 발급한다.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetCookieSession'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponse'
+              examples:
+                ok:
+                  $ref: '#/components/examples/OkExample'
+        '400':
+          description: 입력 검증 실패 또는 현재 비밀번호 불일치 (ERR-01)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                wrongCurrent:
+                  summary: 현재 비밀번호 불일치 (AC-21)
+                  value:
+                    error:
+                      code: VALIDATION_ERROR
+                      message: 입력값을 확인해 주세요.
+                      fields:
+                        - field: currentPassword
+                          message: 현재 비밀번호가 일치하지 않습니다.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/CsrfFailed'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /categories:
+    get:
+      tags: [categories]
+      operationId: listCategories
+      summary: 카테고리 목록 (카테고리별 할일 수 포함)
+      description: |
+        기본 카테고리를 포함한 내 카테고리 전체다. 할일 폼 드롭다운(WF-04), 목록 필터(WF-03), 카테고리 관리(WF-08)가 쓴다.
+        각 항목의 `todoCount`는 삭제 확인 대화상자에 보여 줄 '옮겨질 할일 수'이며 조회 시점의 안내 값이다(BR-06, PRD 11장, AQ-08). 삭제 전 개수를 얻는 별도 API는 없다.
+        정렬은 기본 카테고리 먼저, 그다음 `createdAt` 오름차순(가정, SQ-06).
+
+        경로는 가정 (설계서 COM-01에서 확정). 근거: FR-02, UC-04, BR-02, BR-06, PRD 11장, AD-10, WF-08, BE-16.
+      x-priority: P0
+      x-source-ids: [FR-02, UC-04, BR-02, BR-04, BR-06, AQ-08, AD-10, WF-03, WF-04, WF-08, BE-16]
+      responses:
+        '200':
+          description: 카테고리 목록
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryList'
+              examples:
+                list:
+                  value:
+                    items:
+                      - id: 0b6f7a52-1c3d-4e5f-9a8b-7c6d5e4f3a21
+                        name: 기본
+                        isDefault: true
+                        createdAt: '2026-11-03T09:00:00.000Z'
+                        todoCount: 3
+                      - id: 5a1c2d3e-4f50-4617-8a9b-0c1d2e3f4a5b
+                        name: 업무
+                        isDefault: false
+                        createdAt: '2026-11-03T09:05:00.000Z'
+                        todoCount: 2
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [categories]
+      operationId: createCategory
+      summary: 카테고리 등록 (P1)
+      description: |
+        이름은 앞뒤 공백을 제거한 입력 표기 그대로 저장한다(BR-14). 필수·공백만은 400, 같은 사용자 안 중복(공백 제거 뒤 대소문자 무시, '기본' 포함)은 409(BR-14, EQ-03).
+
+        경로는 가정 (설계서 COM-01에서 확정). 근거: FR-02, UC-04, BR-14, BR-15, VR-07, BE-21.
+      x-priority: P1
+      x-source-ids: [FR-02, UC-04, BR-14, BR-15, VR-07, ERR-01, ERR-04, BE-21]
+      security:
+        - accessTokenCookie: []
+          csrfCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryWriteRequest'
+            examples:
+              create:
+                value:
+                  name: 업무
+      responses:
+        '201':
+          description: 등록된 카테고리
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+              examples:
+                created:
+                  $ref: '#/components/examples/CategoryExample'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/CsrfFailed'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /categories/{categoryId}:
+    parameters:
+      - $ref: '#/components/parameters/CategoryId'
+    patch:
+      tags: [categories]
+      operationId: updateCategory
+      summary: 카테고리 이름 변경 (P1)
+      description: |
+        - 기본 카테고리의 이름 변경은 400 `VALIDATION_ERROR`(BR-05, AC-03).
+        - 이름 규칙·중복은 등록과 같다(BR-14, VR-07).
+        - 없는·다른 사용자의 카테고리, uuid 형식 오류는 404(BR-02, SO-07).
+
+        경로·메서드는 가정 (설계서 COM-01에서 확정). 근거: FR-02, UC-04, AC-03, BR-05, BR-14, VR-07, BE-22.
+      x-priority: P1
+      x-source-ids: [FR-02, UC-04, AC-03, BR-02, BR-05, BR-14, BR-15, VR-07, BE-22]
+      security:
+        - accessTokenCookie: []
+          csrfCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryWriteRequest'
+            examples:
+              rename:
+                value:
+                  name: 회사 업무
+      responses:
+        '200':
+          description: 수정된 카테고리
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+              examples:
+                updated:
+                  value:
+                    id: 5a1c2d3e-4f50-4617-8a9b-0c1d2e3f4a5b
+                    name: 회사 업무
+                    isDefault: false
+                    createdAt: '2026-11-03T09:05:00.000Z'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/CsrfFailed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [categories]
+      operationId: deleteCategory
+      summary: 카테고리 삭제 (할일은 기본 카테고리로 이동, P1)
+      description: |
+        그 카테고리의 할일을 기본 카테고리로 옮긴 뒤 삭제한다. 이동과 삭제는 한 트랜잭션이며 대상 행을 잠근다(BR-06, AC-04, DL-08, AD-10).
+        - 삭제 전 확인 대화상자의 할일 수는 `GET /categories`의 `todoCount`로 얻는다. 확인 취소 시 클라이언트는 이 요청을 보내지 않는다.
+        - 기본 카테고리 삭제는 400 `VALIDATION_ERROR`(BR-05, AC-03).
+        - 없는·다른 사용자의 카테고리, uuid 형식 오류는 404.
+        - 클라이언트는 성공 뒤 카테고리·할일 쿼리를 함께 무효화한다(DL-12).
+
+        경로는 가정 (설계서 COM-01에서 확정). 근거: FR-02, UC-04, AC-03, AC-04, BR-05, BR-06, OI-04, AQ-08, AD-10, BE-22.
+      x-priority: P1
+      x-source-ids: [FR-02, UC-04, AC-03, AC-04, BR-02, BR-05, BR-06, OI-04, AQ-08, AD-10, BE-22]
+      security:
+        - accessTokenCookie: []
+          csrfCookie: []
+          csrfHeader: []
+      responses:
+        '204':
+          description: 삭제 성공 (본문 없음)
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/CsrfFailed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /todos:
+    get:
+      tags: [todos]
+      operationId: listTodos
+      summary: 할일 목록 (카테고리·상태 필터)
+      description: |
+        카테고리 1개와 상태 1개를 AND로 걸 수 있고, 지정하지 않으면 전체다(BR-11). 정렬은 고정: `endDate` 오름차순 → `startDate` 오름차순 → `createdAt` 오름차순(BR-11). 정렬 파라미터는 없다(DL-10).
+        - 상태는 서버가 `User.timezone` 기준 오늘로 판정한다(도메인 4장, DL-09).
+        - 허용되지 않은 `status` 값은 400(AD-09). 없는·다른 사용자의 `categoryId`, uuid 형식 오류는 404(BR-02, SO-07).
+        - 페이지네이션 없음(OI-15).
+
+        경로는 가정 (설계서 COM-01에서 확정). 근거: FR-05, UC-06, AC-07, AC-08, AC-09, BR-02, BR-11, AD-09, BE-19.
+      x-priority: P0
+      x-source-ids: [FR-05, UC-06, AC-07, AC-08, AC-09, AC-13, BR-02, BR-11, OI-15, DL-09, DL-10, AD-09, BE-19]
+      parameters:
+        - name: categoryId
+          in: query
+          required: false
+          description: 카테고리 필터. 없는·다른 사용자의 ID, uuid 형식 오류는 404 `NOT_FOUND`.
+          schema:
+            type: string
+            format: uuid
+          example: 5a1c2d3e-4f50-4617-8a9b-0c1d2e3f4a5b
+        - name: status
+          in: query
+          required: false
+          description: 상태 필터. 이 밖의 값은 400 `VALIDATION_ERROR`.
+          schema:
+            $ref: '#/components/schemas/TodoStatus'
+          example: OVERDUE
+      responses:
+        '200':
+          description: 할일 목록 (status 포함)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoList'
+              examples:
+                list:
+                  value:
+                    items:
+                      - id: 9c8b7a6f-5e4d-4c3b-a2f1-e0d9c8b7a6f5
+                        categoryId: 5a1c2d3e-4f50-4617-8a9b-0c1d2e3f4a5b
+                        title: 기획서 초안 작성
+                        description: null
+                        startDate: '2026-11-03'
+                        endDate: '2026-11-05'
+                        completed: false
+                        completedAt: null
+                        status: IN_PROGRESS
+                        createdAt: '2026-11-03T09:10:00.000Z'
+                        updatedAt: '2026-11-03T09:10:00.000Z'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [todos]
+      operationId: createTodo
+      summary: 할일 등록
+      description: |
+        - `categoryId`를 생략하거나 null로 보내면 기본 카테고리에 넣는다(BR-04, AC-05). 없는·다른 사용자의 ID, uuid 형식 오류는 404(BR-02).
+        - `startDate`·`endDate`는 둘 다 필수이고 `startDate ≤ endDate`(BR-07, BR-08, AC-06). 위반은 400이고 `fields`에 날짜 필드가 있다.
+        - 제목 필수·공백만 불가·1~100자(BR-09, VR-05). 설명은 선택·최대 1000자이고 공백 제거 뒤 비면 null로 저장·응답한다(VR-06).
+        - 완료 여부는 false로 시작한다(BE-17).
+
+        경로는 가정 (설계서 COM-01에서 확정). 근거: FR-02, FR-04, UC-05, AC-05, AC-06, BR-04, BR-07~BR-09, VR-05, VR-06, BE-17.
+      x-priority: P0
+      x-source-ids: [FR-02, FR-04, UC-05, AC-05, AC-06, BR-02, BR-04, BR-07, BR-08, BR-09, BR-15, VR-05, VR-06, BE-17]
+      security:
+        - accessTokenCookie: []
+          csrfCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTodoRequest'
+            examples:
+              withCategory:
+                value:
+                  title: 기획서 초안 작성
+                  description: 1장~3장
+                  startDate: '2026-11-03'
+                  endDate: '2026-11-05'
+                  categoryId: 5a1c2d3e-4f50-4617-8a9b-0c1d2e3f4a5b
+              defaultCategory:
+                summary: 카테고리 미지정 (기본 카테고리, AC-05)
+                value:
+                  title: 장보기
+                  startDate: '2026-11-04'
+                  endDate: '2026-11-04'
+      responses:
+        '201':
+          description: 등록된 할일 (status 포함)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+              examples:
+                created:
+                  $ref: '#/components/examples/TodoExample'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/CsrfFailed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /todos/{todoId}:
+    parameters:
+      - $ref: '#/components/parameters/TodoId'
+    get:
+      tags: [todos]
+      operationId: getTodo
+      summary: 할일 단건 조회 (편집 화면)
+      description: |
+        편집 화면(WF-04)이 완료 여부·현재 상태·'마지막 수정'(`updatedAt`)을 보여 주는 데 쓴다. 없는·다른 사용자의 할일, uuid 형식 오류는 404(BR-02, SO-07).
+
+        경로는 가정 (설계서 COM-01에서 확정). 근거: FR-07, UC-07, BR-02, WF-04, BE-17.
+      x-priority: P0
+      x-source-ids: [FR-07, UC-07, BR-02, WF-04, BE-17]
+      responses:
+        '200':
+          description: 할일 (status 포함)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+              examples:
+                todo:
+                  $ref: '#/components/examples/TodoExample'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags: [todos]
+      operationId: updateTodo
+      summary: 할일 수정 (완료 표시·해제 포함)
+      description: |
+        보낸 필드만 바꾼다(최소 1개). 완료 표시·해제는 별도 엔드포인트 없이 이 요청의 `completed`로 한다(OI-07, FR-07).
+        - `completed`를 true로 바꾸면 `completedAt`에 그 시각, false면 null(BR-13, AC-10).
+        - 날짜 순서는 수정 뒤 값 기준으로 `startDate ≤ endDate`(BR-07). 위반이면 저장하지 않는다.
+        - `categoryId`는 생략하면 유지한다. null은 허용하지 않는다(가정, SQ-05). 없는·다른 사용자의 ID는 404(BR-02).
+        - `updatedAt`이 갱신된다(AC-17).
+
+        경로·메서드는 가정 (설계서 COM-01에서 확정). 근거: FR-07, UC-07, AC-10, AC-17, BR-04, BR-07~BR-09, BR-13, VR-05, VR-06, BE-18.
+      x-priority: P0
+      x-source-ids: [FR-07, UC-07, AC-10, AC-17, BR-02, BR-04, BR-07, BR-08, BR-09, BR-13, BR-15, VR-05, VR-06, OI-07, BE-18]
+      security:
+        - accessTokenCookie: []
+          csrfCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTodoRequest'
+            examples:
+              edit:
+                summary: 제목·시작일 변경 (AC-17)
+                value:
+                  title: 기획서 초안 작성 (수정)
+                  startDate: '2026-11-04'
+              complete:
+                summary: 완료 표시
+                value:
+                  completed: true
+              uncomplete:
+                summary: 완료 해제 (AC-10)
+                value:
+                  completed: false
+      responses:
+        '200':
+          description: 수정된 할일 (status 재판정)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+              examples:
+                completed:
+                  value:
+                    id: 9c8b7a6f-5e4d-4c3b-a2f1-e0d9c8b7a6f5
+                    categoryId: 5a1c2d3e-4f50-4617-8a9b-0c1d2e3f4a5b
+                    title: 기획서 초안 작성
+                    description: 1장~3장
+                    startDate: '2026-11-03'
+                    endDate: '2026-11-05'
+                    completed: true
+                    completedAt: '2026-11-04T05:10:00.000Z'
+                    status: COMPLETED
+                    createdAt: '2026-11-03T09:10:00.000Z'
+                    updatedAt: '2026-11-04T05:10:00.000Z'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/CsrfFailed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [todos]
+      operationId: deleteTodo
+      summary: 할일 삭제 (물리 삭제)
+      description: |
+        물리 삭제다(BR-10). 확인 대화상자에서 취소하면 클라이언트는 요청을 보내지 않는다(AC-11). 없는·다른 사용자의 할일, uuid 형식 오류는 404.
+
+        경로는 가정 (설계서 COM-01에서 확정). 근거: FR-06, UC-08, AC-11, BR-02, BR-10, BE-17.
+      x-priority: P0
+      x-source-ids: [FR-06, UC-08, AC-11, BR-02, BR-10, BE-17]
+      security:
+        - accessTokenCookie: []
+          csrfCookie: []
+          csrfHeader: []
+      responses:
+        '204':
+          description: 삭제 성공 (본문 없음)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/CsrfFailed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /calendar/todos:
+    get:
+      tags: [calendar]
+      operationId: listCalendarTodos
+      summary: 캘린더 기간 조회 (월간 P0, 주간·일간 P1)
+      description: |
+        PRD 11장 캘린더 기간 조회 계약(AQ-07). 할일의 `startDate ≤ to` 이고 `endDate ≥ from`인 할일(BR-12의 겹침)을 완료·기한 초과 포함해 돌려준다. 항목에 서버가 계산한 `status`가 있다(PR-06).
+        - 월간은 앞뒤 달 날짜 칸을 포함한 그리드 전체 범위(월요일 시작, OI-06)를 한 번에 요청한다. 주간·일간(P1)도 같은 API를 쓴다.
+        - 형식 오류, `from > to`, 기간 42일 초과는 400(양 끝 포함 일수 기준 가정, SQ-02).
+        - 칸당 3건 + '+N개 더', 모바일 개수 표시는 프런트 표시 규칙이며 서버는 범위 안의 모든 할일을 돌려준다(NFR-12, OI-15).
+
+        경로·파라미터 이름은 가정 (설계서 COM-01에서 확정, 파라미터 이름은 8-plan.md BE-20을 따름, SQ-01). 근거: FR-08, UC-09, AC-12, AC-18, BR-12, NFR-05, AD-11, BE-20.
+      x-priority: P0
+      x-source-ids: [FR-08, UC-09, AC-12, AC-18, BR-02, BR-12, OI-06, NFR-05, NFR-12, AQ-07, AD-11, WF-05, WF-06, BE-20]
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: 조회 시작일 (YYYY-MM-DD, 포함)
+          schema:
+            $ref: '#/components/schemas/DateString'
+          example: '2026-10-26'
+        - name: to
+          in: query
+          required: true
+          description: 조회 종료일 (YYYY-MM-DD, 포함). `from` 이상, 양 끝 포함 42일 이하.
+          schema:
+            $ref: '#/components/schemas/DateString'
+          example: '2026-12-06'
+      responses:
+        '200':
+          description: 기간과 겹치는 할일 (status 포함, 목록과 같은 정렬)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoList'
+              examples:
+                month:
+                  value:
+                    items:
+                      - id: 9c8b7a6f-5e4d-4c3b-a2f1-e0d9c8b7a6f5
+                        categoryId: 5a1c2d3e-4f50-4617-8a9b-0c1d2e3f4a5b
+                        title: 기획서 초안 작성
+                        description: null
+                        startDate: '2026-11-03'
+                        endDate: '2026-11-05'
+                        completed: false
+                        completedAt: null
+                        status: IN_PROGRESS
+                        createdAt: '2026-11-03T09:10:00.000Z'
+                        updatedAt: '2026-11-03T09:10:00.000Z'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /health:
+    get:
+      tags: [health]
+      operationId: getHealth
+      summary: 헬스 체크
+      description: |
+        인증 없이 `select 1`을 실행하고 `{ "status": "ok" }`만 돌려준다. 내부 정보는 넣지 않는다. compose의 `backend` healthcheck가 같은 경로를 쓴다(SO-14, AQ-06, XQ-04).
+        DB 오류 시 응답은 문서에 없어 500 `INTERNAL_ERROR`로 두었다(SQ-07).
+
+        근거: SO-14, SO-07, DL-05, AQ-06, BE-03.
+      x-priority: P0
+      x-source-ids: [SO-14, SO-07, DL-05, AQ-06, XQ-04, BE-03]
+      security: []
+      responses:
+        '200':
+          description: 정상
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponse'
+              examples:
+                ok:
+                  $ref: '#/components/examples/OkExample'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    accessTokenCookie:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: |
+        JWT 액세스 토큰(HS384만 허용, 클레임 `sub`·`iat`·`exp`·`jti`, 만료 15분). `HttpOnly; SameSite=Lax; Path=/api; Max-Age=900`, 운영 HTTPS에서 `Secure`(NFR-07, SO-12).
+        쿠키 이름과 `Path`는 가정 (설계서 COM-01에서 확정).
+    refreshTokenCookie:
+      type: apiKey
+      in: cookie
+      name: refresh_token
+      description: |
+        불투명 리프레시 토큰(32바이트 이상 무작위, DB에는 SHA-256 해시만, 7일 슬라이딩). `HttpOnly; SameSite=Strict; Path=/api/auth; Max-Age=604800`, 운영 HTTPS에서 `Secure`.
+        `Path`는 갱신·로그아웃을 모두 포함하는 인증 API 공통 접두사 하나이며 그 아래의 회원가입·로그인 요청에도 전송되지만 쓰지 않는다(NFR-07, OI-19).
+        토큰 갱신과 로그아웃만 읽는다. 쿠키 이름과 `/api/auth` 값은 가정 (설계서 COM-01에서 확정).
+    csrfCookie:
+      type: apiKey
+      in: cookie
+      name: csrf_token
+      description: |
+        Signed Double-Submit의 쿠키 쪽 값(현재 JWT `jti`에 묶어 서버 비밀 키로 HMAC 서명). HttpOnly가 아니다. `SameSite=Lax; Path=/; Max-Age=900`(NFR-15, PRD 11장).
+        로그인·회원가입·토큰 갱신·비밀번호 변경 때 발급, 로그아웃 때 삭제. 쿠키 이름·`SameSite`·`Path`는 가정 (설계서 COM-01에서 확정, SQ-08).
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: |
+        상태 변경 요청(POST·PUT·PATCH·DELETE)에 `csrf_token` 쿠키 값을 그대로 담는다. 쿠키·헤더 일치, 서명, 현재 JWT `jti` 연계 중 하나라도 틀리면 403 `CSRF_FAILED`(ERR-08). 인증(ERR-02)을 먼저 검사한다(DL-05).
+        회원가입·로그인·토큰 갱신·로그아웃은 대상이 아니다. 헤더 이름은 가정 (설계서 COM-01에서 확정).
+
+  headers:
+    SetCookieSession:
+      description: |
+        세션 쿠키 3종을 발급한다(Set-Cookie 헤더 3개). 운영 HTTPS에서는 세 쿠키 모두 `Secure`를 붙인다(로컬 HTTP 제외, NFR-07, SO-04).
+        - `access_token=<JWT>; Path=/api; HttpOnly; SameSite=Lax; Max-Age=900`
+        - `refresh_token=<opaque>; Path=/api/auth; HttpOnly; SameSite=Strict; Max-Age=604800`
+        - `csrf_token=<signed>; Path=/; SameSite=Lax; Max-Age=900`
+
+        이름·Path(리프레시 제외)·CSRF SameSite는 가정 (설계서 COM-01에서 확정). Max-Age는 PRD 11장(액세스·CSRF 15분, 리프레시 7일).
+      schema:
+        type: string
+      example: access_token=eyJhbGciOiJIUzM4NCJ9...; Path=/api; HttpOnly; SameSite=Lax; Max-Age=900
+    SetCookieClear:
+      description: |
+        세션 쿠키 3종을 삭제한다(발급 때와 같은 이름·Path, `Max-Age=0`, BR-01, NFR-15).
+        - `access_token=; Path=/api; HttpOnly; SameSite=Lax; Max-Age=0`
+        - `refresh_token=; Path=/api/auth; HttpOnly; SameSite=Strict; Max-Age=0`
+        - `csrf_token=; Path=/; SameSite=Lax; Max-Age=0`
+      schema:
+        type: string
+      example: refresh_token=; Path=/api/auth; HttpOnly; SameSite=Strict; Max-Age=0
+
+  parameters:
+    CategoryId:
+      name: categoryId
+      in: path
+      required: true
+      description: 카테고리 ID. 없는·다른 사용자의 ID와 uuid 형식 오류는 모두 404 `NOT_FOUND`(BR-02, SO-07).
+      schema:
+        type: string
+        format: uuid
+      example: 5a1c2d3e-4f50-4617-8a9b-0c1d2e3f4a5b
+    TodoId:
+      name: todoId
+      in: path
+      required: true
+      description: 할일 ID. 없는·다른 사용자의 ID와 uuid 형식 오류는 모두 404 `NOT_FOUND`(BR-02, SO-07).
+      schema:
+        type: string
+        format: uuid
+      example: 9c8b7a6f-5e4d-4c3b-a2f1-e0d9c8b7a6f5
+
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+      example: 9c8b7a6f-5e4d-4c3b-a2f1-e0d9c8b7a6f5
+    DateString:
+      type: string
+      format: date
+      pattern: '^\d{4}-\d{2}-\d{2}$'
+      description: 날짜만 의미하는 값. `YYYY-MM-DD` 문자열 그대로이며 시간대 변환을 하지 않는다(CN-06, PRD 4.2).
+      example: '2026-11-03'
+    Timestamp:
+      type: string
+      format: date-time
+      description: ISO 8601 UTC 시각(CN-06). 화면에서 사용자 시간대로 변환한다(CN-07).
+      example: '2026-11-04T05:10:00.000Z'
+    Password:
+      type: string
+      minLength: 15
+      maxLength: 128
+      format: password
+      description: VR-02. 15~128자, 문자 종류 조합 강제 없음. 앞뒤 공백을 포함해 입력값 그대로 검증·해시한다(PRD 4.1, NFR-06).
+    Email:
+      type: string
+      format: email
+      maxLength: 254
+      description: VR-01. 필수, 이메일 형식, 최대 254자. 서버가 소문자로 정규화한다.
+      example: a@example.com
+    Timezone:
+      type: string
+      minLength: 1
+      description: VR-04. IANA 시간대 이름(예 `Asia/Seoul`, `UTC`). 오프셋 형식(`+09:00`)은 거부하고 정규형으로 저장한다(PQ-06).
+      example: Asia/Seoul
+
+    User:
+      type: object
+      description: 사용자(도메인 3장, ER-01). `passwordHash`는 어떤 응답에도 넣지 않는다.
+      required: [id, email, name, timezone, createdAt, updatedAt]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        email:
+          $ref: '#/components/schemas/Email'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          example: 김민수
+        timezone:
+          $ref: '#/components/schemas/Timezone'
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+        updatedAt:
+          $ref: '#/components/schemas/Timestamp'
+
+    SignUpRequest:
+      type: object
+      required: [email, password, name]
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        password:
+          $ref: '#/components/schemas/Password'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          pattern: '\S'
+          description: VR-03. 필수, 공백 제거 뒤 1~50자.
+          example: 김민수
+        timezone:
+          type: string
+          description: 브라우저 `Intl.DateTimeFormat().resolvedOptions().timeZone` 감지값. 없거나 VR-04를 통과하지 못하면 오류 없이 `Asia/Seoul`로 저장한다(PRD 4.2, 가입 때만).
+          example: Asia/Seoul
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      description: PRD 4.1 로그인 입력 검증. VR-02의 15자 하한은 적용하지 않는다(AQ-04).
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        password:
+          type: string
+          format: password
+          minLength: 1
+          maxLength: 128
+          description: 필수, 128자 이하. 공백 제거 없음. 15자 미만이어도 형식 오류가 아니며 틀리면 401 `INVALID_CREDENTIALS`.
+
+    UpdateUserRequest:
+      type: object
+      minProperties: 1
+      description: 보낸 필드만 바꾼다. email은 바꿀 수 없다(OI-03).
+      properties:
+        timezone:
+          $ref: '#/components/schemas/Timezone'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          pattern: '\S'
+          description: P1. VR-03. 공백 제거 뒤 1~50자.
+          example: 김민지
+
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+          format: password
+          minLength: 1
+          description: 현재 비밀번호. 공백 제거 없음. 틀리면 400 `fields[].field = currentPassword`(PRD 4.4).
+        newPassword:
+          $ref: '#/components/schemas/Password'
+
+    Category:
+      type: object
+      description: 카테고리(도메인 3장, ER-02). 사용자마다 `isDefault=true`인 '기본' 카테고리가 정확히 1개 있다.
+      required: [id, name, isDefault, createdAt]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 30
+          example: 업무
+        isDefault:
+          type: boolean
+          description: 기본 카테고리 여부. true면 이름 변경·삭제 불가(BR-05).
+          example: false
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+
+    CategoryWithTodoCount:
+      allOf:
+        - $ref: '#/components/schemas/Category'
+        - type: object
+          required: [todoCount]
+          properties:
+            todoCount:
+              type: integer
+              minimum: 0
+              description: 이 카테고리의 할일 수(완료 포함). 삭제 확인 안내용이며 실제 이동 건수와 다를 수 있다(BR-06, AQ-08).
+              example: 2
+
+    CategoryList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryWithTodoCount'
+
+    CategoryWriteRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 30
+          pattern: '\S'
+          description: VR-07, BR-14. 필수, 공백만 불가, 공백 제거 뒤 1~30자. 같은 사용자 안에서 공백 제거·대소문자 무시로 고유('기본' 포함), 중복은 409.
+          example: 업무
+
+    TodoStatus:
+      type: string
+      enum: [NOT_STARTED, IN_PROGRESS, COMPLETED, OVERDUE]
+      description: |
+        서버 판정 상태(도메인 4장, 저장하지 않음). `NOT_STARTED`=시작 전, `IN_PROGRESS`=진행 중, `COMPLETED`=완료, `OVERDUE`=기한 초과.
+        값 이름은 가정 (설계서 COM-01에서 확정, CN-09). 한국어 표시는 프런트 `statusLabel.ts`가 한다.
+      example: IN_PROGRESS
+
+    Todo:
+      type: object
+      description: 할일(도메인 3장, ER-03). `status`는 응답 때 계산한다.
+      required: [id, categoryId, title, description, startDate, endDate, completed, completedAt, status, createdAt, updatedAt]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        categoryId:
+          $ref: '#/components/schemas/Uuid'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: 기획서 초안 작성
+        description:
+          type: string
+          nullable: true
+          maxLength: 1000
+          description: 없으면(빈 입력 포함) null(VR-06, EQ-08).
+          example: 1장~3장
+        startDate:
+          $ref: '#/components/schemas/DateString'
+        endDate:
+          $ref: '#/components/schemas/DateString'
+        completed:
+          type: boolean
+          example: false
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 완료 표시 시각(UTC). 미완료면 null(BR-13).
+          example: null
+        status:
+          $ref: '#/components/schemas/TodoStatus'
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+        updatedAt:
+          $ref: '#/components/schemas/Timestamp'
+
+    TodoList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          description: BR-11 고정 정렬(endDate → startDate → createdAt 오름차순).
+          items:
+            $ref: '#/components/schemas/Todo'
+
+    CreateTodoRequest:
+      type: object
+      required: [title, startDate, endDate]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: '\S'
+          description: BR-09, VR-05. 필수, 공백만 불가, 공백 제거 뒤 1~100자.
+          example: 기획서 초안 작성
+        description:
+          type: string
+          nullable: true
+          maxLength: 1000
+          description: VR-06. 선택, 공백 제거 뒤 최대 1000자. 공백 제거 뒤 비면 null로 저장한다.
+          example: 1장~3장
+        startDate:
+          $ref: '#/components/schemas/DateString'
+        endDate:
+          $ref: '#/components/schemas/DateString'
+        categoryId:
+          type: string
+          format: uuid
+          nullable: true
+          description: 생략 또는 null이면 기본 카테고리(BR-04). 없는·다른 사용자의 ID는 404.
+          example: 5a1c2d3e-4f50-4617-8a9b-0c1d2e3f4a5b
+
+    UpdateTodoRequest:
+      type: object
+      minProperties: 1
+      description: 보낸 필드만 바꾼다. 날짜 순서(BR-07)는 수정 뒤 값으로 검사한다.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: '\S'
+          description: BR-09, VR-05.
+        description:
+          type: string
+          nullable: true
+          maxLength: 1000
+          description: VR-06. null 또는 공백 제거 뒤 빈 값이면 null로 저장한다.
+        startDate:
+          $ref: '#/components/schemas/DateString'
+        endDate:
+          $ref: '#/components/schemas/DateString'
+        categoryId:
+          type: string
+          format: uuid
+          description: 생략하면 유지. null 불가(가정, SQ-05). 없는·다른 사용자의 ID는 404.
+        completed:
+          type: boolean
+          description: 완료 표시·해제(OI-07). `completedAt`은 서버가 설정·해제한다(BR-13).
+
+    OkResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+
+    ErrorCode:
+      type: string
+      enum: [VALIDATION_ERROR, UNAUTHORIZED, INVALID_CREDENTIALS, CONFLICT, NOT_FOUND, TOO_MANY_REQUESTS, INTERNAL_ERROR, CSRF_FAILED]
+      description: PRD 4.3 ERR-01~08의 code. 백엔드 `errors.js`, 프런트 `api/errorCodes.ts`의 상수와 같다(CN-05).
+
+    FieldError:
+      type: object
+      required: [field, message]
+      properties:
+        field:
+          type: string
+          description: 요청 필드 이름(camelCase, 프런트 폼 필드 이름과 같음, CN-08).
+          example: endDate
+        message:
+          type: string
+          description: 한국어 사유. 프런트가 입력란 아래에 그대로 표시한다.
+          example: 종료일은 시작일 이후여야 합니다.
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: 한국어 메시지. 클라이언트는 이 문자열로 분기하지 않는다(PR-08). 스택·SQL 등 내부 정보는 넣지 않는다(SO-07).
+            fields:
+              type: array
+              description: ERR-01일 때 필드별 사유. 다른 code에서는 없다.
+              items:
+                $ref: '#/components/schemas/FieldError'
+
+  responses:
+    ValidationError:
+      description: ERR-01 `VALIDATION_ERROR` - 입력 검증 실패, 기본 카테고리 삭제·이름 변경, 현재 비밀번호 불일치, 로그인 형식 위반, 잘못된 시간대·필터·기간
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            dateOrder:
+              summary: 시작일 > 종료일 (AC-06)
+              value:
+                error:
+                  code: VALIDATION_ERROR
+                  message: 입력값을 확인해 주세요.
+                  fields:
+                    - field: endDate
+                      message: 종료일은 시작일 이후여야 합니다.
+    Unauthorized:
+      description: ERR-02 `UNAUTHORIZED` - 액세스 토큰 없음·만료·위조, 또는 갱신 시 리프레시 토큰 없음·만료·폐기·재사용. 클라이언트 처리는 info 공통 규약 참조.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            unauthorized:
+              value:
+                error:
+                  code: UNAUTHORIZED
+                  message: 로그인이 필요합니다.
+    InvalidCredentials:
+      description: ERR-03 `INVALID_CREDENTIALS` - 로그인 실패. 없는 email과 틀린 비밀번호가 같은 본문이다(AC-14).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalid:
+              value:
+                error:
+                  code: INVALID_CREDENTIALS
+                  message: 이메일 또는 비밀번호가 올바르지 않습니다.
+    CsrfFailed:
+      description: ERR-08 `CSRF_FAILED` - CSRF 헤더 없음, 쿠키·헤더 불일치, 서명 오류, 다른 JWT에 묶인 토큰(NFR-15)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            csrf:
+              value:
+                error:
+                  code: CSRF_FAILED
+                  message: 요청을 확인할 수 없습니다. 페이지를 새로고침해 주세요.
+    NotFound:
+      description: ERR-05 `NOT_FOUND` - 없는 리소스, 다른 사용자의 리소스, 다른 사용자의(또는 없는) categoryId, uuid 형식 오류. 경우를 구분하지 않는다(BR-02, SO-07).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            notFound:
+              value:
+                error:
+                  code: NOT_FOUND
+                  message: 대상을 찾을 수 없습니다.
+    Conflict:
+      description: ERR-04 `CONFLICT` - email 중복(VR-01) 또는 같은 사용자 안 카테고리 이름 중복(BR-14)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            duplicateEmail:
+              value:
+                error:
+                  code: CONFLICT
+                  message: 이미 사용 중인 이메일입니다.
+                  fields:
+                    - field: email
+                      message: 이미 사용 중인 이메일입니다.
+    TooManyRequests:
+      description: |
+        ERR-06 `TOO_MANY_REQUESTS` - 로그인 실패 제한 중(NFR-10, AC-15). 비밀번호를 검증하지 않고 거부하며 이 거부는 실패 횟수에 넣지 않는다.
+        시간 창이 지나면 풀린다. `Retry-After` 헤더는 문서에 없어 보내지 않는다(SQ-03).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            limited:
+              value:
+                error:
+                  code: TOO_MANY_REQUESTS
+                  message: 로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.
+    InternalError:
+      description: ERR-07 `INTERNAL_ERROR` - 서버 내부 오류. 고정 문구이며 내부 정보는 넣지 않는다(SO-07, NFR-11).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            internal:
+              value:
+                error:
+                  code: INTERNAL_ERROR
+                  message: 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.
+
+  examples:
+    UserExample:
+      value:
+        id: 3f2b8c1e-9a4d-4b7e-8f21-6c5d4e3a2b10
+        email: a@example.com
+        name: 김민수
+        timezone: Asia/Seoul
+        createdAt: '2026-11-03T09:00:00.000Z'
+        updatedAt: '2026-11-03T09:00:00.000Z'
+    CategoryExample:
+      value:
+        id: 5a1c2d3e-4f50-4617-8a9b-0c1d2e3f4a5b
+        name: 업무
+        isDefault: false
+        createdAt: '2026-11-03T09:05:00.000Z'
+    TodoExample:
+      value:
+        id: 9c8b7a6f-5e4d-4c3b-a2f1-e0d9c8b7a6f5
+        categoryId: 5a1c2d3e-4f50-4617-8a9b-0c1d2e3f4a5b
+        title: 기획서 초안 작성
+        description: 1장~3장
+        startDate: '2026-11-03'
+        endDate: '2026-11-05'
+        completed: false
+        completedAt: null
+        status: IN_PROGRESS
+        createdAt: '2026-11-03T09:10:00.000Z'
+        updatedAt: '2026-11-03T09:10:00.000Z'
+    OkExample:
+      value:
+        status: ok
