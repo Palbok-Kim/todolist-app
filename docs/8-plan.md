@@ -45,7 +45,7 @@
 | 0.39 | 2026-11-05 | MinjeYu | 진척 반영: FE-05 완료 조건 3개 체크(✅). 검증: lint·build·Vitest 43개 통과, 브라우저 1280·768px에서 로그아웃이 헤더 오른쪽 끝(본문 여백 안쪽)이고 메뉴 버튼 없음, 360px에서는 메뉴를 펼쳐야 탭 3개·로그아웃(높이 48px)이 보이고 이동·뒤로 가기 때 메뉴가 닫힘, 가로 스크롤 없음. 로그아웃 → `POST /api/auth/logout` 200, 쿠키 삭제, 로고만 있는 로그인 화면. 뒤로 가기 → 보호 화면 데이터 없이 `/login`(갱신 실패 경로라 만료 안내 표시). `components/`의 `features` import 린트 오류 확인. 공개 화면(로그인·회원가입)도 같은 `Layout`을 로고만으로 써서 상단 알림이 보인다 |
 | 0.40 | 2026-11-05 | MinjeYu | 진척 반영: FE-07 완료 조건 5개 체크(✅). 검증: lint·build·Vitest 43개 통과, 브라우저에서 새 email 가입 → 자동 로그인 후 `/todos`(요청에 `timezone: Asia/Seoul` 자동 포함), 14자 비밀번호는 프런트 검증으로 요청 없이 사유 표시·요청 본문을 14자로 바꾼 서버 400 `fields`도 같은 자리에 표시, 중복 email은 email 아래, 틀린 비밀번호·없는 email·짧은 비밀번호의 상단 알림 문구 동일, 같은 email 5회 실패 뒤 6회째와 올바른 비밀번호 모두 제한 안내, `message ===` grep 0건(`api/client.ts`의 `typeof e.message` 검사를 `String(e.message ?? 기본 문구)`로 바꿈). 필드가 아닌 오류(ERR-03·06·07)는 WF 3.2 상단 알림에 서버 문구 그대로 표시 |
 | 0.41 | 2026-11-05 | MinjeYu | 진척 반영: FE-08 완료 조건 2개 체크(✅). 검증: lint·build 통과, `useQuery` grep(queries.ts 제외) 0건, 브라우저에서 사용자 A의 `CategorySelect`를 임시 렌더해 선택지가 A의 카테고리(기본·업무)와 같고 첫 선택값·폼 값이 `기본`의 id, 빈 선택지 없음, 다른 사용자 B의 카테고리 미노출. WF-03 필터의 `전체` 선택지는 FE-12에서 필터 바가 직접 그린다 |
-| 0.42 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: VR-02를 KISA 기준으로 변경(PRD v0.13). BE-05 수행 작업·완료 조건, FE-06·FE-07 완료 조건의 비밀번호 경계값을 새 규칙(3종류 7·8자, 2종류 9·10자, 1종류 거부, 128·129자)으로 수정하고 코드 수정 뒤 재확인해 체크 유지. 단일 출처 링크 버전을 PRD v0.13·사용자 시나리오 v0.7·와이어프레임 v0.6·아키텍처 다이어그램 v0.11·ERD v0.6에 맞춤. 구조 설계 원칙 v0.18 |
+| 0.42 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: VR-02를 KISA 기준으로 변경(PRD v0.13). BE-05 수행 작업·완료 조건, FE-06·FE-07 완료 조건의 비밀번호 경계값을 새 규칙(3종류 7·8자, 2종류 9·10자, 1종류 거부, 128·129자)으로 수정하고 코드 수정 뒤 재확인해 체크 유지. 단일 출처 링크 버전을 PRD v0.13·사용자 시나리오 v0.7·와이어프레임 v0.6·아키텍처 다이어그램 v0.11·ERD v0.6에 맞춤. 구조 설계 원칙 v0.20 |
 | 0.43 | 2026-11-05 | MinjeYu | 진척 반영: FE-09 완료 조건 3개 체크(✅). 검증: Vitest 61개(할일 검증 14개: title 0·1·100·101자와 공백·이모지, description 1000·1001자, 없는 날짜·윤년, start>end 거부와 같은 날 통과, 필드 순서 — 백엔드 단위 테스트와 같은 경계값·문구), lint·build 통과, `statusLabel.ts`의 `completed` 0건, 프런트에 상태 값 판정 코드 없음(상태 문자열은 `statusLabel.ts`·`api/types.ts`에만), `setQueryData` 0건. 변경 성공 시 할일(`todoKeys.all`)과 카테고리(`todoCount`) 쿼리를 무효화하고, 삭제는 그 할일의 단건 캐시를 먼저 제거한다(재조회 404 방지) |
 | 0.44 | 2026-11-05 | MinjeYu | 진척 반영: FE-10 완료 조건 5개 체크(✅). 검증: lint·build·Vitest 61개 통과, `useForm\|zod` 0건. 브라우저에서 카테고리를 건드리지 않고 등록 → 요청·저장 모두 기본 카테고리 id, 시작일 11-10·종료일 11-05 저장 → 종료일 아래 사유·요청 없음·화면 유지, 편집에서 완료 체크 저장 → 다시 열면 `완료`·해제 저장 → `진행 중`, `마지막 수정`이 `updatedAt` 06:48Z를 Asia/Seoul 15:48·America/New_York 01:48로 표시, 없는 id·형식 오류 id는 `할일을 찾을 수 없습니다`와 목록 링크. 카테고리 드롭다운은 feature 간 컴포넌트 import 금지(DL-11) 때문에 페이지가 폼에 주입한다. 편집 저장은 전체 필드 PATCH |
 | 0.45 | 2026-11-05 | MinjeYu | 진척 반영: FE-11~FE-20 완료 조건 31개 체크(모두 ✅). 4개 묶음 병렬 구현(A 삭제·목록, B 캘린더, C 설정, D 카테고리)과 공용 `components/StatusBadge`. 검증: Vitest 93개(월 그리드·주 범위·카테고리 이름 경계 포함), lint·build·prettier 통과, features의 `new Date(`·`setQueryData` 0건. 브라우저: 삭제 취소/확인, 기한 초과·진행 중·카테고리 AND 필터와 편집 후 필터 유지, 3일짜리 할일 3칸 표시·4건 날짜 3건+`+1개 더`·모바일 개수와 그날 목록, 주간 11-02~11-08·전환 시 기준일 유지, UTC 선택 표시·시간대 변경 후 목록 상태와 마지막 수정 갱신, name 헤더 반영·틀린 현재 비밀번호 사유·변경 후 로그인 유지, 카테고리 추가 즉시 드롭다운·필터 반영·중복 사유·기본 행 버튼 없음·삭제 확인창 할일 2개·확인 후 기본으로 이동과 필터 해제. FE-16에서 태블릿 막대 상태 라벨 잘림·모바일 필터 잘림 보정, 결과를 `docs/test/manual-checklist.md` NFR-12 줄에 기록 |
@@ -56,6 +56,9 @@
 | 0.50 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: FE-23(헤더 탭 순서·로고 이동·'⚙ 설정' 버튼, 언어·테마를 설정 화면으로, 빈 목록 표 머리) Task 추가(P1, ⬜), 의존 그래프 갱신. 단일 출처 링크를 PRD v0.15·와이어프레임 v0.9·구조 설계 원칙 v0.17에 맞춤 |
 | 0.51 | 2026-11-05 | MinjeYu | 진척 반영: FE-23 완료 조건 3개 체크(✅). 검증: tsc·ESLint·Prettier 통과, Vitest 103개. Playwright: 헤더 '로고·캘린더·목록 … + 새 할일·이름·⚙ 설정·로그아웃', 로고 → /calendar, 로그인 화면 헤더는 로고만, 설정에서 일본어·다크 선택 후 새로고침 유지·기어 기호 표시, 모바일 펼침 메뉴 '캘린더·목록·이름·설정·로그아웃'과 가로 스크롤 없음, 빈 목록에 표 머리 + 안내. 설정 라벨 열 96px → 128px(영어·일본어 라벨 한 줄) |
 | 0.52 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: FE-02 수행 작업의 API 기준 주소를 '개발 서버만 기본값, 운영 빌드 필수'로(설계서 v0.10). 구현: `frontend/.env.example` 추가, `client.ts` 기본값을 개발 모드로 한정, `vite.config.ts`가 운영 빌드에서 변수가 없으면 실패. 완료 상태 변화 없음. 구조 설계 원칙 v0.18 링크 |
+| 0.53 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: FE-24(개발 모드 콘솔 로깅, SO-06) Task 추가(P1, ⬜), 의존 그래프 갱신. 구조 설계 원칙 v0.19 링크 |
+| 0.54 | 2026-11-05 | MinjeYu | 진척 반영: FE-24 완료 조건 2개 체크(✅). 검증: tsc·ESLint·Prettier 통과, Vitest 103개, `lib/logger.ts` 밖 `console.` 0건. Playwright(개발 서버): 로그인 실패 `api … 401 INVALID_CREDENTIALS`·`mutation error`, 가입 201, `route`, 목록·캘린더 조회, `prefs` 변경 로그가 남고 비밀번호 문자열은 없음. 운영 빌드 번들에 `[todolist]` 0건(남은 `console.*`는 React 라이브러리 것) |
+| 0.55 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: 환경 변수를 디렉토리별로 정리(`backend/.env`·`backend/.env.example`, 루트는 공용 도구 키 `DB_CONN_STRING`만). BE-01 수행 작업의 `--env-file-if-exists` 경로를 `.env`로. 완료 상태 변화 없음. 구조 설계 원칙 v0.20 링크 |
 
 **표기 범례** (도메인 정의서·PRD·사용자 시나리오·와이어프레임·구조 설계 원칙과 같음)
 - **확정**: 요구사항 원문 또는 사용자 의사결정(2026-11-04)에 근거한 결정
@@ -193,6 +196,7 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 | FE-21 | 다국어(한국어·영어·일본어) (FR-09 P1) | P1 | 3h | Day 3 (추가 요청) | FE-11~FE-20 | ✅ |
 | FE-22 | 라이트·다크 모드 (FR-10 P1) | P1 | 1.5h | Day 3 (추가 요청) | FE-11~FE-20 | ✅ |
 | FE-23 | 헤더 재배치·설정의 언어·테마·빈 목록 표 머리 (WF v0.9) | P1 | 1h | Day 3 (추가 요청) | FE-21, FE-22 | ✅ |
+| FE-24 | 개발 모드 콘솔 로깅 (SO-06) | P1 | 0.5h | Day 3 (추가 요청) | FE-23 | ✅ |
 
 ### 2.5 검증 (QA)
 
@@ -447,7 +451,7 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
   - `backend/package.json`(`"type": "module"`, `engines` Node 22, scripts: `dev`, `test`, `lint`, `format:check`, `migrate`, `seed`), 의존성은 구조 원칙 2.3장 초기 허용 목록만(`express`, `pg`, `cookie-parser`, `jsonwebtoken`, 개발용 `eslint`, `prettier`)
   - `backend/src/config.js`(`process.env`를 읽는 유일한 곳, 필수 값 검증과 실패 시 종료, `NODE_ENV` 3값만 허용, `production`에서 자리표시자 거부와 JWT 서명 키 48바이트 미만 거부(모든 환경), `trust proxy` 설정값(`TRUST_PROXY`, 개발은 비움)과 `true` 거부, CORS 허용 출처(`CORS_ORIGINS`, 정확한 출처 형식 검증, production 필수)·CSRF 쿠키 `Domain`(`COOKIE_DOMAIN`, production 필수, SO-08·SO-12), 쿠키 `Secure` 플래그, 리프레시 재사용 감지 유예 시간(기본 10초, AQ-13))
   - `config.js`에 `CORS_ORIGINS`(SO-08)·`COOKIE_DOMAIN`(CSRF 쿠키 Domain, SO-12)·`ACCESS_TOKEN_TTL_MINUTES`·`REFRESH_TOKEN_TTL_DAYS`(분·일 단위, 내부는 초, NFR-07) 검증 추가(사용자 결정·요청(2026-11-05))
-  - `backend/src/server.js`는 `listen`만 한다. `dev`는 `node --watch --env-file-if-exists=../.env`(포트 3000, 루트 `.env`, SO-09). DB는 로컬에 설치된 PostgreSQL 17(`localhost:5432`)을 쓴다(사용자 결정(2026-11-04): Docker 미사용)
+  - `backend/src/server.js`는 `listen`만 한다. `dev`는 `node --watch --env-file-if-exists=.env`(포트 3000, `backend/.env`, SO-09). DB는 로컬에 설치된 PostgreSQL 17(`localhost:5432`)을 쓴다(사용자 결정(2026-11-04): Docker 미사용)
 - **완료 조건**
   - [x] `backend/`에서 `npm run dev`로 서버가 뜨고 계속 실행된다
   - [x] `NODE_ENV=staging`이면 프로세스가 종료한다. `NODE_ENV=production`에 `JWT` 키가 `change-me` 자리표시자면 종료한다(SO-03, SO-04)
@@ -1104,6 +1108,18 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
   - [x] 헤더에 언어·테마 컨트롤이 없고, 설정 화면에서 바꾸면 바로 적용되고 새로고침해도 유지된다. 영어·일본어에서도 기어 기호가 보인다(수동)
   - [x] 할일이 없는 계정의 목록 화면에 표 머리와 '아직 할일이 없습니다' 안내가 함께 보인다(수동)
 
+#### FE-24 개발 모드 콘솔 로깅 (SO-06)
+
+- **우선순위 / 예상 시간**: P1 / 0.5h
+- **선행 Task**: FE-23
+- **근거**: 사용자 요청(2026-11-05), SO-06, TQ-10
+- **수행 작업**
+  - `src/lib/logger.ts`: `devLog(event, data?, level?)`. `import.meta.env.DEV`일 때만 `console`로 출력. `eslint.config.js`에서 이 파일만 `no-console` 예외
+  - 로깅 지점: `api/client.ts`(요청 결과·네트워크 오류·토큰 갱신), `main.tsx`(인증 만료 처리, 화면 이동, `QueryCache`·`MutationCache` 실패, 언어·테마 변경)
+- **완료 조건**
+  - [x] 개발 서버에서 로그인·목록 조회·저장 실패·화면 이동·언어 변경 때 콘솔에 `[todolist]` 로그가 남고, 요청·응답 body와 비밀번호·토큰은 없다(수동)
+  - [x] 운영 빌드 번들에 `[todolist]` 문자열이 없고 `lib/logger.ts` 밖에 `console.`이 0건이다(grep, SO-06)
+
 ### 3.5 검증 (QA)
 
 #### QA-01 수동 체크리스트 `manual-checklist.md` 작성
@@ -1279,6 +1295,7 @@ flowchart LR
     FE_21["FE-21 다국어 (FR-09 P1)"]
     FE_22["FE-22 라이트·다크 모드 (FR-10 P1)"]
     FE_23["FE-23 헤더 재배치·설정의 언어·테마 (P1)"]
+    FE_24["FE-24 개발 모드 콘솔 로깅 (P1)"]
   end
   subgraph QAG["검증 (QA)"]
     QA_01["QA-01 수동 체크리스트 manual-checklist.md 작성"]
@@ -1402,6 +1419,7 @@ flowchart LR
   FE_20 --> FE_22
   FE_21 --> FE_23
   FE_22 --> FE_23
+  FE_23 --> FE_24
   BE_18 --> QA_02
   BE_20 --> QA_02
   BE_14 --> QA_03
@@ -1416,7 +1434,7 @@ flowchart LR
   QA_02 --> QA_08
   QA_01 --> QA_09
   classDef p1 stroke-dasharray: 5 5,stroke:#888
-  class DB_10,DB_11,BE_21,BE_22,BE_23,FE_17,FE_18,FE_19,FE_20,FE_21,FE_22,FE_23,QA_09 p1
+  class DB_10,DB_11,BE_21,BE_22,BE_23,FE_17,FE_18,FE_19,FE_20,FE_21,FE_22,FE_23,FE_24,QA_09 p1
 ```
 
 ## 5. 일정 배치와 크리티컬 패스

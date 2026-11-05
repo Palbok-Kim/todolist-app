@@ -14,6 +14,7 @@
 | 0.8 | 2026-11-05 | MinjeYu | 백엔드 코드 대조 반영: 2장 검사 순서에 할일 경로 ID 예외, 4장 테스트 IP 예외를 현재형(`LOGIN_LIMIT_EXEMPT_IPS` production 기동 거부)으로, 5.1 Max-Age는 TTL 기본값이며 삭제는 과거 `Expires`(Express 5 `res.clearCookie`)·CSRF 쿠키는 같은 Domain, 5.2 `exp`를 액세스 수명 기준으로, 5.5 세션 토큰 생성 시점(로그인·비밀번호 변경은 트랜잭션 전, 회원가입·갱신은 트랜잭션 안의 동기 계산), 6장 TTL 키 사용처를 `config.js`로 고치고 `LOGIN_LIMIT_EXEMPT_IPS` 행 추가 |
 | 0.9 | 2026-11-05 | MinjeYu | 단일 출처 머리말의 참조 버전을 현재 값(PRD v0.13·사용자 시나리오 v0.7·와이어프레임 v0.6·아키텍처 다이어그램 v0.11·ERD v0.6)에 맞춤. 내용 변경 없음 |
 | 0.10 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: 6장 `VITE_API_BASE_URL`을 운영 빌드 필수로(없으면 빌드 실패), 개발 기본값은 개발 서버에서만, 값 위치는 `frontend/.env`·예시 `frontend/.env.example` |
+| 0.11 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: 6장 환경 변수 파일을 디렉토리별로(`backend/.env`·`frontend/.env`, 루트는 공용 도구 키만, SO-02 v0.20) |
 
 **단일 출처 원칙**: 규칙 원문은 도메인 정의서 v0.10, PRD v0.13, 구조 설계 원칙 v0.14, 아키텍처 다이어그램 v0.11, ERD v0.6에만 있고 이 문서는 ID로 참조한다(PR-01). 이 문서는 PRD 11장이 넘긴 **구현 값·이름·절차**만 정한다. 요청·응답 필드의 상세 스키마는 [`backend/swagger.yaml`](../backend/swagger.yaml)이 단일 출처이며, 이 문서의 2장은 경로·메서드·상태 코드 목록이다.
 
@@ -153,7 +154,7 @@
 
 ## 6. 환경 변수
 
-`.env.example`이 키 목록의 단일 출처다. 비밀은 루트 `.env`로만 주입하고, 백엔드는 `node --env-file-if-exists=../.env`로 읽는다(SO-02, SO-03). Docker는 쓰지 않는다(사용자 결정(2026-11-04)).
+`.env.example`이 키 목록의 단일 출처다. 환경 변수는 디렉토리별로 나눈다: 백엔드 키는 `backend/.env.example`(백엔드는 `node --env-file-if-exists=.env`로 `backend/.env`를 읽는다), 프런트 키는 `frontend/.env.example`, 루트 `.env.example`은 저장소 공용 도구 키(`DB_CONN_STRING`)만. 비밀은 각 `.env`로만 주입한다(SO-02, SO-03). Docker는 쓰지 않는다(사용자 결정(2026-11-04)).
 
 **로컬 실행 구성**: PostgreSQL 17(로컬 설치, `localhost:5432`) → `backend`의 `npm run dev`(포트 3000) → `frontend`의 `npm run dev`(포트 5173). 브라우저는 `http://localhost:5173`(화면)과 `http://localhost:3000/api`(API, CORS)를 직접 호출한다(SO-08). 백엔드는 DB를 기다리지 않으므로 DB를 먼저 띄운다(README).
 

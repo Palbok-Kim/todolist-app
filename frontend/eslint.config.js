@@ -14,6 +14,7 @@ export default tseslint.config(
   tseslint.configs.recommended,
   reactHooks.configs.flat['recommended-latest'],
   { rules: { 'no-console': 'error' } }, // SO-06
+  { files: ['src/lib/logger.ts'], rules: { 'no-console': 'off' } }, // SO-06: 개발 모드 전용 로그
   layer(['src/pages/**'], ['**/api/**']),
   // 다른 feature는 queries(훅)만 import한다
   layer(

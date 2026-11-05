@@ -22,6 +22,8 @@
 | 0.16 | 2026-11-05 | MinjeYu | PRD v0.14(FR-09 다국어·FR-10 테마, 4.5) 반영: DL-13에 화면 언어·테마(`prefsStore`, `persist`로 localStorage 저장), CN-12(한국어 원문 키 번역·서버 메시지 번역·누락 테스트), CN-13(색은 토큰만, 다크는 `data-theme`로 값만 교체) 신설, 6.3 디렉토리에 `store/prefsStore.ts`·`lib/i18n/`. 새 외부 의존성 없음(DL-16, `persist`는 Zustand 내장). 단일 출처 머리말 참조를 도메인 정의서 v0.11·PRD v0.14·와이어프레임 v0.8로 |
 | 0.17 | 2026-11-05 | MinjeYu | 와이어프레임 v0.9 반영: 6.3 디렉토리 `features/user`에 `PrefsForm.tsx`(설정 화면의 언어·테마). 단일 출처 머리말 참조를 PRD v0.15·와이어프레임 v0.9로 |
 | 0.18 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: SO-02 `.env.example`을 루트와 `frontend/` 두 곳에, 6.3 디렉토리에 `frontend/.env.example`. 설계서 v0.10(`VITE_API_BASE_URL` 운영 빌드 필수) 참조 |
+| 0.19 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: SO-06에 프런트 개발 모드 전용 콘솔 로그(`src/lib/logger.ts`의 `devLog`)와 남기는 지점·금지 값, TQ-10 `no-console` 예외에 프런트 `lib/logger.ts`, 6.3 디렉토리에 `lib/logger.ts` |
+| 0.20 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: SO-02 환경 변수를 디렉토리별로(`backend/.env`·`frontend/.env`, 루트는 공용 도구 키만), SO-08 백엔드 `--env-file-if-exists=.env`, 6.1·6.2 디렉토리에 루트·`backend/` `.env.example` |
 
 **표기 범례** (도메인 정의서·PRD·사용자 시나리오·와이어프레임과 같음)
 - **확정**: 요구사항 원문 또는 사용자 의사결정(2026-11-04)에 근거한 결정
@@ -158,7 +160,7 @@
 | TQ-07 | 테스트 이름은 `AC-xx: …` 형식이고 하나의 케이스가 여러 ID를 다루면 `AC-07, BR-11: …`처럼 쉼표로 이어 쓴다. 수동 체크리스트(`docs/test/manual-checklist.md`)는 P0 AC 전부를 한 줄씩 담고, 자동 테스트가 있는 AC는 테스트 파일 위치를 적어 KPI-01을 한 곳에서 측정한다 | KPI-01을 AC 단위로 판정한다 | KPI-01, PR-02 | 확정 (AC별 체크리스트) / 가정 (파일 위치) |
 | TQ-08 | 통합 테스트는 로컬 PostgreSQL 서버(SO-08)의 별도 database(`todolist_test`)에 붙는다. 테스트 시작 시 `migrations/`를 적용하고 각 테스트 파일 전에 `TRUNCATE`한다. 연결 대상 database 이름이 `_test`로 끝나지 않으면 `TRUNCATE` 전에 중단한다 | 개발 데이터를 지우는 사고를 막는다 | NFR-04 | 가정 |
 | TQ-09 | 삭제: 사용자 결정(2026-11-05)으로 k6 부하 테스트를 제거했다. ID는 재사용하지 않는다 | — | NFR-01~03, NFR-16, KPI-02 | 삭제 |
-| TQ-10 | ESLint(권장 규칙 + 프런트는 `typescript-eslint`·`react-hooks`)와 Prettier를 쓰고 Prettier 설정은 루트 `.prettierrc` 하나다. ESLint에 `no-restricted-imports`(DL-01, DL-11)와 `no-console`(`lib/logger.js` 제외, SO-06)을 넣는다. 린트 오류 0건과 `prettier --check` 통과를 커밋 전 조건으로 한다. git hook·CI는 도입하지 않는다 | 레이어 규칙을 사람이 아닌 도구가 확인한다 | PR-03 | 가정 |
+| TQ-10 | ESLint(권장 규칙 + 프런트는 `typescript-eslint`·`react-hooks`)와 Prettier를 쓰고 Prettier 설정은 루트 `.prettierrc` 하나다. ESLint에 `no-restricted-imports`(DL-01, DL-11)와 `no-console`(백엔드 `lib/logger.js`·프런트 `src/lib/logger.ts` 제외, SO-06)을 넣는다. 린트 오류 0건과 `prettier --check` 통과를 커밋 전 조건으로 한다. git hook·CI는 도입하지 않는다 | 레이어 규칙을 사람이 아닌 도구가 확인한다 | PR-03 | 가정 |
 | TQ-11 | 커버리지는 수치 목표를 두지 않고 TQ-05 범위를 기준으로 한다. `node --test --experimental-test-coverage`로 측정만 한다 | 2일 안에 숫자 맞추기보다 위험 범위를 먼저 덮는다 | PRD에 수치 없음 | 가정 |
 | TQ-12 | 코드 리뷰 체크리스트(R-06)는 이 문서의 검증 문장으로 구성한다: DL-01(import 방향), DL-04(`src/db/` 밖 SQL grep), DL-07(`user_id` 조건 누락, `req.body.userId`), DL-10(`${` 사용), CN-04(snake_case), CN-05(code 리터럴), SO-06(로그 금지 값). 실행 명령(`npm test`, `npm run lint`, `npm run format:check`, 마이그레이션, 시드)은 `README.md`에 한 곳으로 모은다 | 보안 실수를 사람 기억에 맡기지 않는다 | R-06, NFR-08, NFR-09 | 가정 |
 
@@ -167,13 +169,13 @@
 | ID | 원칙 | 이유 | 근거 | 구분 |
 |----|------|------|------|------|
 | SO-01 | 환경 변수는 `backend/src/config.js`에서만 읽는다 (`process.env` grep이 그 파일과 `scripts/`, 테스트 DB로 전환하는 `backend/test/helpers/env.js`(TQ-08)에서만 나온다). 시작할 때 필수 값·형식을 검증하고 실패하면 프로세스를 종료한다. pg 풀 크기 등 조정 값도 여기서 설정값으로 노출한다 | 설정 누락을 기동 때 발견한다 | NFR-05 | 가정 |
-| SO-02 | `.env`는 `.gitignore`에 넣고, 키 이름과 안전한 예시 값만 담은 `.env.example`을 루트(백엔드)와 `frontend/`(Vite는 `frontend/`의 `.env`만 읽는다)에 커밋한다. 비밀 값은 커밋하지 않는다 (`git ls-files`에 `.env.example` 외 `.env*` 없음). 프런트 `VITE_*` 변수는 번들에 노출되므로 비밀을 넣지 않는다 (API 기준 주소 `VITE_API_BASE_URL`은 공개 값이다. SO-08) | 비밀 유출 방지 | NFR-07, NFR-15 | 가정 |
+| SO-02 | `.env`는 `.gitignore`에 넣고, 환경 변수는 쓰는 디렉토리별로 나눈다: 백엔드는 `backend/.env`, 프런트는 `frontend/.env`(Vite는 `frontend/`의 `.env`만 읽는다), 루트 `.env`에는 저장소 공용 도구(예: DB 조회용 MCP의 `DB_CONN_STRING`)가 쓰는 키만 둔다. 각 디렉토리에 키 이름과 안전한 예시 값만 담은 `.env.example`을 커밋한다. 비밀 값은 커밋하지 않는다 (`git ls-files`에 `.env.example` 외 `.env*` 없음). 프런트 `VITE_*` 변수는 번들에 노출되므로 비밀을 넣지 않는다 (API 기준 주소 `VITE_API_BASE_URL`은 공개 값이다. SO-08) | 비밀 유출 방지 | NFR-07, NFR-15 | 가정 |
 | SO-03 | JWT·CSRF 서명 키 같은 비밀은 코드에 값을 직접 쓰지 않고 `.env`로만 주입한다. `.env.example`의 값은 `change-me`를 반복해 48자 이상으로 만든 자리표시자이고, `production`에서 자리표시자이면 기동을 거부한다. JWT 서명 키(HS384)는 어느 환경에서든 48바이트(384비트) 미만이면 기동을 거부한다. 키 관리 세부는 11장을 따른다 | 기본 키로 운영되는 사고와 짧은 키로 HS384 서명을 쓰는 사고를 막는다 (자리표시자를 48자 이상으로 하는 이유는 개발·테스트 환경이 길이 검사에 막히지 않게 하기 위함) | NFR-07, NFR-15, R-13, PRD 11장 | 확정 (HS384: 사용자 결정(2026-11-04), 키 길이: 위임 결정(2026-11-04)) / 가정 (검사 위치) |
 | SO-04 | `NODE_ENV`는 `development` / `test` / `production`만 허용하고 그 밖은 기동을 거부한다. 환경별 차이는 `config.js`의 플래그(예: 쿠키 `Secure`)로만 두고 다른 파일에서 `NODE_ENV`를 분기하지 않는다 (grep). `production`에서는 HTTPS 쿠키 `Secure`를 켠다 | 환경 분기가 코드 곳곳에 퍼지는 것을 막는다 | NFR-07, NFR-09 | 확정 (Secure 요구) / 가정 (구조) |
 | SO-05 | NFR-10의 테스트 IP 예외는 기본적으로 구현하지 않는다. 격리 테스트 환경에 꼭 필요해지면 `test`에서만 읽는 설정으로 두고 `production`에서 그 설정 값이 있으면 `config.js`가 기동을 거부한다. 구현 방식은 11장을 따르며 이 가드는 TQ-05의 테스트로 확인한다 | 운영에서 켤 수 없어야 한다 | NFR-10, PRD 11장 | 확정 (원칙적 예외 금지, 운영 불가) / 가정 (가드 방식) |
-| SO-06 | 로그는 한 줄 JSON을 stdout으로 내보내는 `lib/logger.js` 하나로만 쓴다 (`console.*`는 그 파일 밖에서 린트 오류). 요청 로그는 `time`(`Date.now()`의 epoch 밀리초 숫자, `new Date(` 없이 CN-06을 지킨다. 8-plan.md XQ-10), `level`, `method`, `path`, `status`, `userId`, `durationMs`만 담고, 서버 오류는 요청 정보와 함께 `err.message`·`err.stack`을 남긴다. 평문 비밀번호, 토큰, 쿠키, `Authorization` 헤더, 요청 body 통째는 어떤 로그에도 넣지 않는다. 프런트도 비밀번호·토큰을 `console`로 출력하지 않는다 | 로그를 통한 비밀 유출 방지 | NFR-06, NFR-11 | 확정 (남길 것, 금지 값, `time` 값: 위임 결정(2026-11-04)) / 가정 (형식) |
+| SO-06 | 로그는 한 줄 JSON을 stdout으로 내보내는 `lib/logger.js` 하나로만 쓴다 (`console.*`는 그 파일 밖에서 린트 오류). 요청 로그는 `time`(`Date.now()`의 epoch 밀리초 숫자, `new Date(` 없이 CN-06을 지킨다. 8-plan.md XQ-10), `level`, `method`, `path`, `status`, `userId`, `durationMs`만 담고, 서버 오류는 요청 정보와 함께 `err.message`·`err.stack`을 남긴다. 평문 비밀번호, 토큰, 쿠키, `Authorization` 헤더, 요청 body 통째는 어떤 로그에도 넣지 않는다. 프런트도 비밀번호·토큰을 `console`로 출력하지 않는다. 프런트의 콘솔 로그는 `src/lib/logger.ts`의 `devLog` 하나로만 남기고 개발 모드(`import.meta.env.DEV`)에서만 출력한다(운영 번들에서는 출력 코드가 빠진다). 남기는 지점은 API 요청 결과(`method`·`path`·`status`·`durationMs`·오류 `code`), 토큰 갱신 시작·결과, 인증 만료 처리, 화면 이동 경로, 쿼리·변경 실패(`code`), 언어·테마 변경이고, 요청·응답 body는 남기지 않는다 (사용자 요청(2026-11-05)) | 로그를 통한 비밀 유출 방지 | NFR-06, NFR-11 | 확정 (남길 것, 금지 값, `time` 값: 위임 결정(2026-11-04)) / 가정 (형식) |
 | SO-07 | 응답에 내부 정보를 넣지 않는다. 오류 응답은 `errorHandler` 한 곳에서만 만들고, 알 수 없는 예외는 ERR-07의 고정 문구로 바꾼다. 스택, SQL 문, pg 오류 메시지, 파일 경로는 응답에 들어가지 않는다. pg 오류 코드는 service가 번역한다(유니크 위반은 ERR-04, 카테고리 FK 위반은 ERR-05). uuid 형식이 아닌 경로·본문의 ID는 DB에 보내기 전에 ERR-05로 응답해 pg 형식 오류가 ERR-07로 새지 않게 한다(7-erd.md EQ-01). 로그인 실패는 email 존재 여부와 상관없이 ERR-03의 같은 문구다 (응답 시간 처리는 11장) | 내부 정보 노출을 막는다 | NFR-11, ERR-03, ERR-07, AC-14, BR-02 | 확정 (FK 위반·uuid 형식 오류의 ERR-05 번역은 위임 결정(2026-11-04), AQ-08, EQ-01) |
-| SO-08 | 로컬 실행 구성은 프로세스 3개다: 로컬에 직접 설치한 PostgreSQL 17(`localhost:5432`, 외부에 노출하지 않고 localhost만 연다), 백엔드 node(`backend/`에서 `npm run dev` = `node --watch --env-file-if-exists=../.env src/server.js`, 포트 3000, 루트 `.env`를 읽는다), Vite 개발 서버(`frontend/`에서 `npm run dev`, 포트 5173, `strictPort: true`로 출처 고정). 화면↔API는 CORS다(사용자 결정(2026-11-05)): 브라우저가 `http://localhost:5173`에서 `http://localhost:3000/api`를 직접 호출하고 Vite `/api` 프록시는 없다. 백엔드 `middleware/cors.js`(직접 작성, 요청 로거 다음·파서·인증·CSRF 앞)가 `CORS_ORIGINS`(쉼표 구분 정확한 출처, `*`·경로·끝 슬래시는 기동 거부, 개발 기본 `http://localhost:5173`, production 필수)에 있는 출처에만 `Access-Control-Allow-Origin`(그 출처)·`Allow-Credentials: true`를 붙이고 항상 `Vary: Origin`을 둔다. 사전 요청은 인증·CSRF 전에 204로 끝낸다. 쿠키 인증이라 `*`는 쓰지 않는다. 프런트는 `VITE_API_BASE_URL`(개발 기본 `http://localhost:3000/api`)로 호출하고 `fetch`에 `credentials: 'include'`를 쓴다. localhost 쿠키는 포트와 무관하게 공유되고 같은 사이트라 SameSite가 그대로 동작한다. 허용 헤더·메서드·`Max-Age`는 설계서를 따른다. 기동 순서(DB 먼저)는 따로 보장하는 장치를 만들지 않고 README의 실행 순서로만 안내한다 | 운영(같은 사이트의 다른 서브도메인)과 같은 CORS 구성을 개발에서도 써서 출처·쿠키 문제를 일찍 드러내고, 로컬 설정은 프로세스 3개로 줄인다 | PRD 6장 개발 환경, NFR-07 | 확정 (사용자 결정(2026-11-04): Docker 미사용) / 가정 (세부) |
+| SO-08 | 로컬 실행 구성은 프로세스 3개다: 로컬에 직접 설치한 PostgreSQL 17(`localhost:5432`, 외부에 노출하지 않고 localhost만 연다), 백엔드 node(`backend/`에서 `npm run dev` = `node --watch --env-file-if-exists=.env src/server.js`, 포트 3000, `backend/.env`를 읽는다), Vite 개발 서버(`frontend/`에서 `npm run dev`, 포트 5173, `strictPort: true`로 출처 고정). 화면↔API는 CORS다(사용자 결정(2026-11-05)): 브라우저가 `http://localhost:5173`에서 `http://localhost:3000/api`를 직접 호출하고 Vite `/api` 프록시는 없다. 백엔드 `middleware/cors.js`(직접 작성, 요청 로거 다음·파서·인증·CSRF 앞)가 `CORS_ORIGINS`(쉼표 구분 정확한 출처, `*`·경로·끝 슬래시는 기동 거부, 개발 기본 `http://localhost:5173`, production 필수)에 있는 출처에만 `Access-Control-Allow-Origin`(그 출처)·`Allow-Credentials: true`를 붙이고 항상 `Vary: Origin`을 둔다. 사전 요청은 인증·CSRF 전에 204로 끝낸다. 쿠키 인증이라 `*`는 쓰지 않는다. 프런트는 `VITE_API_BASE_URL`(개발 기본 `http://localhost:3000/api`)로 호출하고 `fetch`에 `credentials: 'include'`를 쓴다. localhost 쿠키는 포트와 무관하게 공유되고 같은 사이트라 SameSite가 그대로 동작한다. 허용 헤더·메서드·`Max-Age`는 설계서를 따른다. 기동 순서(DB 먼저)는 따로 보장하는 장치를 만들지 않고 README의 실행 순서로만 안내한다 | 운영(같은 사이트의 다른 서브도메인)과 같은 CORS 구성을 개발에서도 써서 출처·쿠키 문제를 일찍 드러내고, 로컬 설정은 프로세스 3개로 줄인다 | PRD 6장 개발 환경, NFR-07 | 확정 (사용자 결정(2026-11-04): Docker 미사용) / 가정 (세부) |
 | SO-09 | 의존성은 `backend/`와 `frontend/` 각각 `package-lock.json`을 커밋하고 `npm ci`로 설치한다. 운영 배포 구성·HTTPS 종단은 이 문서의 범위 밖이다 (PQ-07) | 재현 가능한 설치 | OI-12 | 확정 (Docker 관련 내용 삭제: 사용자 결정(2026-11-04): Docker 미사용) / 가정 (`npm ci`) |
 | SO-10 | DDL은 `backend/migrations/NNN_<설명>.sql`에만 쓰고 앱 코드에 `CREATE`·`ALTER`를 두지 않는다. 파일은 번호 순서로 한 방향(forward-only)으로 적용하고 적용된 파일은 고치지 않고 새 파일로 바꾼다. 러너 `backend/scripts/migrate.js`가 `schema_migrations` 표에 적용 기록을 남기고 파일마다 트랜잭션으로 실행한다. DB가 보장할 수 있는 불변식은 제약으로도 둔다: 날짜 순서(BR-07), 카테고리 이름 중복(BR-14, 방법은 7-erd.md EQ-03), 사용자당 기본 카테고리 1개. 할일·카테고리 표에는 `user_id`로 시작하는 인덱스를 만든다 | 스키마 변경을 재현하고 검증을 DB에서도 한 번 더 막는다 | NFR-05, BR-07, BR-14, PRD 11장 | 가정 (러너·제약 방침) / 확정 (인덱스 요구) |
 | SO-11 | 시드는 `backend/scripts/seed.js` 하나에 `dev`(데모 사용자 2명과 소량 데이터)와 `load`(계정 1000개, 사용자당 할일 200개·카테고리 5개) 두 모드를 둔다. `NODE_ENV=production`이면 실행을 거부한다. 시드 비밀번호는 `validation/user.validation.js`의 VR-02 검사를 통과해야 하고, `lib/password.js`로 사용자마다 따로 해시하고 기본 카테고리를 만들어(BR-03) 규칙을 우회하지 않는다. 시드 email은 `@example.test` 도메인이고 재실행하면 그 도메인 계정만 지우고 다시 만든다. 시드 계정 비밀번호는 환경 변수로 받는다 | 부하 데이터를 재현 가능하게 만든다 | NFR-04, NFR-06, BR-03 | 확정 (데이터 규모) / 가정 (스크립트 방식) |
@@ -192,7 +194,7 @@
 
 ```text
 todolist-app/
-├─ .env.example            # 환경 변수 키와 자리표시자 값 (SO-02)
+├─ .env.example            # 루트 공용 도구용 키만(DB_CONN_STRING) (SO-02)
 ├─ .gitignore              # .env, node_modules
 ├─ .prettierrc             # 포맷 설정 하나 (TQ-10)
 ├─ README.md               # 실행·테스트·린트·마이그레이션·시드 명령 (TQ-12)
@@ -210,6 +212,7 @@ todolist-app/
 
 ```text
 backend/
+├─ .env.example            # 백엔드 환경 변수 키와 자리표시자 값 (SO-02, 설계서 6장)
 ├─ package.json            # scripts: dev, test, lint, format:check, migrate, seed
 ├─ eslint.config.js        # 레이어 import 제한, no-console (DL-01, TQ-10)
 ├─ migrations/             # DDL SQL 파일, 번호 순서 forward-only (SO-10)
@@ -312,6 +315,7 @@ frontend/
    ├─ lib/                 # 순수 함수
    │  ├─ date.ts           # 날짜 문자열 계산, 시각 표시 변환 (CN-06, CN-07)
    │  ├─ validation.ts     # 공백 제거·길이 같은 공통 검증 도구
+   │  ├─ logger.ts         # devLog: 개발 모드에서만 콘솔 출력 (SO-06)
    │  └─ i18n/             # translate(원문, 언어, 값), en.ts·ja.ts 사전 (CN-12)
    └─ styles/              # 전역 스타일, 화면별은 CSS Modules
 ```

@@ -1,3 +1,4 @@
+import { devLog } from '../lib/logger';
 import { ERR, type ErrorCode } from './errorCodes';
 import type { FieldIssue } from './types';
 
@@ -57,6 +58,7 @@ async function send<T>(method: Method, path: string, body?: unknown): Promise<T>
     if (token) headers['X-CSRF-Token'] = token;
   }
   let res: Response;
+  const started = performance.now();
   try {
     res = await fetch(`${BASE}${path}`, {
       method,
@@ -65,18 +67,30 @@ async function send<T>(method: Method, path: string, body?: unknown): Promise<T>
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
+    devLog('api network error', { method, path }, 'error');
     throw new ApiError(0, ERR.INTERNAL_ERROR, DEFAULT_MESSAGE);
   }
-  return parse<T>(res);
+  const durationMs = Math.round(performance.now() - started);
+  // SO-06: body는 남기지 않고 결과와 오류 code만 남긴다
+  try {
+    const data = await parse<T>(res);
+    devLog('api', { method, path, status: res.status, durationMs });
+    return data;
+  } catch (err) {
+    const code = err instanceof ApiError ? err.code : undefined;
+    devLog('api', { method, path, status: res.status, durationMs, code }, 'warn');
+    throw err;
+  }
 }
 
 // DL-14: 동시에 ERR-02를 받은 요청은 갱신 하나를 공유한다(single-flight)
 let refreshing: Promise<void> | null = null;
 function refresh(): Promise<void> {
+  if (!refreshing) devLog('token refresh start');
   refreshing ??= send('POST', '/auth/refresh')
     .then(
-      () => {},
-      () => {},
+      () => devLog('token refresh ok'),
+      () => devLog('token refresh failed', undefined, 'warn'),
     )
     .finally(() => {
       refreshing = null;

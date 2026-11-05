@@ -19,8 +19,8 @@
 
 필요한 것: Node.js 22 이상, 로컬에 설치한 PostgreSQL 17(`localhost:5432`). Docker는 쓰지 않는다(PRD 6장).
 
-1. 루트에 `.env`가 없으면 `.env.example`을 복사해 만든다. 키 설명은 9-design.md 6장, 서명 키 생성은 5.3. 비밀 값은 `.env`에만 둔다(SO-02, SO-03)
-2. `.env`의 `DATABASE_URL`이 가리키는 데이터베이스를 PostgreSQL에 만들어 둔다
+1. 환경 변수는 디렉토리별로 둔다. `backend/.env`가 없으면 `backend/.env.example`을, `frontend/.env`가 없으면 `frontend/.env.example`을 복사해 만든다. 루트 `.env`(`.env.example`)는 DB 조회용 MCP 같은 공용 도구 키만 둔다. 키 설명은 9-design.md 6장, 서명 키 생성은 5.3. 비밀 값은 `.env`에만 둔다(SO-02, SO-03)
+2. `backend/.env`의 `DATABASE_URL`이 가리키는 데이터베이스를 PostgreSQL에 만들어 둔다
 3. 의존성 설치와 마이그레이션:
 
 ```sh
@@ -40,7 +40,7 @@ cd backend && npm run dev     # API  http://localhost:3000
 cd frontend && npm run dev    # 화면 http://localhost:5173 (백엔드를 CORS로 직접 호출)
 ```
 
-CORS 허용 출처는 `.env`의 `CORS_ORIGINS`(기본 `http://localhost:5173`)로 정한다. 화면 포트를 바꾸면 이 값도 바꾼다.
+CORS 허용 출처는 `backend/.env`의 `CORS_ORIGINS`(기본 `http://localhost:5173`)로 정한다. 화면 포트를 바꾸면 이 값도 바꾼다.
 
 API 문서(Swagger UI)는 개발 환경(`NODE_ENV=development`, `npm run dev` 기본값)에서만 열린다: http://localhost:3000/api/docs. API와 같은 출처라 Try it out을 쓸 수 있고, 상태 변경 요청에는 `X-CSRF-Token` 헤더가 필요하다.
 
@@ -57,4 +57,4 @@ API 문서(Swagger UI)는 개발 환경(`NODE_ENV=development`, `npm run dev` �
 | 양쪽 | `npm run lint` | ESLint(레이어 규칙 DL-01·DL-11, `no-console` SO-06) |
 | 양쪽 | `npm run format:check` | Prettier(루트 `.prettierrc`, TQ-10) |
 
-- 시드 비밀번호는 `.env`의 `SEED_PASSWORD`다. 시드는 `@example.test` 계정만 지우고 다시 만들며, `dev`와 `load`는 같은 도메인이라 서로를 지운다
+- 시드 비밀번호는 `backend/.env`의 `SEED_PASSWORD`다. 시드는 `@example.test` 계정만 지우고 다시 만들며, `dev`와 `load`는 같은 도메인이라 서로를 지운다

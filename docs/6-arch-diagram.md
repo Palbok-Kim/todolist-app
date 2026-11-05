@@ -15,6 +15,7 @@
 | 0.9 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: 프록시 → CORS. AD-01(Vite 프록시·같은 출처 삭제, 브라우저 직접 호출·운영 서브도메인), AD-02(`cors` 노드), AD-04(`api/client.ts` `credentials: 'include'`, 호출 대상), 2.3 가정·AQ-05(`TRUST_PROXY` 비움)·4장 AD-01 요약 수정, 단일 출처 링크 버전을 PRD v0.12·구조 설계 원칙 v0.12에 맞춤 |
 | 0.10 | 2026-11-05 | MinjeYu | 백엔드 코드 대조 반영: AD-02 공개 라우트에 개발 전용 `/api/docs`, 미매칭 경로 가정을 '인증 전 ERR-02, 인증 후 ERR-05'로, AD-06·AD-14의 세션 토큰 생성 시점을 코드(회원가입·갱신은 트랜잭션 안의 동기 계산, scrypt·받은 값 해시는 트랜잭션 밖)에 맞춤 |
 | 0.11 | 2026-11-05 | MinjeYu | PRD v0.13(VR-02 KISA 기준 변경)과 일치화: AD-07 로그인 입력 검증 표의 '15자 미만' 표현을 VR-02 참조로, AQ-04 기록의 VR-02 값에 '당시' 표기. 머리말 참조 버전 갱신 |
+| 0.12 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: 배포 다이어그램의 백엔드 환경 파일을 `backend/.env`로(구조 설계 원칙 v0.20 SO-02) |
 
 **표기 범례** (도메인 정의서·PRD·사용자 시나리오·와이어프레임·구조 설계 원칙과 같음)
 - **확정**: 요구사항 원문 또는 사용자 의사결정(2026-11-04)에 근거한 결정
@@ -58,7 +59,7 @@ flowchart LR
         subgraph FE["frontend 프로세스 - 포트 5173"]
             VITE["Vite 개발 서버 - React 19 + TypeScript"]
         end
-        subgraph BE["backend 프로세스 - 포트 3000, 루트 .env"]
+        subgraph BE["backend 프로세스 - 포트 3000, backend/.env"]
             API["Node 22 + Express 5 - ESM, npm run dev"]
         end
         subgraph DBC["로컬 설치 PostgreSQL - localhost:5432"]
