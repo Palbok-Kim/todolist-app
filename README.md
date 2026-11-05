@@ -40,6 +40,8 @@ cd backend && npm run dev     # API  http://localhost:3000
 cd frontend && npm run dev    # 화면 http://localhost:5173 (/api는 백엔드로 프록시)
 ```
 
+API 문서(Swagger UI)는 운영이 아닌 환경에서만 열린다: http://localhost:5173/api/docs. Vite 프록시를 거쳐 같은 출처로 호출하므로 Try it out을 쓸 수 있고, 상태 변경 요청에는 `X-CSRF-Token` 헤더가 필요하다.
+
 ## 3. 명령 모음
 
 | 위치 | 명령 | 하는 일 |
