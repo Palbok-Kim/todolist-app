@@ -1,0 +1,31 @@
+import { AppError, ERR } from '../errors.js';
+import { logger } from '../lib/logger.js';
+
+const INTERNAL_MESSAGE = '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+
+// SO-07: 오류 응답은 여기서만 만든다. 알 수 없는 예외는 ERR-07 고정 문구
+export function errorHandler(err, req, res, next) {
+  if (res.headersSent) return next(err); // 응답 도중 실패는 Express 기본 처리기가 연결을 끊는다
+  if (err instanceof AppError) {
+    const body = { code: err.code, message: err.message };
+    if (err.fields) body.fields = err.fields;
+    return res.status(err.status).json({ error: body });
+  }
+  // express.json()의 잘못된 JSON은 클라이언트 입력 오류다
+  if (err.type === 'entity.parse.failed') {
+    return res.status(ERR.VALIDATION_ERROR.status).json({
+      error: { code: ERR.VALIDATION_ERROR.code, message: '요청 형식이 올바르지 않습니다.' },
+    });
+  }
+  // NFR-11: 요청 정보와 함께 서버 로그에만 남긴다
+  logger.error({
+    method: req.method,
+    path: req.originalUrl.split('?')[0],
+    userId: req.user?.id ?? null,
+    message: err.message,
+    stack: err.stack,
+  });
+  res
+    .status(ERR.INTERNAL_ERROR.status)
+    .json({ error: { code: ERR.INTERNAL_ERROR.code, message: INTERNAL_MESSAGE } });
+}
