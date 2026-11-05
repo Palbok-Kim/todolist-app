@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import type { FieldIssue } from '../../api/types';
 import { FieldError } from '../../components/FieldError';
 import { useAlertStore } from '../../store/alertStore';
+import { useT } from '../../store/prefsStore';
 import { ERR, useChangePassword } from './queries';
 import styles from './Settings.module.css';
 
@@ -10,6 +11,7 @@ export function PasswordForm() {
   const [currentPassword, setCurrent] = useState('');
   const [newPassword, setNew] = useState('');
   const [issues, setIssues] = useState<FieldIssue[]>([]);
+  const t = useT();
   const change = useChangePassword();
   const { showAlert, clearAlert } = useAlertStore();
   const msg = (field: string) => issues.find((i) => i.field === field)?.message;
@@ -36,9 +38,9 @@ export function PasswordForm() {
 
   return (
     <form noValidate className={styles.section} onSubmit={onSubmit}>
-      <h2 className={styles.title}>비밀번호 변경</h2>
+      <h2 className={styles.title}>{t('비밀번호 변경')}</h2>
       <div className={styles.row}>
-        <label htmlFor="settings-current-password">현재 비밀번호</label>
+        <label htmlFor="settings-current-password">{t('현재 비밀번호')}</label>
         <div>
           <input
             id="settings-current-password"
@@ -53,7 +55,7 @@ export function PasswordForm() {
         </div>
       </div>
       <div className={styles.row}>
-        <label htmlFor="settings-new-password">새 비밀번호</label>
+        <label htmlFor="settings-new-password">{t('새 비밀번호')}</label>
         <div>
           <input
             id="settings-new-password"
@@ -69,7 +71,7 @@ export function PasswordForm() {
       </div>
       <div className={styles.actions}>
         <button type="submit" className={styles.primary} disabled={change.isPending}>
-          변경
+          {t('변경')}
         </button>
       </div>
     </form>

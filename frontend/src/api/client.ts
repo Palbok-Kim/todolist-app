@@ -1,7 +1,9 @@
 import { ERR, type ErrorCode } from './errorCodes';
 import type { FieldIssue } from './types';
 
-const BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api';
+// 설계서 6장: 기본값은 개발 서버에서만. 운영 빌드는 vite.config.ts가 변수 없이는 막는다
+const BASE =
+  import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:3000/api' : '');
 const DEFAULT_MESSAGE = '문제가 발생했습니다. 잠시 후 다시 시도하세요.';
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';

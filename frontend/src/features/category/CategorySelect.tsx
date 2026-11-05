@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { FieldError } from '../../components/FieldError';
+import { useT } from '../../store/prefsStore';
 import { useCategories } from './queries';
 import styles from './CategorySelect.module.css';
 
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function CategorySelect({ id, value, onChange, invalid }: Props) {
+  const t = useT();
   const { data, isPending, error } = useCategories();
   const items = data?.items ?? [];
   const def = items.find((c) => c.isDefault);
@@ -24,7 +26,7 @@ export function CategorySelect({ id, value, onChange, invalid }: Props) {
     return (
       <>
         <select id={id} className={styles.select} disabled>
-          <option>{isPending ? '불러오는 중...' : '불러오지 못했습니다'}</option>
+          <option>{t(isPending ? '불러오는 중...' : '불러오지 못했습니다')}</option>
         </select>
         {error && <FieldError message={error.message} />}
       </>
@@ -41,7 +43,7 @@ export function CategorySelect({ id, value, onChange, invalid }: Props) {
     >
       {items.map((c) => (
         <option key={c.id} value={c.id}>
-          {c.name}
+          {c.isDefault ? t(c.name) : c.name}
         </option>
       ))}
     </select>

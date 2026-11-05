@@ -7,6 +7,7 @@ import { useMe } from '../features/auth/queries';
 import { useCalendarTodos } from '../features/todo/queries';
 import { addDays, firstOfMonth, todayIn, weekRange } from '../lib/date';
 import { useCalendarStore } from '../store/calendarStore';
+import { useT } from '../store/prefsStore';
 
 const VIEWS = [
   ['month', '월'],
@@ -17,11 +18,13 @@ const VIEWS = [
 // WF-05, WF-06
 export function CalendarPage() {
   const me = useMe().data;
-  if (!me) return <p>불러오는 중...</p>;
+  const t = useT();
+  if (!me) return <p>{t('불러오는 중...')}</p>;
   return <Calendar timezone={me.timezone} />;
 }
 
 function Calendar({ timezone }: { timezone: string }) {
+  const t = useT();
   const { view, anchorDate, selectedDate, setView, setAnchorDate, setSelectedDate } =
     useCalendarStore();
   const today = todayIn(timezone);
@@ -63,10 +66,20 @@ function Calendar({ timezone }: { timezone: string }) {
         <div className={styles.nav}>
           <h1 className={styles.title}>{title}</h1>
           <div className={styles.pair}>
-            <button type="button" className={styles.btn} aria-label="이전" onClick={() => move(-1)}>
+            <button
+              type="button"
+              className={styles.btn}
+              aria-label={t('이전')}
+              onClick={() => move(-1)}
+            >
               &lt;
             </button>
-            <button type="button" className={styles.btn} aria-label="다음" onClick={() => move(1)}>
+            <button
+              type="button"
+              className={styles.btn}
+              aria-label={t('다음')}
+              onClick={() => move(1)}
+            >
               &gt;
             </button>
           </div>
@@ -78,10 +91,10 @@ function Calendar({ timezone }: { timezone: string }) {
               setSelectedDate(null);
             }}
           >
-            오늘
+            {t('오늘')}
           </button>
         </div>
-        <div className={styles.pair} role="group" aria-label="보기 전환">
+        <div className={styles.pair} role="group" aria-label={t('보기 전환')}>
           {VIEWS.map(([v, label]) => (
             <button
               key={v}
@@ -94,14 +107,14 @@ function Calendar({ timezone }: { timezone: string }) {
                 setView(v);
               }}
             >
-              {label}
+              {t(label)}
             </button>
           ))}
         </div>
       </div>
-      {error && <p className={styles.error}>{error.message}</p>}
+      {error && <p className={styles.error}>{t(error.message)}</p>}
       {isPending ? (
-        <p>불러오는 중...</p>
+        <p>{t('불러오는 중...')}</p>
       ) : view === 'month' ? (
         <>
           <MonthGrid

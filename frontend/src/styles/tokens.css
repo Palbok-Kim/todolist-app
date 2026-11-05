@@ -15,6 +15,9 @@
   --color-danger: #d93025;
   --color-danger-soft: #fdecea;
   --color-info-soft: #eef2ff;
+  --color-surface: #ffffff;
+  --color-on-primary: #ffffff;
+  --color-overlay: rgb(0 0 0 / 40%);
 
   --status-todo: #8a8f98;
   --status-todo-soft: #f0f1f3;
@@ -50,6 +53,35 @@
   --form-max: 360px;
 }
 
+/* style-guide 2.1 다크 모드: 같은 토큰의 값만 바꾼다(CN-13) */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-primary: #8b7cf0;
+  --color-primary-hover: #9d90f3;
+  --color-primary-soft: #2c2650;
+  --color-text: #e6e6ea;
+  --color-text-muted: #a0a0aa;
+  --color-text-disabled: #5c5c66;
+  --color-bg: #17171c;
+  --color-bg-subtle: #202027;
+  --color-surface: #202027;
+  --color-border: #2e2e37;
+  --color-border-strong: #454552;
+  --color-today-bg: #1f2a38;
+  --color-sunday: #ff6b6e;
+  --color-saturday: #6f9bf0;
+  --color-danger: #ff6b5e;
+  --color-danger-soft: #3a1f1d;
+  --color-info-soft: #22243a;
+  --status-todo-soft: #2a2c31;
+  --status-doing-soft: #3a2a22;
+  --status-done-soft: #1f3329;
+  --status-overdue: #e5483d;
+  --status-overdue-soft: #3a1f1d;
+  --color-overlay: rgb(0 0 0 / 60%);
+  --shadow-pop: 0 4px 16px rgb(0 0 0 / 48%);
+}
+
 @media (max-width: 767px) {
   :root {
     --control-height: 40px;
@@ -67,4 +99,12 @@ body {
   font: var(--text-md) var(--font-family);
   color: var(--color-text);
   background: var(--color-bg);
+}
+
+/* 모듈에서 바탕을 정하지 않은 입력란도 테마 토큰을 따른다(CN-13) */
+input,
+select,
+textarea {
+  color: var(--color-text);
+  background-color: var(--color-surface);
 }

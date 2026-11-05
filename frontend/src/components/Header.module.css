@@ -38,12 +38,13 @@
 
 .newBtn {
   display: inline-flex;
+  white-space: nowrap;
   align-items: center;
   height: var(--control-height);
   margin-left: auto;
   padding: 0 var(--space-3);
   font: var(--text-md) var(--font-family);
-  color: #fff;
+  color: var(--color-on-primary);
   text-decoration: none;
   background: var(--color-primary);
   border-radius: var(--radius-md);
@@ -73,6 +74,22 @@
 
 .logout {
   order: 1;
+}
+
+.settings {
+  display: inline-flex;
+  order: 1;
+  align-items: center;
+  gap: var(--space-1);
+  font: var(--text-md) var(--font-family);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: color 120ms;
+}
+
+.settings:hover,
+.settingsActive {
+  color: var(--color-primary);
 }
 
 .logout:hover,
@@ -126,6 +143,7 @@
   }
 
   .navOpen .tab,
+  .navOpen .settings,
   .navOpen .logout {
     order: 0;
     justify-content: flex-start;

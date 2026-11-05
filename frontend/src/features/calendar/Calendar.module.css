@@ -28,7 +28,7 @@
   padding: 0 var(--space-3);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
-  background: #fff;
+  background: var(--color-surface);
   color: var(--color-text);
   font: var(--text-md) var(--font-family);
   cursor: pointer;
@@ -57,7 +57,7 @@
 .pair > .active:hover {
   border-color: var(--color-primary);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 .error {
@@ -136,7 +136,7 @@
   height: 20px;
   padding: 0 var(--space-1);
   border-radius: var(--radius-sm);
-  color: #fff;
+  color: var(--color-on-primary);
   font: var(--text-xs) var(--font-family);
   line-height: 20px;
   text-decoration: none;
@@ -308,7 +308,7 @@
     height: 24px;
     border-radius: 50%;
     background: var(--color-primary);
-    color: #fff;
+    color: var(--color-on-primary);
     line-height: 24px;
     text-align: center;
   }

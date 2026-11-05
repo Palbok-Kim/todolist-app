@@ -4,6 +4,7 @@ import { ERR } from '../../api/errorCodes';
 import type { FieldIssue } from '../../api/types';
 import { FieldError } from '../../components/FieldError';
 import { useAlertStore } from '../../store/alertStore';
+import { useT } from '../../store/prefsStore';
 import { useLogin } from './queries';
 import { validateLogin } from './validation';
 import styles from './AuthForm.module.css';
@@ -12,6 +13,7 @@ export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [issues, setIssues] = useState<FieldIssue[]>([]);
+  const t = useT();
   const login = useLogin();
   const navigate = useNavigate();
   const { showAlert, clearAlert } = useAlertStore();
@@ -39,9 +41,9 @@ export function LoginForm() {
 
   return (
     <form noValidate className={styles.form} onSubmit={onSubmit}>
-      <h1 className={styles.title}>로그인</h1>
+      <h1 className={styles.title}>{t('로그인')}</h1>
       <div className={styles.field}>
-        <label htmlFor="login-email">이메일</label>
+        <label htmlFor="login-email">{t('이메일')}</label>
         <input
           id="login-email"
           type="email"
@@ -54,7 +56,7 @@ export function LoginForm() {
         <FieldError message={msg('email')} />
       </div>
       <div className={styles.field}>
-        <label htmlFor="login-password">비밀번호</label>
+        <label htmlFor="login-password">{t('비밀번호')}</label>
         <input
           id="login-password"
           type="password"
@@ -67,12 +69,12 @@ export function LoginForm() {
         <FieldError message={msg('password')} />
       </div>
       <button type="submit" className={styles.submit} disabled={login.isPending}>
-        {login.isPending ? '로그인 중...' : '로그인'}
+        {login.isPending ? t('로그인 중...') : t('로그인')}
       </button>
       <p className={styles.footer}>
-        계정이 없나요?{' '}
+        {t('계정이 없나요?')}{' '}
         <Link to="/signup" onClick={clearAlert}>
-          회원가입
+          {t('회원가입')}
         </Link>
       </p>
     </form>

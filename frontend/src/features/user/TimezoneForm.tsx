@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import type { FieldIssue, User } from '../../api/types';
 import { FieldError } from '../../components/FieldError';
 import { useAlertStore } from '../../store/alertStore';
+import { useT } from '../../store/prefsStore';
 import { ERR, useUpdateMe } from './queries';
 import styles from './Settings.module.css';
 
@@ -11,6 +12,7 @@ const zones = Intl.supportedValuesOf('timeZone');
 export function TimezoneForm({ user }: { user: User }) {
   const [timezone, setTimezone] = useState(user.timezone);
   const [issues, setIssues] = useState<FieldIssue[]>([]);
+  const t = useT();
   const update = useUpdateMe();
   const { showAlert, clearAlert } = useAlertStore();
   // PQ-06: 저장된 값이 목록에 없어도 선택지에 남긴다
@@ -35,9 +37,9 @@ export function TimezoneForm({ user }: { user: User }) {
 
   return (
     <form noValidate className={styles.section} onSubmit={onSubmit}>
-      <h2 className={styles.title}>시간대</h2>
+      <h2 className={styles.title}>{t('시간대')}</h2>
       <div className={styles.row}>
-        <label htmlFor="settings-timezone">시간대</label>
+        <label htmlFor="settings-timezone">{t('시간대')}</label>
         <div>
           <select
             id="settings-timezone"
@@ -57,7 +59,7 @@ export function TimezoneForm({ user }: { user: User }) {
       </div>
       <div className={styles.actions}>
         <button type="submit" className={styles.primary} disabled={update.isPending}>
-          저장
+          {t('저장')}
         </button>
       </div>
     </form>

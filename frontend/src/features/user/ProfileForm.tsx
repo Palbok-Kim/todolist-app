@@ -3,12 +3,14 @@ import type { FieldIssue, User } from '../../api/types';
 import { FieldError } from '../../components/FieldError';
 import { textError } from '../../lib/validation';
 import { useAlertStore } from '../../store/alertStore';
+import { useT } from '../../store/prefsStore';
 import { ERR, useUpdateMe } from './queries';
 import styles from './Settings.module.css';
 
 export function ProfileForm({ user }: { user: User }) {
   const [name, setName] = useState(user.name);
   const [issues, setIssues] = useState<FieldIssue[]>([]);
+  const t = useT();
   const update = useUpdateMe();
   const { showAlert, clearAlert } = useAlertStore();
   const msg = issues.find((i) => i.field === 'name')?.message;
@@ -34,13 +36,13 @@ export function ProfileForm({ user }: { user: User }) {
 
   return (
     <form noValidate className={styles.section} onSubmit={onSubmit}>
-      <h2 className={styles.title}>내 정보</h2>
+      <h2 className={styles.title}>{t('내 정보')}</h2>
       <div className={styles.row}>
-        <span className={styles.label}>이메일</span>
+        <span className={styles.label}>{t('이메일')}</span>
         <p className={styles.text}>{user.email}</p>
       </div>
       <div className={styles.row}>
-        <label htmlFor="settings-name">이름</label>
+        <label htmlFor="settings-name">{t('이름')}</label>
         <div>
           <input
             id="settings-name"
@@ -54,7 +56,7 @@ export function ProfileForm({ user }: { user: User }) {
       </div>
       <div className={styles.actions}>
         <button type="submit" className={styles.primary} disabled={update.isPending}>
-          저장
+          {t('저장')}
         </button>
       </div>
     </form>

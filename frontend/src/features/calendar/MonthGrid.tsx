@@ -1,8 +1,9 @@
 import type { MouseEvent } from 'react';
 import { Link } from 'react-router';
 import type { Todo } from '../../api/types';
+import { weekdayNames } from '../../lib/date';
+import { usePrefsStore, useT } from '../../store/prefsStore';
 import { STATUS_LABEL, STATUS_TONE } from '../todo/queries';
-import { WEEKDAYS } from './DayTodoList';
 import { todosOn, type MonthGrid as Grid } from './buildMonthGrid';
 import styles from './Calendar.module.css';
 
@@ -11,6 +12,7 @@ const stop = (e: MouseEvent) => e.stopPropagation();
 
 // BR-12: 여러 날 할일은 칸마다 막대를 따로 그린다
 export function TodoBar({ todo }: { todo: Todo }) {
+  const t = useT();
   return (
     <Link
       to={`/todos/${todo.id}`}
@@ -20,7 +22,7 @@ export function TodoBar({ todo }: { todo: Todo }) {
     >
       {/* 칸이 좁아도 상태 라벨은 잘리지 않고 제목만 줄인다(BR-12: 색 + 텍스트) */}
       <span className={styles.barTitle}>{todo.title}</span>
-      <span className={styles.barLabel}> · {STATUS_LABEL[todo.status]}</span>
+      <span className={styles.barLabel}> · {t(STATUS_LABEL[todo.status])}</span>
     </Link>
   );
 }
@@ -34,9 +36,11 @@ interface Props {
 }
 
 export function MonthGrid({ grid, todos, today, selectedDate, onSelectDate }: Props) {
+  const t = useT();
+  const lang = usePrefsStore((s) => s.lang);
   return (
     <div className={styles.month}>
-      {WEEKDAYS.map((w, i) => (
+      {weekdayNames(lang).map((w, i) => (
         <div
           key={w}
           className={`${styles.dow} ${i === 5 ? styles.sat : ''} ${i === 6 ? styles.sun : ''}`}
@@ -58,8 +62,8 @@ export function MonthGrid({ grid, todos, today, selectedDate, onSelectDate }: Pr
           <div key={date} className={cls} onClick={() => onSelectDate(date)}>
             <span className={styles.num}>{Number(date.slice(8))}</span>
             <div className={styles.bars}>
-              {items.slice(0, LIMIT).map((t) => (
-                <TodoBar key={t.id} todo={t} />
+              {items.slice(0, LIMIT).map((todo) => (
+                <TodoBar key={todo.id} todo={todo} />
               ))}
               {items.length > LIMIT && (
                 <button
@@ -70,7 +74,7 @@ export function MonthGrid({ grid, todos, today, selectedDate, onSelectDate }: Pr
                     onSelectDate(date);
                   }}
                 >
-                  +{items.length - LIMIT}개 더
+                  {t('+{n}개 더', { n: items.length - LIMIT })}
                 </button>
               )}
             </div>

@@ -13,6 +13,7 @@
 | 0.7 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: 6장 환경 변수 표에 `ACCESS_TOKEN_TTL_MINUTES`(분)·`REFRESH_TOKEN_TTL_DAYS`(일) 추가(기본값은 NFR-07의 15분·7일, 5.1의 Max-Age는 기본값 기준) |
 | 0.8 | 2026-11-05 | MinjeYu | 백엔드 코드 대조 반영: 2장 검사 순서에 할일 경로 ID 예외, 4장 테스트 IP 예외를 현재형(`LOGIN_LIMIT_EXEMPT_IPS` production 기동 거부)으로, 5.1 Max-Age는 TTL 기본값이며 삭제는 과거 `Expires`(Express 5 `res.clearCookie`)·CSRF 쿠키는 같은 Domain, 5.2 `exp`를 액세스 수명 기준으로, 5.5 세션 토큰 생성 시점(로그인·비밀번호 변경은 트랜잭션 전, 회원가입·갱신은 트랜잭션 안의 동기 계산), 6장 TTL 키 사용처를 `config.js`로 고치고 `LOGIN_LIMIT_EXEMPT_IPS` 행 추가 |
 | 0.9 | 2026-11-05 | MinjeYu | 단일 출처 머리말의 참조 버전을 현재 값(PRD v0.13·사용자 시나리오 v0.7·와이어프레임 v0.6·아키텍처 다이어그램 v0.11·ERD v0.6)에 맞춤. 내용 변경 없음 |
+| 0.10 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: 6장 `VITE_API_BASE_URL`을 운영 빌드 필수로(없으면 빌드 실패), 개발 기본값은 개발 서버에서만, 값 위치는 `frontend/.env`·예시 `frontend/.env.example` |
 
 **단일 출처 원칙**: 규칙 원문은 도메인 정의서 v0.10, PRD v0.13, 구조 설계 원칙 v0.14, 아키텍처 다이어그램 v0.11, ERD v0.6에만 있고 이 문서는 ID로 참조한다(PR-01). 이 문서는 PRD 11장이 넘긴 **구현 값·이름·절차**만 정한다. 요청·응답 필드의 상세 스키마는 [`backend/swagger.yaml`](../backend/swagger.yaml)이 단일 출처이며, 이 문서의 2장은 경로·메서드·상태 코드 목록이다.
 
@@ -166,7 +167,7 @@
 | `TRUST_PROXY` | `backend` | 개발은 비움(앞단 프록시 없음, 불신). 운영은 리버스 프록시 주소만. `true` 거부. 4장 |
 | `CORS_ORIGINS` | `backend` | 쉼표 구분 허용 출처, 각 값은 `scheme://host[:port]` 정확한 출처(`*`·경로·슬래시 끝은 기동 거부). 개발·테스트 기본 `http://localhost:5173`, production 필수. 허용 출처에만 `Access-Control-Allow-Origin`(그 출처)·`Allow-Credentials: true`, 항상 `Vary: Origin`. 사전 요청(OPTIONS + `Access-Control-Request-Method`)은 인증·CSRF 전에 204로 끝내고 허용 출처에만 `Allow-Methods: GET, POST, PUT, PATCH, DELETE`, `Allow-Headers: Content-Type, X-CSRF-Token`, `Max-Age: 600`을 붙인다. 허용하지 않은 출처는 CORS 헤더 없음. `*`는 쓰지 않는다(SO-08) |
 | `COOKIE_DOMAIN` | `backend` | CSRF 쿠키에만 붙는 `Domain`(상위 도메인, 예 `example.com`). 개발은 비움, production 필수(없으면 기동 실패). 5.1 |
-| `VITE_API_BASE_URL` | `frontend` | API 기준 주소. 개발 기본 `http://localhost:3000/api`. 공개 값(SO-02) |
+| `VITE_API_BASE_URL` | `frontend` | API 기준 주소. 개발 서버(`npm run dev`)는 없으면 `http://localhost:3000/api`를 쓴다. 운영 빌드(`npm run build`)는 필수이고 없으면 `vite.config.ts`가 빌드를 멈춘다(번들이 localhost를 가리키지 않게). Vite는 `frontend/`의 `.env`만 읽으므로 값은 `frontend/.env`에 두고 예시는 `frontend/.env.example`에 있다. 공개 값(SO-02) |
 | `UV_THREADPOOL_SIZE` | `backend` | 3장 |
 | `SEED_PASSWORD` | `seed.js` | 시드 계정 비밀번호(SO-11) |
 | `PG_POOL_MAX` | `backend` | pg 풀 크기, 기본 10. 조정 가능(NFR-05) |

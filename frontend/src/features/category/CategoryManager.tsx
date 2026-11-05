@@ -5,6 +5,7 @@ import type { CategoryWithTodoCount } from '../../api/types';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { FieldError } from '../../components/FieldError';
 import { useAlertStore } from '../../store/alertStore';
+import { useT } from '../../store/prefsStore';
 import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from './queries';
 import { validateCategoryName } from './validation';
 import styles from './CategoryManager.module.css';
@@ -16,6 +17,7 @@ function nameIssue(e: ApiError): string | null {
 }
 
 export function CategoryManager() {
+  const t = useT();
   const { data, isPending, error } = useCategories();
   const create = useCreateCategory();
   const update = useUpdateCategory();
@@ -80,7 +82,7 @@ export function CategoryManager() {
   return (
     <div>
       <form className={styles.createRow} onSubmit={onCreate} noValidate>
-        <label htmlFor="new-category">새 카테고리</label>
+        <label htmlFor="new-category">{t('새 카테고리')}</label>
         <input
           id="new-category"
           className={styles.input}
@@ -89,28 +91,28 @@ export function CategoryManager() {
           onChange={(e) => setName(e.target.value)}
         />
         <button type="submit" className={styles.primary} disabled={create.isPending}>
-          추가
+          {t('추가')}
         </button>
         <div className={styles.errorCell}>
           <FieldError message={nameError} />
         </div>
       </form>
 
-      {isPending && <p className={styles.muted}>불러오는 중...</p>}
-      {error && <p className={styles.muted}>{error.message}</p>}
+      {isPending && <p className={styles.muted}>{t('불러오는 중...')}</p>}
+      {error && <p className={styles.muted}>{t(error.message)}</p>}
       {data && (
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>이름</th>
-              <th>할일 수</th>
-              <th>동작</th>
+              <th>{t('이름')}</th>
+              <th>{t('할일 수')}</th>
+              <th>{t('동작')}</th>
             </tr>
           </thead>
           <tbody>
             {data.items.map((c) => (
               <tr key={c.id}>
-                <td data-label="이름">
+                <td data-label={t('이름')}>
                   {editingId === c.id ? (
                     <form
                       className={styles.editForm}
@@ -119,7 +121,7 @@ export function CategoryManager() {
                     >
                       <input
                         className={styles.input}
-                        aria-label="카테고리 이름"
+                        aria-label={t('카테고리 이름')}
                         value={editName}
                         aria-invalid={!!editError}
                         autoFocus
@@ -132,27 +134,29 @@ export function CategoryManager() {
                           className={styles.primary}
                           disabled={update.isPending}
                         >
-                          저장
+                          {t('저장')}
                         </button>
                         <button
                           type="button"
                           className={styles.secondary}
                           onClick={() => setEditingId(null)}
                         >
-                          취소
+                          {t('취소')}
                         </button>
                       </div>
                     </form>
+                  ) : c.isDefault ? (
+                    t(c.name)
                   ) : (
                     c.name
                   )}
                 </td>
-                <td data-label="할일 수" className={styles.count}>
+                <td data-label={t('할일 수')} className={styles.count}>
                   {c.todoCount}
                 </td>
-                <td data-label="동작">
+                <td data-label={t('동작')}>
                   {c.isDefault ? (
-                    <span className={styles.muted}>기본 카테고리: 이름 변경·삭제 불가</span>
+                    <span className={styles.muted}>{t('기본 카테고리: 이름 변경·삭제 불가')}</span>
                   ) : (
                     editingId !== c.id && (
                       <div className={styles.btns}>
@@ -161,14 +165,14 @@ export function CategoryManager() {
                           className={styles.secondary}
                           onClick={() => startEdit(c)}
                         >
-                          이름 변경
+                          {t('이름 변경')}
                         </button>
                         <button
                           type="button"
                           className={styles.secondary}
                           onClick={() => setDeleting(c)}
                         >
-                          삭제
+                          {t('삭제')}
                         </button>
                       </div>
                     )
@@ -182,8 +186,10 @@ export function CategoryManager() {
 
       {deleting && (
         <ConfirmDialog
-          title={`'${deleting.name}' 카테고리를 삭제할까요?`}
-          message={`이 카테고리의 할일 ${deleting.todoCount}개가 '기본' 카테고리로 옮겨집니다.`}
+          title={t("'{name}' 카테고리를 삭제할까요?", { name: deleting.name })}
+          message={t("이 카테고리의 할일 {count}개가 '기본' 카테고리로 옮겨집니다.", {
+            count: deleting.todoCount,
+          })}
           onCancel={() => setDeleting(null)}
           onConfirm={() => onDelete(deleting)}
         />

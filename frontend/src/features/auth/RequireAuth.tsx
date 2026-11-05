@@ -2,18 +2,20 @@ import type { ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Navigate, Outlet, useLocation } from 'react-router';
 import { ERR } from '../../api/errorCodes';
+import { useT } from '../../store/prefsStore';
 import { useMe, userKeys } from './queries';
 import styles from './RequireAuth.module.css';
 
 // AC-02: 현재 사용자 조회 결과로 인증을 판정한다
 export function RequireAuth({ children }: { children?: ReactNode }) {
   const me = useMe();
-  if (me.isPending) return <p className={styles.message}>불러오는 중...</p>;
+  const t = useT();
+  if (me.isPending) return <p className={styles.message}>{t('불러오는 중...')}</p>;
   if (me.isError) {
     return me.error.code === ERR.UNAUTHORIZED ? (
       <Navigate to="/login" replace />
     ) : (
-      <p className={styles.message}>{me.error.message}</p>
+      <p className={styles.message}>{t(me.error.message)}</p>
     );
   }
   return children ?? <Outlet />;

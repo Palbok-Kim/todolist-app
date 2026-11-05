@@ -19,6 +19,9 @@
 | 0.13 | 2026-11-05 | MinjeYu | 백엔드 코드 대조 반영: DL-05 미들웨어 순서에 `cors`(로거 다음)와 개발 전용 `/api/docs`, SO-08 이유를 CORS 구성에 맞게, 2.1 의존 표 `scripts/`에 `pg`(마이그레이션 직접 연결) 추가 |
 | 0.14 | 2026-11-05 | MinjeYu | 단일 출처 머리말의 참조 버전을 현재 값(PRD v0.13·사용자 시나리오 v0.7·와이어프레임 v0.6·아키텍처 다이어그램 v0.11·ERD v0.6)에 맞춤. 규칙 변경 없음 |
 | 0.15 | 2026-11-05 | MinjeYu | 코드 리뷰 반영: DL-14 `onUnauthorized`는 현재 사용자 캐시가 있을 때만·한 번만 동작, SO-11 시드 비밀번호 VR-02 검사, 6장 `RequireAuth.tsx`에 `GuestOnly`. 단일 출처 머리말의 와이어프레임 참조를 v0.7로 |
+| 0.16 | 2026-11-05 | MinjeYu | PRD v0.14(FR-09 다국어·FR-10 테마, 4.5) 반영: DL-13에 화면 언어·테마(`prefsStore`, `persist`로 localStorage 저장), CN-12(한국어 원문 키 번역·서버 메시지 번역·누락 테스트), CN-13(색은 토큰만, 다크는 `data-theme`로 값만 교체) 신설, 6.3 디렉토리에 `store/prefsStore.ts`·`lib/i18n/`. 새 외부 의존성 없음(DL-16, `persist`는 Zustand 내장). 단일 출처 머리말 참조를 도메인 정의서 v0.11·PRD v0.14·와이어프레임 v0.8로 |
+| 0.17 | 2026-11-05 | MinjeYu | 와이어프레임 v0.9 반영: 6.3 디렉토리 `features/user`에 `PrefsForm.tsx`(설정 화면의 언어·테마). 단일 출처 머리말 참조를 PRD v0.15·와이어프레임 v0.9로 |
+| 0.18 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: SO-02 `.env.example`을 루트와 `frontend/` 두 곳에, 6.3 디렉토리에 `frontend/.env.example`. 설계서 v0.10(`VITE_API_BASE_URL` 운영 빌드 필수) 참조 |
 
 **표기 범례** (도메인 정의서·PRD·사용자 시나리오·와이어프레임과 같음)
 - **확정**: 요구사항 원문 또는 사용자 의사결정(2026-11-04)에 근거한 결정
@@ -27,7 +30,7 @@
 - **미결정**: 결정하기 전에는 구현을 보류한다
 - 이 문서에서 원문에 없는 결정은 모두 **가정**이다. 큰 가정과 문서 사이의 공백·모순은 8장(`PQ-xx`)에 모은다
 
-**단일 출처 원칙**: 엔티티 속성·상태 판정·BR·UC·AC는 [도메인 정의서 v0.10](./1-domain-definition.md), FR 우선순위·VR·ERR·NFR·KPI·R은 [PRD v0.13](./2-prd.md), SC는 [사용자 시나리오 v0.7](./3-user-scenario.md), WF는 [와이어프레임 v0.7](./4-wireframe.md)에만 둔다. 이 문서는 규칙 원문을 복사하지 않고 ID로 참조한다. 이 문서에서 새로 만든 ID는 원칙 `PR-xx`(공통), `DL-xx`(의존성·레이어), `CN-xx`(코드·네이밍), `TQ-xx`(테스트·품질), `SO-xx`(설정·보안·운영)와 확인 필요 `PQ-xx`뿐이다.
+**단일 출처 원칙**: 엔티티 속성·상태 판정·BR·UC·AC는 [도메인 정의서 v0.11](./1-domain-definition.md), FR 우선순위·VR·ERR·NFR·KPI·R은 [PRD v0.15](./2-prd.md), SC는 [사용자 시나리오 v0.7](./3-user-scenario.md), WF는 [와이어프레임 v0.9](./4-wireframe.md)에만 둔다. 이 문서는 규칙 원문을 복사하지 않고 ID로 참조한다. 이 문서에서 새로 만든 ID는 원칙 `PR-xx`(공통), `DL-xx`(의존성·레이어), `CN-xx`(코드·네이밍), `TQ-xx`(테스트·품질), `SO-xx`(설정·보안·운영)와 확인 필요 `PQ-xx`뿐이다.
 
 **범위**: 프로젝트 구조와 코딩 원칙만 정한다. API 명세, DDL, PRD 11장의 구현 세부(scrypt 값, CSRF 토큰 구조, 쿠키 이름·경로, 리프레시 토큰 세부, 로그인 카운터 저장 위치 등)는 설계서에서 정하며 이 문서는 "11장 참조"로만 가리킨다. 원칙은 코드 리뷰나 grep, 린트로 확인할 수 있게 쓴다.
 
@@ -93,7 +96,7 @@
 |----|------|------|------|------|
 | DL-11 | 위 의존 표를 지킨다. `frontend/eslint.config.js`의 `no-restricted-imports`로 기계 검증하고 순환 import를 만들지 않는다 | 화면이 적어도(WF 8개) 방향이 섞이면 데이터 흐름을 추적하기 어렵다 | PR-03 | 가정 |
 | DL-12 | 서버에서 온 데이터(User, Category, Todo)는 TanStack Query에만 두고 Zustand에 복사하지 않는다 (`store/`에 `Todo`·`Category`·`User` 타입이 없어야 한다). 쿼리 키와 훅은 `features/<domain>/queries.ts` 한 곳에 두고, 변경(mutation) 성공 뒤에는 관련 쿼리를 `invalidateQueries`로 갱신하며 캐시를 손으로 고치지 않는다. 카테고리 삭제 뒤에는 카테고리와 할일 쿼리를 함께 무효화하고, 시간대 변경 성공 뒤에는 사용자 쿼리와 할일(목록·캘린더) 쿼리를 함께 무효화한다 | 서버 상태의 복사본이 둘이면 어긋난다. 캐시된 `status`는 시간대가 바뀌면 낡는다 | PRD 6장, BR-06, AC-13 | 확정 (역할 분리, 시간대 변경 뒤 무효화는 위임 결정(2026-11-04), AQ-03) / 가정 (갱신 방식) |
-| DL-13 | Zustand는 서버에 없는 UI 상태만 담는다: 상단 알림(WF-00), 모바일 메뉴 열림, 목록 필터(카테고리·상태, WF-03), 캘린더 보기 모드·기준일·모바일 선택일(WF-05·06). 폼 입력값은 컴포넌트 로컬 `useState`에 두고 Zustand에 넣지 않는다 | 필터와 캘린더 위치를 store에 두면 편집 화면에서 돌아와도 유지된다 | WF-03, WF-04, WF-05 | 가정 |
+| DL-13 | Zustand는 서버에 없는 UI 상태만 담는다: 상단 알림(WF-00), 모바일 메뉴 열림, 목록 필터(카테고리·상태, WF-03), 캘린더 보기 모드·기준일·모바일 선택일(WF-05·06), 화면 언어·테마(FR-09·10, `prefsStore`. 이것만 Zustand 내장 `persist`로 `localStorage`에 저장한다, PRD 4.5). 폼 입력값은 컴포넌트 로컬 `useState`에 두고 Zustand에 넣지 않는다 | 필터와 캘린더 위치를 store에 두면 편집 화면에서 돌아와도 유지된다 | WF-03, WF-04, WF-05 | 가정 |
 | DL-14 | `fetch`는 `api/client.ts` 한 곳에서만 호출한다 (`fetch(` grep이 그 파일에서만 나온다). 여기서 쿠키 전송, 상태 변경 요청의 CSRF 헤더, 응답 파싱, `ApiError` 변환, ERR-02 처리(토큰 갱신 시도, 실패 시 로그인 화면 이동과 만료 안내)를 맡되, `api/`는 `store/`·router를 import하지 못하므로(2.2장 표) `onUnauthorized` 콜백 등록 함수만 노출한다. 보호 API가 ERR-02(액세스 토큰 만료)를 받으면 토큰 갱신을 한 번만 시도하고, 그 사이 ERR-02를 받은 다른 요청은 진행 중인 갱신 하나를 공유한다(single-flight, 모듈 안의 진행 중 Promise 하나). 갱신이 성공하면 원 요청을 한 번만 다시 보낸다. 갱신이 ERR-02로 실패해도 원 요청을 한 번만 다시 보낸다(쿠키는 브라우저 탭 간에 공유되어 다른 탭이 받은 새 쿠키가 이미 있을 수 있다). 갱신 요청 자체와 다시 보낸 요청은 ERR-02여도 재시도하거나 다시 갱신하지 않고 `onUnauthorized` 콜백을 호출한다. `main.tsx`가 콜백에 `alertStore`(만료 안내)와 router(로그인 화면 이동)를 연결한다. 콜백은 현재 사용자 캐시가 있을 때만(로그인 중이던 경우) 동작하고 처리 중에는 다시 실행하지 않는다(동시 실패가 이동·캐시 비우기를 여러 번 하지 않게). 캐시가 없으면 `RequireAuth`가 안내 없이 로그인 화면으로 보낸다(WF 2장). `main.tsx`·`App.tsx`는 앱 조립 파일이라 2.2장 표의 대상이 아니다. 엔드포인트별 함수는 `features/<domain>/api.ts`에 두고 컴포넌트는 `queries.ts`의 훅만 쓴다 | 인증·CSRF 처리를 한 곳에 모으고 `api/`의 의존 방향을 지킨다. 동시 요청이 각자 갱신하면 폐기된 토큰의 재제출이 생기므로 갱신을 한 곳에서 하나로 모은다. 여러 탭의 경합은 서버의 유예 시간(SO-17)과 이 재전송이 함께 막는다 | NFR-07, NFR-15, ERR-02, SC-03, SC-16, WF-01, R-14 | 가정 (구조) / 확정 (콜백 연결, 위임 결정(2026-11-04), AQ-02) / 확정 (single-flight 갱신과 갱신 실패 시 원 요청 1회 재전송: 사용자 결정(2026-11-04)의 후속, 위임 결정(2026-11-04)) |
 | DL-15 | `pages/`는 WF 1개당 파일 1개이고 훅 호출과 feature 컴포넌트 배치만 한다. 규칙·검증·변환 로직을 두지 않는다 | 화면과 와이어프레임을 1:1로 찾게 한다 | 와이어프레임 1장 | 가정 |
 
@@ -138,6 +141,8 @@
 | CN-08 | 검증 오류의 `fields` 키는 API 필드 이름(camelCase, 예: `currentPassword`)을 그대로 쓰고 프런트 폼 필드 이름과 같게 한다. 서버 `message`와 `fields[].message`는 한국어이며 프런트는 그대로 표시한다 | 필드 매핑 코드를 없앤다 | PRD 4.3, 4.4, 7장 | 가정 |
 | CN-09 | 할일 상태 값은 `backend/src/db/todoStatus.js`의 상수(`NOT_STARTED`, `IN_PROGRESS`, `COMPLETED`, `OVERDUE`)로 정의하고, 한국어 표시는 프런트 `features/todo/statusLabel.ts` 한 곳에서 매핑한다. 값 이름은 API 설계서에서 확정한다 | 상태 이름과 표시 문구를 분리한다 | 도메인 4장, WF-03 | 가정 |
 | CN-10 | 주석은 한국어로, 코드가 말해 주지 않는 이유만 한 줄 쓴다. 규칙을 구현한 곳은 PR-02의 ID 한 줄이면 충분하며 규칙 문장을 복사하지 않는다. 알려진 한계는 `// LIMIT: <한계>, <언제 바꾸는지>` 한 줄로 남긴다 (`LIMIT:` grep으로 목록화) | 주석이 규칙의 두 번째 출처가 되지 않게 한다 | PR-01 | 가정 |
+| CN-12 | 화면에 보이는 문구는 한국어 원문을 그대로 키로 써서 `store/prefsStore.ts`의 `useT()`가 돌려주는 `t()`로 감싸 표시한다(검증 함수 등은 한국어 원문을 그대로 돌려주고 표시하는 컴포넌트가 번역한다). 번역은 `lib/i18n/`의 `en.ts`·`ja.ts`(원문 → 번역) 한 곳에만 두고, 바뀌는 값은 `{n}` 자리표시로 쓴다. 서버가 준 `message`·`fields[].message`도 같은 사전으로 번역하고 없으면 원문을 보인다(PRD 4.5). 요일 이름은 `lib/date.ts`에서 `Intl.DateTimeFormat`으로 만든다. 사전 누락은 Vitest가 프런트 소스와 백엔드 `src`의 사용자 메시지 한국어 문자열이 `en`·`ja`에 모두 있는지로 검사한다 | 원문을 키로 쓰면 한국어 화면과 기존 테스트를 바꾸지 않고 번역을 얹을 수 있고, 서버 응답 형식도 그대로 둔다 | FR-09, PRD 4.5, CN-08 | 가정 |
+| CN-13 | 색은 `styles/tokens.css`의 토큰만 쓴다(CSS Modules에 색 직접 값 금지). 다크 모드는 `<html data-theme="dark">`일 때 같은 토큰 이름의 값만 바꾼다(스타일 가이드 2.1) | 화면별 CSS를 고치지 않고 테마를 바꾼다 | FR-10, PRD 4.5 | 가정 |
 | CN-11 | 모듈은 named export만 쓴다 (설정 파일 제외). 백엔드는 ESM(`"type": "module"`)이고 상대 경로에 `.js` 확장자를 붙인다. 순환 import는 만들지 않는다 | import 이름을 일관되게 하고 순환을 막는다 | — | 가정 |
 
 ## 4. 테스트·품질 원칙
@@ -162,7 +167,7 @@
 | ID | 원칙 | 이유 | 근거 | 구분 |
 |----|------|------|------|------|
 | SO-01 | 환경 변수는 `backend/src/config.js`에서만 읽는다 (`process.env` grep이 그 파일과 `scripts/`, 테스트 DB로 전환하는 `backend/test/helpers/env.js`(TQ-08)에서만 나온다). 시작할 때 필수 값·형식을 검증하고 실패하면 프로세스를 종료한다. pg 풀 크기 등 조정 값도 여기서 설정값으로 노출한다 | 설정 누락을 기동 때 발견한다 | NFR-05 | 가정 |
-| SO-02 | `.env`는 `.gitignore`에 넣고, 키 이름과 안전한 예시 값만 담은 `.env.example`을 루트에 커밋한다. 비밀 값은 커밋하지 않는다 (`git ls-files`에 `.env.example` 외 `.env*` 없음). 프런트 `VITE_*` 변수는 번들에 노출되므로 비밀을 넣지 않는다 (API 기준 주소 `VITE_API_BASE_URL`은 공개 값이다. SO-08) | 비밀 유출 방지 | NFR-07, NFR-15 | 가정 |
+| SO-02 | `.env`는 `.gitignore`에 넣고, 키 이름과 안전한 예시 값만 담은 `.env.example`을 루트(백엔드)와 `frontend/`(Vite는 `frontend/`의 `.env`만 읽는다)에 커밋한다. 비밀 값은 커밋하지 않는다 (`git ls-files`에 `.env.example` 외 `.env*` 없음). 프런트 `VITE_*` 변수는 번들에 노출되므로 비밀을 넣지 않는다 (API 기준 주소 `VITE_API_BASE_URL`은 공개 값이다. SO-08) | 비밀 유출 방지 | NFR-07, NFR-15 | 가정 |
 | SO-03 | JWT·CSRF 서명 키 같은 비밀은 코드에 값을 직접 쓰지 않고 `.env`로만 주입한다. `.env.example`의 값은 `change-me`를 반복해 48자 이상으로 만든 자리표시자이고, `production`에서 자리표시자이면 기동을 거부한다. JWT 서명 키(HS384)는 어느 환경에서든 48바이트(384비트) 미만이면 기동을 거부한다. 키 관리 세부는 11장을 따른다 | 기본 키로 운영되는 사고와 짧은 키로 HS384 서명을 쓰는 사고를 막는다 (자리표시자를 48자 이상으로 하는 이유는 개발·테스트 환경이 길이 검사에 막히지 않게 하기 위함) | NFR-07, NFR-15, R-13, PRD 11장 | 확정 (HS384: 사용자 결정(2026-11-04), 키 길이: 위임 결정(2026-11-04)) / 가정 (검사 위치) |
 | SO-04 | `NODE_ENV`는 `development` / `test` / `production`만 허용하고 그 밖은 기동을 거부한다. 환경별 차이는 `config.js`의 플래그(예: 쿠키 `Secure`)로만 두고 다른 파일에서 `NODE_ENV`를 분기하지 않는다 (grep). `production`에서는 HTTPS 쿠키 `Secure`를 켠다 | 환경 분기가 코드 곳곳에 퍼지는 것을 막는다 | NFR-07, NFR-09 | 확정 (Secure 요구) / 가정 (구조) |
 | SO-05 | NFR-10의 테스트 IP 예외는 기본적으로 구현하지 않는다. 격리 테스트 환경에 꼭 필요해지면 `test`에서만 읽는 설정으로 두고 `production`에서 그 설정 값이 있으면 `config.js`가 기동을 거부한다. 구현 방식은 11장을 따르며 이 가드는 TQ-05의 테스트로 확인한다 | 운영에서 켤 수 없어야 한다 | NFR-10, PRD 11장 | 확정 (원칙적 예외 금지, 운영 불가) / 가정 (가드 방식) |
@@ -268,6 +273,7 @@ backend/
 ```text
 frontend/
 ├─ package.json            # scripts: dev, build, test, lint, format:check
+├─ .env.example            # VITE_API_BASE_URL 예시(운영 빌드 필수, 설계서 6장)
 ├─ vite.config.ts          # 개발 서버(포트 5173 `strictPort`, 프록시 없음) (SO-08)
 ├─ tsconfig.json
 ├─ eslint.config.js        # 레이어 import 제한, react-hooks (DL-11)
@@ -285,7 +291,7 @@ frontend/
    │  └─ CategoryManagePage.tsx  # WF-08
    ├─ features/            # 도메인별 화면 조각과 데이터 훅
    │  ├─ auth/             # api.ts, queries.ts, validation.ts, LoginForm.tsx, SignupForm.tsx, RequireAuth.tsx(RequireAuth·GuestOnly)
-   │  ├─ user/             # 내 정보·시간대: TimezoneForm.tsx, ProfileForm.tsx, PasswordForm.tsx
+   │  ├─ user/             # 내 정보·시간대·화면 설정: TimezoneForm.tsx, ProfileForm.tsx, PasswordForm.tsx, PrefsForm.tsx(언어·테마, FR-09·10)
    │  ├─ category/         # CategorySelect.tsx, CategoryManager.tsx, api.ts, queries.ts, validation.ts
    │  ├─ todo/             # TodoTable.tsx, TodoFilterBar.tsx, TodoForm.tsx, statusLabel.ts, api.ts, queries.ts, validation.ts
    │  └─ calendar/         # MonthGrid.tsx, WeekView.tsx, DayView.tsx, DayTodoList.tsx, buildMonthGrid.ts
@@ -301,10 +307,12 @@ frontend/
    ├─ store/               # Zustand, UI 상태만 (DL-13)
    │  ├─ alertStore.ts, menuStore.ts
    │  ├─ todoFilterStore.ts
-   │  └─ calendarStore.ts
+   │  ├─ calendarStore.ts
+   │  └─ prefsStore.ts      # 화면 언어·테마(localStorage 저장), useT() (DL-13, CN-12, CN-13)
    ├─ lib/                 # 순수 함수
    │  ├─ date.ts           # 날짜 문자열 계산, 시각 표시 변환 (CN-06, CN-07)
-   │  └─ validation.ts     # 공백 제거·길이 같은 공통 검증 도구
+   │  ├─ validation.ts     # 공백 제거·길이 같은 공통 검증 도구
+   │  └─ i18n/             # translate(원문, 언어, 값), en.ts·ja.ts 사전 (CN-12)
    └─ styles/              # 전역 스타일, 화면별은 CSS Modules
 ```
 

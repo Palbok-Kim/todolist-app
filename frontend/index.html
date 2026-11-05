@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TodoList</title>
+    <!-- FR-09·10: 번들 실행 전에 저장된 테마·언어를 반영해 첫 화면 깜빡임을 막는다(main.tsx가 이어서 관리) -->
+    <script>
+      try {
+        var p = JSON.parse(localStorage.getItem('todolist-prefs') || '{}').state || {};
+        var d = document.documentElement;
+        d.dataset.theme =
+          p.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        if (p.lang) d.lang = p.lang;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

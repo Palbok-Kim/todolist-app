@@ -20,7 +20,7 @@
 
 .row {
   display: grid;
-  grid-template-columns: 96px 1fr;
+  grid-template-columns: 128px 1fr; /* 영어·일본어 라벨도 한 줄에 들어가는 폭 */
   column-gap: var(--space-3);
 }
 
@@ -50,7 +50,7 @@
   padding: 0 var(--space-2);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
-  background: #fff;
+  background: var(--color-surface);
   font: var(--text-md) var(--font-family);
 }
 
@@ -70,7 +70,7 @@
   border: none;
   border-radius: var(--radius-md);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
   font: var(--text-md) var(--font-family);
   cursor: pointer;
   transition: background-color 120ms;

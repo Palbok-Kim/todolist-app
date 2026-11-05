@@ -5,6 +5,7 @@ import type { FieldIssue, Todo } from '../../api/types';
 import { FieldError } from '../../components/FieldError';
 import { formatTimestamp } from '../../lib/date';
 import { useAlertStore } from '../../store/alertStore';
+import { useT } from '../../store/prefsStore';
 import { useMe } from '../auth/queries';
 import { StatusBadge } from '../../components/StatusBadge';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export function TodoForm({ todo, renderCategory }: Props) {
+  const t = useT();
   // DL-13: 초기값은 한 번만 쓰고 refetch가 입력을 덮지 않게 한다
   const [title, setTitle] = useState(todo?.title ?? '');
   const [description, setDescription] = useState(todo?.description ?? '');
@@ -81,13 +83,14 @@ export function TodoForm({ todo, renderCategory }: Props) {
     <form noValidate className={styles.form} onSubmit={onSubmit}>
       <div className={styles.header}>
         <button type="button" className={styles.textBtn} onClick={back}>
-          &lt; 뒤로
+          &lt; {t('뒤로')}
         </button>
-        <h1>{todo ? '할일 편집' : '할일 등록'}</h1>
+        <h1>{t(todo ? '할일 편집' : '할일 등록')}</h1>
       </div>
       <div className={styles.row}>
         <label htmlFor="todo-title">
-          제목<span className={styles.req}>*</span>
+          {t('제목')}
+          <span className={styles.req}>*</span>
         </label>
         <div>
           <input
@@ -102,7 +105,7 @@ export function TodoForm({ todo, renderCategory }: Props) {
         </div>
       </div>
       <div className={styles.row}>
-        <label htmlFor="todo-description">설명</label>
+        <label htmlFor="todo-description">{t('설명')}</label>
         <div>
           <textarea
             id="todo-description"
@@ -116,7 +119,7 @@ export function TodoForm({ todo, renderCategory }: Props) {
         </div>
       </div>
       <div className={styles.row}>
-        <label htmlFor="todo-category">카테고리</label>
+        <label htmlFor="todo-category">{t('카테고리')}</label>
         <div>
           {renderCategory({
             id: 'todo-category',
@@ -129,7 +132,8 @@ export function TodoForm({ todo, renderCategory }: Props) {
       </div>
       <div className={styles.row}>
         <label htmlFor="todo-startDate">
-          시작일<span className={styles.req}>*</span>
+          {t('시작일')}
+          <span className={styles.req}>*</span>
         </label>
         <div>
           <input
@@ -145,7 +149,8 @@ export function TodoForm({ todo, renderCategory }: Props) {
       </div>
       <div className={styles.row}>
         <label htmlFor="todo-endDate">
-          종료일<span className={styles.req}>*</span>
+          {t('종료일')}
+          <span className={styles.req}>*</span>
         </label>
         <div>
           <input
@@ -162,7 +167,7 @@ export function TodoForm({ todo, renderCategory }: Props) {
       {todo && tone && (
         <>
           <div className={styles.row}>
-            <span className={styles.label}>상태</span>
+            <span className={styles.label}>{t('상태')}</span>
             <div className={styles.completeLine}>
               <input
                 id="todo-completed"
@@ -170,7 +175,7 @@ export function TodoForm({ todo, renderCategory }: Props) {
                 checked={completed}
                 onChange={(e) => setCompleted(e.target.checked)}
               />
-              <label htmlFor="todo-completed">완료로 표시</label>
+              <label htmlFor="todo-completed">{t('완료로 표시')}</label>
               <StatusBadge label={STATUS_LABEL[todo.status]} tone={tone} />
             </div>
           </div>
@@ -178,7 +183,7 @@ export function TodoForm({ todo, renderCategory }: Props) {
             <div className={styles.row}>
               <span />
               <p className={styles.muted}>
-                마지막 수정 {formatTimestamp(todo.updatedAt, me.timezone)}
+                {t('마지막 수정')} {formatTimestamp(todo.updatedAt, me.timezone)}
               </p>
             </div>
           )}
@@ -192,20 +197,20 @@ export function TodoForm({ todo, renderCategory }: Props) {
             disabled={pending}
             onClick={() => setConfirming(true)}
           >
-            삭제
+            {t('삭제')}
           </button>
         )}
         <button type="button" className={styles.secondary} onClick={back}>
-          취소
+          {t('취소')}
         </button>
         <button type="submit" className={styles.primary} disabled={pending}>
-          {pending ? '저장 중...' : '저장'}
+          {pending ? t('저장 중...') : t('저장')}
         </button>
       </div>
       {todo && confirming && (
         <ConfirmDialog
-          title="할일을 삭제할까요?"
-          message="삭제하면 복구할 수 없습니다."
+          title={t('할일을 삭제할까요?')}
+          message={t('삭제하면 복구할 수 없습니다.')}
           onCancel={() => setConfirming(false)}
           onConfirm={() => {
             setConfirming(false);

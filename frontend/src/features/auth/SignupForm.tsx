@@ -4,6 +4,7 @@ import { ERR } from '../../api/errorCodes';
 import type { FieldIssue } from '../../api/types';
 import { FieldError } from '../../components/FieldError';
 import { useAlertStore } from '../../store/alertStore';
+import { useT } from '../../store/prefsStore';
 import { useSignup } from './queries';
 import { validateSignup } from './validation';
 import styles from './AuthForm.module.css';
@@ -13,6 +14,7 @@ export function SignupForm() {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [issues, setIssues] = useState<FieldIssue[]>([]);
+  const t = useT();
   const signup = useSignup();
   const navigate = useNavigate();
   const { showAlert, clearAlert } = useAlertStore();
@@ -40,9 +42,9 @@ export function SignupForm() {
 
   return (
     <form noValidate className={styles.form} onSubmit={onSubmit}>
-      <h1 className={styles.title}>회원가입</h1>
+      <h1 className={styles.title}>{t('회원가입')}</h1>
       <div className={styles.field}>
-        <label htmlFor="signup-email">이메일</label>
+        <label htmlFor="signup-email">{t('이메일')}</label>
         <input
           id="signup-email"
           type="email"
@@ -55,7 +57,7 @@ export function SignupForm() {
         <FieldError message={msg('email')} />
       </div>
       <div className={styles.field}>
-        <label htmlFor="signup-name">이름</label>
+        <label htmlFor="signup-name">{t('이름')}</label>
         <input
           id="signup-name"
           type="text"
@@ -68,7 +70,7 @@ export function SignupForm() {
         <FieldError message={msg('name')} />
       </div>
       <div className={styles.field}>
-        <label htmlFor="signup-password">비밀번호</label>
+        <label htmlFor="signup-password">{t('비밀번호')}</label>
         <input
           id="signup-password"
           type="password"
@@ -79,17 +81,17 @@ export function SignupForm() {
           aria-invalid={!!msg('password')}
         />
         <p className={styles.hint}>
-          영대문자·영소문자·숫자·특수문자 중 3종류 이상 8자, 또는 2종류 이상 10자 이상
+          {t('영대문자·영소문자·숫자·특수문자 중 3종류 이상 8자, 또는 2종류 이상 10자 이상')}
         </p>
         <FieldError message={msg('password')} />
       </div>
       <button type="submit" className={styles.submit} disabled={signup.isPending}>
-        {signup.isPending ? '가입 중...' : '가입하기'}
+        {signup.isPending ? t('가입 중...') : t('가입하기')}
       </button>
       <p className={styles.footer}>
-        이미 계정이 있나요?{' '}
+        {t('이미 계정이 있나요?')}{' '}
         <Link to="/login" onClick={clearAlert}>
-          로그인
+          {t('로그인')}
         </Link>
       </p>
     </form>

@@ -35,6 +35,12 @@ export function firstOfMonth(date: string, offset = 0): string {
   return `${yy}-${mm}-01`;
 }
 
+// CN-12: 요일 이름(월요일 시작, OI-06)은 언어별로 Intl이 만든다. 2024-01-01은 월요일
+export function weekdayNames(lang: string): string[] {
+  const f = new Intl.DateTimeFormat(lang, { weekday: 'short', timeZone: 'UTC' });
+  return Array.from({ length: 7 }, (_, i) => f.format(utc('2024-01-01', i)));
+}
+
 function format(timeZone: string, ms: number, opts: Intl.DateTimeFormatOptions) {
   const ps = new Intl.DateTimeFormat('en-CA', { timeZone, ...opts }).formatToParts(new Date(ms));
   return (type: string) => ps.find((p) => p.type === type)!.value;
