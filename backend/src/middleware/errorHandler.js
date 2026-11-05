@@ -11,8 +11,8 @@ export function errorHandler(err, req, res, next) {
     if (err.fields) body.fields = err.fields;
     return res.status(err.status).json({ error: body });
   }
-  // express.json()의 잘못된 JSON은 클라이언트 입력 오류다
-  if (err.type === 'entity.parse.failed') {
+  // express.json()의 클라이언트 오류(잘못된 JSON, 413 크기 초과, 415 문자셋 등)는 ERR-01로 돌려주고 로그를 남기지 않는다
+  if (err.expose && err.status >= 400 && err.status < 500) {
     return res.status(ERR.VALIDATION_ERROR.status).json({
       error: { code: ERR.VALIDATION_ERROR.code, message: '요청 형식이 올바르지 않습니다.' },
     });

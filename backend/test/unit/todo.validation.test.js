@@ -19,7 +19,7 @@ test('VR-05: title 0자·공백만·101자는 거부, 1자·100자는 통과한�
 });
 
 test('VR-06: description 공백만·누락·null은 null로 정규화된다', () => {
-  for (const description of ['   ', '', undefined, null, 5]) {
+  for (const description of ['   ', '', undefined, null]) {
     const r = todo({ description });
     assert.deepEqual(r.fields, []);
     assert.equal(r.value.description, null);
@@ -86,12 +86,12 @@ test('BR-08: 날짜 누락은 거부되고 한쪽이 잘못되면 순서 검사�
   assert.equal(todo({ startDate: '2026-12-01', endDate: 'bad' }).fields.length, 1);
 });
 
-test('VR-05: categoryId 누락·null은 null, 형식 오류는 거부, 유효 uuid는 통과한다', () => {
+test('VR-05: categoryId 누락·null은 null, 형식 오류는 service가 404로 판정하도록 그대로 넘긴다', () => {
   assert.equal(todo({}).value.categoryId, null);
   assert.equal(todo({ categoryId: null }).value.categoryId, null);
   const bad = todo({ categoryId: 'abc' });
-  assert.deepEqual(fieldNames(bad), ['categoryId']);
-  assert.equal(bad.fields[0].message, '카테고리를 찾을 수 없습니다.');
+  assert.deepEqual(bad.fields, []);
+  assert.equal(bad.value.categoryId, 'abc');
   const ok = todo({ categoryId: UUID });
   assert.deepEqual(ok.fields, []);
   assert.equal(ok.value.categoryId, UUID);
@@ -119,4 +119,27 @@ test('VR-07: 카테고리 name 0자·공백만·31자는 거부, 1자·30자는 
   assert.equal(validateCategory({ name: 'c'.repeat(30) }).value.name, 'c'.repeat(30));
   assert.equal(validateCategory({ name: '  업무  ' }).value.name, '업무');
   assert.deepEqual(fieldNames(validateCategory(null)), ['name']);
+});
+
+test('VR-06: 문자열이 아닌 description은 null로 지우지 않고 거부한다', () => {
+  for (const description of [5, true, { x: 1 }]) {
+    assert.deepEqual(
+      fieldNames(todo({ description })),
+      ['description'],
+      JSON.stringify(description),
+    );
+  }
+});
+
+test('VR-05: 제목 길이는 코드 포인트로 센다(이모지 100개는 통과, 101개는 거부)', () => {
+  assert.deepEqual(todo({ title: '😀'.repeat(100) }).fields, []);
+  assert.deepEqual(fieldNames(todo({ title: '😀'.repeat(101) })), ['title']);
+});
+
+test('BR-08: 0000년은 PostgreSQL에 없어 거부하고 0001년은 통과한다', () => {
+  assert.deepEqual(fieldNames(todo({ startDate: '0000-01-01', endDate: '0000-01-02' })), [
+    'endDate',
+    'startDate',
+  ]);
+  assert.deepEqual(todo({ startDate: '0001-01-01', endDate: '0001-01-01' }).fields, []);
 });

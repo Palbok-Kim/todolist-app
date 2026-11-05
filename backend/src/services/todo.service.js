@@ -22,6 +22,20 @@ function toTodo(row) {
   return todo;
 }
 
+// SO-07: 확인 뒤 카테고리가 동시에 삭제되면 FK(RESTRICT) 위반이 난다. 500이 아니라 404로 돌려준다
+async function guardFk(promise) {
+  try {
+    return await promise;
+  } catch (err) {
+    if (err.code === '23503') throw notFound();
+    throw err;
+  }
+}
+
+// 형식이 틀린 ID는 DB에 묻지 않고 없는 것으로 본다
+const findCategory = (userId, id) =>
+  isUuid(id) ? categoryQueries.findById(pool, userId, id) : Promise.resolve(null);
+
 // DL-06, DL-09: 상태 판정의 오늘은 DB의 사용자 시간대로 계산한다
 async function todayOf(userId) {
   const user = await userQueries.findById(pool, userId);
@@ -33,13 +47,15 @@ export async function createTodo(userId, body) {
   const { value, fields } = validateTodoCreate(body);
   if (fields.length) throw new AppError(ERR.VALIDATION_ERROR, '입력값을 확인해 주세요.', fields);
   // BR-04: 미지정이면 기본 카테고리, BR-02: 남의·없는 카테고리는 404
-  const category = value.categoryId
-    ? await categoryQueries.findById(pool, userId, value.categoryId)
-    : await categoryQueries.findDefault(pool, userId);
+  const [category, today] = await Promise.all([
+    value.categoryId !== null
+      ? findCategory(userId, value.categoryId)
+      : categoryQueries.findDefault(pool, userId),
+    todayOf(userId),
+  ]);
   if (!category) throw notFound();
-  const today = await todayOf(userId);
   return toTodo(
-    await todoQueries.insert(pool, userId, today, { ...value, categoryId: category.id }),
+    await guardFk(todoQueries.insert(pool, userId, today, { ...value, categoryId: category.id })),
   );
 }
 
@@ -76,10 +92,10 @@ export async function updateTodo(userId, id, body) {
     throw new AppError(ERR.VALIDATION_ERROR, '입력값을 확인해 주세요.', [
       { field: 'endDate', message: order },
     ]);
-  if (value.categoryId && !(await categoryQueries.findById(pool, userId, value.categoryId)))
+  if (value.categoryId !== undefined && !(await findCategory(userId, value.categoryId)))
     throw notFound();
 
-  const updated = await todoQueries.update(pool, userId, today, id, value);
+  const updated = await guardFk(todoQueries.update(pool, userId, today, id, value));
   if (!updated) throw notFound();
   return toTodo(updated);
 }
@@ -91,11 +107,11 @@ export async function listTodos(userId, { categoryId, status } = {}) {
     throw new AppError(ERR.VALIDATION_ERROR, '입력값을 확인해 주세요.', [
       { field: 'status', message: '상태 값이 올바르지 않습니다.' },
     ]);
-  if (categoryId !== undefined) {
-    if (!isUuid(categoryId) || !(await categoryQueries.findById(pool, userId, categoryId)))
-      throw notFound();
-  }
-  const today = await todayOf(userId);
+  const [category, today] = await Promise.all([
+    categoryId === undefined ? true : findCategory(userId, categoryId),
+    todayOf(userId),
+  ]);
+  if (!category) throw notFound();
   const rows = await todoQueries.listByUser(pool, userId, today, {
     categoryId: categoryId ?? null,
     status: status ?? null,

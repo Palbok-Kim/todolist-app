@@ -1,4 +1,4 @@
-import { asObject, checkDate, checkDateOrder, checkText, isUuid } from './common.js';
+import { asObject, checkDate, checkDateOrder, checkText } from './common.js';
 
 // VR-05
 const TITLE_MAX = 100;
@@ -22,9 +22,8 @@ export function validateTodoCreate(body) {
     const msg = checkDateOrder(s.value, e.value);
     if (msg) fields.push({ field: 'endDate', message: msg });
   }
-  if (b.categoryId === undefined || b.categoryId === null) value.categoryId = null;
-  else if (isUuid(b.categoryId)) value.categoryId = b.categoryId;
-  else fields.push({ field: 'categoryId', message: '카테고리를 찾을 수 없습니다.' });
+  // BR-02, SO-07: uuid 형식 오류는 없는 카테고리와 같은 404라 service가 판정한다
+  value.categoryId = b.categoryId ?? null;
   return { value, fields };
 }
 
@@ -43,8 +42,8 @@ export function validateTodoUpdate(body) {
   run('description', (v) => checkText(v, { max: DESCRIPTION_MAX, required: false }));
   run('startDate', checkDate);
   run('endDate', checkDate);
-  // D-05: categoryId null은 허용하지 않는다
-  run('categoryId', (v) => (isUuid(v) ? { value: v } : { error: '카테고리를 찾을 수 없습니다.' }));
+  // D-05: categoryId null은 ERR-01, 형식 오류는 service가 404로 판정한다(SO-07)
+  run('categoryId', (v) => (v === null ? { error: '카테고리를 선택해 주세요.' } : { value: v }));
   run('completed', (v) =>
     typeof v === 'boolean' ? { value: v } : { error: '완료 여부를 확인해 주세요.' },
   );
@@ -55,7 +54,8 @@ export function validateTodoUpdate(body) {
 const RANGE_MAX_DAYS = 42;
 const dayNumber = (date) => {
   const [y, m, d] = date.split('-').map(Number);
-  return Date.UTC(y, m - 1, d) / 86_400_000;
+  // Date.UTC는 0~99년을 1900년대로 바꾸므로 400년 주기(달력 동일)만큼 밀어 계산한다
+  return Date.UTC(y + 10_000, m - 1, d) / 86_400_000;
 };
 
 export function validateCalendarRange(query) {

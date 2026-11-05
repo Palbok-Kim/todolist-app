@@ -29,12 +29,7 @@ export async function updateMe(userId, body) {
   if (fields.length) throw invalid(fields);
   if (Object.keys(value).length === 0)
     throw new AppError(ERR.VALIDATION_ERROR, '변경할 항목이 없습니다.');
-  const user = await withTransaction(async (db) => {
-    let row = null;
-    if (value.timezone) row = await userQueries.updateTimezone(db, userId, value.timezone);
-    if (value.name) row = await userQueries.updateName(db, userId, value.name);
-    return row;
-  });
+  const user = await userQueries.updateProfile(pool, userId, value);
   if (!user) throw gone();
   return toUser(user);
 }

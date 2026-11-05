@@ -291,3 +291,20 @@ test('SO-06: 로그인·로그아웃 응답과 로그에 비밀번호·리프레
     }
   }
 });
+
+test('NFR-10: 같은 계정으로 틀린 비밀번호 20건을 동시에 보내도 검증은 한도(5건)만 하고 나머지는 429다', async () => {
+  const { email } = await register();
+  const results = await Promise.all(
+    Array.from({ length: 20 }, () => loginCall(email, 'wrong password 123')),
+  );
+  const statuses = results.map((r) => r.status);
+  assert.equal(statuses.filter((s) => s === 401).length, EMAIL_LIMIT);
+  assert.equal(statuses.filter((s) => s === 429).length, 20 - EMAIL_LIMIT);
+});
+
+test('NFR-10: 동시에 성공한 로그인은 실패 횟수를 남기지 않는다', async () => {
+  const { email } = await register();
+  const results = await Promise.all(Array.from({ length: 4 }, () => loginCall(email)));
+  assert.ok(results.every((r) => r.status === 200));
+  assert.deepEqual(size(), { ip: 0, email: 0 });
+});

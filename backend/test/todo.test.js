@@ -108,16 +108,83 @@ test('AC-06, BR-15: 시작일이 종료일보다 늦으면 400이고 fields에 �
   assert.equal(await todoCount(), 0);
 });
 
-test('VR-05: 제목 누락·잘못된 날짜·형식이 틀린 categoryId는 400이고 행이 생기지 않는다', async () => {
+test('VR-05: 제목 누락·잘못된 날짜는 400이고 행이 생기지 않는다', async () => {
   const a = await register();
   const res = await create(a, { startDate: '2026-02-30', endDate: today, categoryId: 'abc' });
   assert.equal(res.status, 400);
-  assert.deepEqual(res.body.error.fields.map((f) => f.field).sort(), [
-    'categoryId',
-    'startDate',
-    'title',
-  ]);
+  assert.deepEqual(res.body.error.fields.map((f) => f.field).sort(), ['startDate', 'title']);
   assert.equal(await todoCount(), 0);
+});
+
+test('SO-07: 본문의 형식이 틀린 categoryId는 등록·수정 모두 없는 카테고리와 같은 404다', async () => {
+  const a = await register();
+  const missing = await create(a, { ...base, categoryId: randomUUID() });
+  for (const categoryId of ['abc', 123]) {
+    const res = await create(a, { ...base, categoryId });
+    assert.equal(res.status, 404, String(categoryId));
+    assert.deepEqual(res.body, missing.body);
+  }
+  const todo = (await create(a, base)).body;
+  const res = await req(`/api/todos/${todo.id}`, {
+    method: 'PATCH',
+    session: a,
+    body: { categoryId: 'abc' },
+  });
+  assert.equal(res.status, 404);
+  assert.equal(await todoCount(), 1);
+});
+
+test('SO-07: 카테고리 확인 뒤 동시에 삭제돼 FK가 막아도 등록·수정은 500이 아니라 404다', async () => {
+  const a = await register();
+  const todo = (await create(a, base)).body;
+  const { rows } = await pool.query(
+    "INSERT INTO categories (user_id, name) VALUES ($1, '사라질 카테고리') RETURNING id",
+    [a.body.id],
+  );
+  // 할일 INSERT·UPDATE 직전에 대상 카테고리를 지워 동시 삭제를 재현한다(테스트 DB 전용 트리거)
+  await pool.query(
+    `CREATE OR REPLACE FUNCTION test_drop_category() RETURNS trigger LANGUAGE plpgsql AS $$
+     BEGIN DELETE FROM categories WHERE id = NEW.category_id AND NOT is_default; RETURN NEW; END $$`,
+  );
+  await pool.query(
+    'CREATE TRIGGER test_drop_category BEFORE INSERT OR UPDATE ON todos FOR EACH ROW EXECUTE FUNCTION test_drop_category()',
+  );
+  try {
+    const created = await create(a, { ...base, categoryId: rows[0].id });
+    assert.equal(created.status, 404);
+    assert.equal(created.body.error.code, ERR.NOT_FOUND.code);
+    // 실패한 INSERT와 함께 트리거의 DELETE도 롤백돼 카테고리는 남아 있다
+    const patched = await req(`/api/todos/${todo.id}`, {
+      method: 'PATCH',
+      session: a,
+      body: { categoryId: rows[0].id },
+    });
+    assert.equal(patched.status, 404);
+  } finally {
+    await pool.query('DROP TRIGGER IF EXISTS test_drop_category ON todos');
+    await pool.query('DROP FUNCTION IF EXISTS test_drop_category()');
+  }
+});
+
+test('VR-06: 수정 때 문자열이 아닌 description은 400이고 기존 값을 지우지 않는다', async () => {
+  const a = await register();
+  const todo = (await create(a, { ...base, description: '메모' })).body;
+  for (const description of [123, { x: 1 }]) {
+    const res = await req(`/api/todos/${todo.id}`, {
+      method: 'PATCH',
+      session: a,
+      body: { description },
+    });
+    assert.equal(res.status, 400);
+  }
+  assert.equal((await req(`/api/todos/${todo.id}`, { session: a })).body.description, '메모');
+});
+
+test('BR-08: 0000년 날짜 등록은 500이 아니라 400이다', async () => {
+  const a = await register();
+  const res = await create(a, { title: 'x', startDate: '0000-01-01', endDate: '0000-01-02' });
+  assert.equal(res.status, 400);
+  assert.equal(res.body.error.code, ERR.VALIDATION_ERROR.code);
 });
 
 test('BR-02: 다른 사용자나 없는 categoryId로 등록하면 404 NOT_FOUND이고 행이 생기지 않는다', async () => {

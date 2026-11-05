@@ -26,6 +26,26 @@ export function isLimited({ ip, email }, now = Date.now(), windowMs = WINDOW_MS)
   return (i?.count ?? 0) >= IP_LIMIT || (e?.count ?? 0) >= EMAIL_LIMIT;
 }
 
+// 확인과 집계를 await 없이 한 번에 해, 동시 요청이 모두 한도 확인을 통과하지 못하게 한다.
+// 검증 전에 실패로 미리 세고 성공하면 release로 되돌린다(성공은 집계하지 않는다)
+export function reserve(key, now = Date.now(), windowMs = WINDOW_MS) {
+  if (isLimited(key, now, windowMs)) return false;
+  recordFailure(key, now, windowMs);
+  return true;
+}
+
+export function release({ ip, email }, now = Date.now(), windowMs = WINDOW_MS) {
+  for (const [map, k] of [
+    [ips, ip],
+    [emails, email],
+  ]) {
+    const e = k === undefined ? undefined : current(map, k, now, windowMs);
+    if (!e) continue;
+    e.count -= 1;
+    if (e.count <= 0) map.delete(k);
+  }
+}
+
 // 한도에 이미 도달한 항목은 늘리지 않는다(제한 중 시도 미집계)
 function bump(map, key, limit, now, windowMs) {
   if (key === undefined) return 0;

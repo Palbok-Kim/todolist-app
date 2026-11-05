@@ -7,6 +7,8 @@ import {
   MAX_KEYS,
   isLimited,
   recordFailure,
+  reserve,
+  release,
   sweep,
   reset,
   size,
@@ -110,5 +112,19 @@ test('NFR-10: sweep은 만료 항목만 지운다', () => {
   sweep(t0 + WINDOW_MS);
   assert.deepEqual(size(), { ip: 1, email: 1 });
   sweep(t0 + 10 + WINDOW_MS);
+  assert.deepEqual(size(), { ip: 0, email: 0 });
+});
+
+test('NFR-10: reserve는 확인과 집계를 한 번에 해 한도만큼만 통과시키고 release는 되돌린다', () => {
+  reset();
+  const key = { ip: '10.9.9.9', email: 'race@example.test' };
+  const passed = Array.from({ length: 20 }, () => reserve(key)).filter(Boolean).length;
+  assert.equal(passed, EMAIL_LIMIT);
+  assert.equal(isLimited(key), true);
+  reset();
+  assert.equal(reserve(key), true);
+  release(key);
+  assert.deepEqual(size(), { ip: 0, email: 0 }); // 성공은 집계하지 않는다
+  release(key); // 없는 항목 release는 무시
   assert.deepEqual(size(), { ip: 0, email: 0 });
 });

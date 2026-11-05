@@ -87,6 +87,8 @@ test('AQ-07: 형식 오류·누락·from > to·42일 초과는 400 VALIDATION_ER
     ['?from=20261101&to=2026-11-30', ['from']],
     ['?from=2026-11-05&to=2026-11-04', ['to']],
     ['?from=2026-10-26&to=2026-12-07', ['to']], // 43일
+    ['?from=0000-01-01&to=0000-01-02', ['from', 'to']], // PostgreSQL에 0년 없음
+    ['?from=0001-01-01&to=0100-01-01', ['to']], // Date.UTC의 0~99년 보정 확인
   ];
   for (const [q, expected] of cases) {
     const res = await req(`/api/calendar/todos${q}`, { session: a });

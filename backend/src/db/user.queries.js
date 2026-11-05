@@ -21,19 +21,12 @@ export async function insert(db, { email, passwordHash, name, timezone }) {
   return rows[0];
 }
 
-// EQ-02: updated_at은 앱이 갱신한다
-export async function updateTimezone(db, id, timezone) {
+// EQ-02: updated_at은 앱이 갱신한다. null인 필드는 유지한다
+export async function updateProfile(db, id, { timezone = null, name = null }) {
   const { rows } = await db.query(
-    `UPDATE users SET timezone = $2, updated_at = now() WHERE id = $1 RETURNING ${USER_COLUMNS}`,
-    [id, timezone],
-  );
-  return rows[0] ?? null;
-}
-
-export async function updateName(db, id, name) {
-  const { rows } = await db.query(
-    `UPDATE users SET name = $2, updated_at = now() WHERE id = $1 RETURNING ${USER_COLUMNS}`,
-    [id, name],
+    `UPDATE users SET timezone = COALESCE($2, timezone), name = COALESCE($3, name), updated_at = now()
+     WHERE id = $1 RETURNING ${USER_COLUMNS}`,
+    [id, timezone, name],
   );
   return rows[0] ?? null;
 }

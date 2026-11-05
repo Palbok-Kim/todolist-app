@@ -93,3 +93,21 @@ test('SO-06: 요청 로그는 정해진 7개 필드만 있고 헤더·쿠키·bo
   assert.equal(line.status, 400);
   assert.ok(!JSON.stringify(logs).includes('secret'));
 });
+
+test('ERR-01: 본문 크기 초과(413)·지원하지 않는 문자셋(415)도 500이 아니라 400이고 오류 로그가 없다', async () => {
+  const big = await call('/validation', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ x: 'a'.repeat(200 * 1024) }),
+  });
+  const charset = await call('/validation', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json; charset=latin9' },
+    body: '{}',
+  });
+  for (const res of [big, charset]) {
+    assert.equal(res.status, 400);
+    assert.equal(res.body.error.code, ERR.VALIDATION_ERROR.code);
+    assert.ok(!res.logs.some((l) => l.level === 'error'));
+  }
+});

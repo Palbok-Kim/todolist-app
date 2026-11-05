@@ -3,7 +3,7 @@ import { AppError, ERR } from '../errors.js';
 import { config } from '../config.js';
 import { hashPassword, needsRehash, verifyDummy, verifyPassword } from '../lib/password.js';
 import { issueSessionTokens, hashRefreshToken } from '../lib/token.js';
-import { isLimited, recordFailure } from '../lib/loginAttempts.js';
+import { release, reserve } from '../lib/loginAttempts.js';
 import { logger } from '../lib/logger.js';
 import { validateLogin, validateSignup } from '../validation/user.validation.js';
 import * as categoryQueries from '../db/category.queries.js';
@@ -63,23 +63,28 @@ export async function login(body, ip) {
   if (fields.length) throw new AppError(ERR.VALIDATION_ERROR, '입력값을 확인해 주세요.', fields);
 
   const key = { ip, email: value.email };
-  // NFR-10: 제한 중에는 비밀번호를 검증하지 않고 집계도 하지 않는다
-  if (isLimited(key)) {
+  // NFR-10: 제한 중에는 비밀번호를 검증하지 않고 집계도 하지 않는다. 통과하면 이 시도를 실패로 미리 센다
+  if (!reserve(key)) {
     throw new AppError(
       ERR.TOO_MANY_REQUESTS,
       '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.',
     );
   }
 
-  const row = await userQueries.findByEmail(pool, value.email);
-  // 계정이 없어도 scrypt를 한 번 수행해 응답 시간 차이로 존재 여부가 드러나지 않게 한다
-  const ok = row
-    ? await verifyPassword(value.password, row.passwordHash)
-    : await verifyDummy(value.password);
-  if (!ok) {
-    recordFailure(key);
-    throw new AppError(ERR.INVALID_CREDENTIALS, '이메일 또는 비밀번호가 올바르지 않습니다.');
+  let row;
+  let ok;
+  try {
+    row = await userQueries.findByEmail(pool, value.email);
+    // 계정이 없어도 scrypt를 한 번 수행해 응답 시간 차이로 존재 여부가 드러나지 않게 한다
+    ok = row
+      ? await verifyPassword(value.password, row.passwordHash)
+      : await verifyDummy(value.password);
+  } catch (err) {
+    release(key); // 서버 오류는 비밀번호 실패가 아니다
+    throw err;
   }
+  if (!ok) throw new AppError(ERR.INVALID_CREDENTIALS, '이메일 또는 비밀번호가 올바르지 않습니다.');
+  release(key);
 
   // 9-design 3장: 재해시 실패는 로그인 성공을 막지 않는다
   if (needsRehash(row.passwordHash)) {
