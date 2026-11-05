@@ -29,7 +29,7 @@ async function quiet(fn) {
 }
 
 const register = (email = 'a@example.test') =>
-  quiet(() => signup(api, { email, password: 'correct horse battery staple', name: '홍길동' }));
+  quiet(() => signup(api, { email, password: 'correct horse battery staple 1!', name: '홍길동' }));
 const req = (path, init) => quiet(() => api.request(path, init));
 async function create(session, title, startDate, endDate) {
   const res = await req('/api/todos', {

@@ -31,7 +31,7 @@ const register = () => {
   const spy = mock.method(console, 'log', () => {});
   return signup(api, {
     email: 'me@example.test',
-    password: 'correct horse battery staple',
+    password: 'correct horse battery staple 1!',
     name: '홍길동',
     timezone: 'Asia/Seoul',
   }).finally(() => spy.mock.restore());

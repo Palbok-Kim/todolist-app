@@ -11,8 +11,10 @@
 | 0.5 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: D-07·API 표의 헬스 실패를 500에서 503(`db: down`)으로 변경(SO-14 v0.11) |
 | 0.6 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: 프록시 → CORS. 4장 클라이언트 IP(프록시 없음, `TRUST_PROXY` 비움), 5.1 CSRF 쿠키 `Domain`, 5.6 `credentials: 'include'`·`VITE_API_BASE_URL`, 6장 로컬 실행 구성과 환경 변수 표(`CORS_ORIGINS`·`COOKIE_DOMAIN`·`VITE_API_BASE_URL` 추가, `TRUST_PROXY` 설명). 단일 출처 링크 버전을 PRD v0.12·구조 설계 원칙 v0.12·아키텍처 다이어그램 v0.9로 갱신 |
 | 0.7 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: 6장 환경 변수 표에 `ACCESS_TOKEN_TTL_MINUTES`(분)·`REFRESH_TOKEN_TTL_DAYS`(일) 추가(기본값은 NFR-07의 15분·7일, 5.1의 Max-Age는 기본값 기준) |
+| 0.8 | 2026-11-05 | MinjeYu | 백엔드 코드 대조 반영: 2장 검사 순서에 할일 경로 ID 예외, 4장 테스트 IP 예외를 현재형(`LOGIN_LIMIT_EXEMPT_IPS` production 기동 거부)으로, 5.1 Max-Age는 TTL 기본값이며 삭제는 과거 `Expires`(Express 5 `res.clearCookie`)·CSRF 쿠키는 같은 Domain, 5.2 `exp`를 액세스 수명 기준으로, 5.5 세션 토큰 생성 시점(로그인·비밀번호 변경은 트랜잭션 전, 회원가입·갱신은 트랜잭션 안의 동기 계산), 6장 TTL 키 사용처를 `config.js`로 고치고 `LOGIN_LIMIT_EXEMPT_IPS` 행 추가 |
+| 0.9 | 2026-11-05 | MinjeYu | 단일 출처 머리말의 참조 버전을 현재 값(PRD v0.13·사용자 시나리오 v0.7·와이어프레임 v0.6·아키텍처 다이어그램 v0.11·ERD v0.6)에 맞춤. 내용 변경 없음 |
 
-**단일 출처 원칙**: 규칙 원문은 도메인 정의서 v0.10, PRD v0.12, 구조 설계 원칙 v0.12, 아키텍처 다이어그램 v0.9, ERD v0.5에만 있고 이 문서는 ID로 참조한다(PR-01). 이 문서는 PRD 11장이 넘긴 **구현 값·이름·절차**만 정한다. 요청·응답 필드의 상세 스키마는 [`backend/swagger.yaml`](../backend/swagger.yaml)이 단일 출처이며, 이 문서의 2장은 경로·메서드·상태 코드 목록이다.
+**단일 출처 원칙**: 규칙 원문은 도메인 정의서 v0.10, PRD v0.13, 구조 설계 원칙 v0.14, 아키텍처 다이어그램 v0.11, ERD v0.6에만 있고 이 문서는 ID로 참조한다(PR-01). 이 문서는 PRD 11장이 넘긴 **구현 값·이름·절차**만 정한다. 요청·응답 필드의 상세 스키마는 [`backend/swagger.yaml`](../backend/swagger.yaml)이 단일 출처이며, 이 문서의 2장은 경로·메서드·상태 코드 목록이다.
 
 **구분**: 이 문서의 결정은 모두 위임 결정(2026-11-04)에 따른 **확정**이다. 측정 후 조정할 수 있는 값은 '조정 가능'으로 표시한다.
 
@@ -59,7 +61,7 @@
 
 - **현재 사용자 조회**(AQ-03): `GET /api/users/me`가 `User`(`id`, `email`, `name`, `timezone`, `createdAt`, `updatedAt`)를 돌려준다. 회원가입·로그인 성공 본문도 같은 `User`이고 `passwordHash`는 어떤 응답에도 없다.
 - **캘린더 계약**(AQ-07): 파라미터는 `from`·`to`(`YYYY-MM-DD`, SQ-01. CN-06의 `*Date` 규칙은 JSON 필드에만 적용). 조회 조건은 BR-12, 응답 항목은 서버가 계산한 `status`를 포함한다. 형식 오류, `from > to`, 양 끝 포함 42일 초과(`to - from > 41일`, SQ-02)는 ERR-01이다.
-- **검사 순서**: 토큰 갱신·회원가입·로그인·로그아웃·헬스는 인증 미들웨어 앞의 공개 라우트다. 보호 라우트는 인증(ERR-02) → CSRF(ERR-08) → 검증(ERR-01) → 소유권(ERR-05) 순서다(DL-05, AD-08).
+- **검사 순서**: 토큰 갱신·회원가입·로그인·로그아웃·헬스는 인증 미들웨어 앞의 공개 라우트다. 보호 라우트는 인증(ERR-02) → CSRF(ERR-08) → 검증(ERR-01) → 소유권(ERR-05) 순서다(DL-05, AD-08). 예외: `/api/todos/{todoId}`의 GET·PATCH·DELETE는 경로 ID가 uuid 형식이 아니면 본문 검증보다 먼저 404(ERR-05)다(`todo.service.js`, swagger 공통 규약).
 
 ## 3. 비밀번호 해시 (NFR-06, NFR-16, R-04)
 
@@ -88,26 +90,27 @@
 | 정리·상한 | 접근할 때 창이 지난 항목을 지우고, `setInterval` 15분 간격(`unref()`)으로 일괄 정리한다. 키 수 상한은 각 10,000개, 넘으면 `Map` 삽입 순서상 가장 오래된 항목부터 지운다. `// LIMIT:` 주석 |
 | 클라이언트 IP(로컬) | 브라우저가 백엔드를 직접 호출하므로 앞단 프록시가 없다. `TRUST_PROXY`를 비워(기본, 불신) `req.ip`가 소켓 주소가 되게 한다. `true`는 기동 거부(SO-16) |
 | 클라이언트 IP(운영) | 배포 문서에서 리버스 프록시 주소만 `TRUST_PROXY`로 정한다(PQ-07) |
-| 테스트 IP 예외 | 구현하지 않는다. 테스트는 IP별 시나리오마다 카운터를 초기화하는 `lib/loginAttempts.js`의 테스트용 `reset()` 함수를 쓴다. 나중에 예외가 필요하면 `test` 전용 설정으로 두고 `production`에 그 값이 있으면 `config.js`가 기동을 거부한다(SO-05) |
+| 테스트 IP 예외 | 구현하지 않는다. 테스트는 IP별 시나리오마다 카운터를 초기화하는 `lib/loginAttempts.js`의 테스트용 `reset()` 함수를 쓴다. `config.js`는 `LOGIN_LIMIT_EXEMPT_IPS`를 읽지 않으며, `production`에 그 키가 있으면 기동을 거부한다(SO-05, XQ-06) |
 
 ## 5. 인증 토큰 (NFR-07, NFR-15, SO-12, SO-17)
 
 ### 5.1 쿠키
 
-| 쿠키 | 값 | HttpOnly | SameSite | Path | Max-Age |
+| 쿠키 | 값 | HttpOnly | SameSite | Path | Max-Age (기본값) |
 |------|----|----------|----------|------|---------|
 | `access_token` | JWT(HS384) | 예 | Lax | `/api` | 900 (15분) |
 | `refresh_token` | 불투명 값 32바이트 base64url | 예 | Strict | `/api/auth` | 604800 (7일) |
 | `csrf_token` | 5.4의 서명 토큰 | 아니오(스크립트가 읽음) | Lax | `/` | 900 (15분) |
 
+- Max-Age는 6장 `ACCESS_TOKEN_TTL_MINUTES`·`REFRESH_TOKEN_TTL_DAYS`에서 정하며 위 값은 기본값이다. `csrf_token`은 액세스 수명과 같다.
 - `Secure`는 `config.js`의 `cookieSecure`(`NODE_ENV=production`일 때만 `true`)로 세 쿠키에 함께 붙인다(SO-04).
 - `Domain`은 `csrf_token`에만 `COOKIE_DOMAIN`(6장)으로 붙인다. 화면(다른 서브도메인) JS가 `document.cookie`로 읽어 `X-CSRF-Token` 헤더로 보내야 하기 때문이다(SO-12). `access_token`·`refresh_token`은 `Domain` 없이 API 호스트 전용이다. 개발은 `COOKIE_DOMAIN`을 비우며 localhost 쿠키는 포트와 무관하게 공유된다.
 - 리프레시 쿠키 `Path=/api/auth`는 갱신(`/api/auth/refresh`)과 로그아웃(`/api/auth/logout`)을 함께 포함하는 인증 API 공통 접두사다. 쿠키 Path는 하나뿐이라 **같은 접두사 아래의 회원가입·로그인 요청에도 리프레시 쿠키가 전송되지만 서버는 그 요청에서 읽지 않는다**(OI-19).
-- 삭제는 같은 이름·Path에 `Max-Age=0`이다(BR-01).
+- 삭제는 발급 때와 같은 이름·Path(`csrf_token`은 같은 `Domain`)에 과거 `Expires`를 보낸다(Express 5 `res.clearCookie`는 `Max-Age`를 보내지 않는다, BR-01).
 
 ### 5.2 JWT 액세스 토큰
 
-- 클레임: `sub`(userId), `iat`, `exp`(발급 + 900초), `jti`(`crypto.randomUUID()`). 그 밖의 클레임은 넣지 않는다.
+- 클레임: `sub`(userId), `iat`, `exp`(발급 + 액세스 수명, 기본 900초), `jti`(`crypto.randomUUID()`). 그 밖의 클레임은 넣지 않는다.
 - 서명·검증은 `lib/token.js`에서만, `algorithm: 'HS384'` / `algorithms: ['HS384']`.
 
 ### 5.3 서명 키 (R-13, SO-03)
@@ -136,8 +139,8 @@
 
 | 흐름 | 처리 |
 |------|------|
-| 로그인·회원가입 | 새 `family_id`로 행 INSERT. 로그인은 같은 트랜잭션에서 그 사용자의 `expires_at < now()` 행을 삭제한다(`// LIMIT:` 로그인하지 않는 사용자의 만료 행은 남는다) |
-| 갱신 | 트랜잭션: 해시로 `SELECT ... FOR UPDATE` → (1) 없음·만료: ERR-02 (2) `revoked_at` 있음, `now() - revoked_at ≤ 유예`: 아무것도 바꾸지 않고 ERR-02 (3) `revoked_at` 있음, 유예 초과: `revokeFamily` 후 **COMMIT하고** ERR-02 (4) 유효: `revokeById` + 같은 `family_id`로 새 행 INSERT(만료 = now + 7일) 후 COMMIT, 새 쿠키 3종 발급. 무작위 값·해시 계산은 트랜잭션 전에 한다(DL-08) |
+| 로그인·회원가입 | 새 `family_id`로 행 INSERT. 세션 토큰은 로그인은 트랜잭션 전, 회원가입은 `user.id`가 필요해 트랜잭션 안에서 만든다(I/O 없는 동기 계산, scrypt 해시는 트랜잭션 밖). 로그인은 같은 트랜잭션에서 그 사용자의 `expires_at < now()` 행을 삭제한다(`// LIMIT:` 로그인하지 않는 사용자의 만료 행은 남는다) |
+| 갱신 | 트랜잭션: 해시로 `SELECT ... FOR UPDATE` → (1) 없음·만료: ERR-02 (2) `revoked_at` 있음, `now() - revoked_at ≤ 유예`: 아무것도 바꾸지 않고 ERR-02 (3) `revoked_at` 있음, 유예 초과: `revokeFamily` 후 **COMMIT하고** ERR-02 (4) 유효: `revokeById` + 같은 `family_id`로 새 행 INSERT(만료 = now + 7일) 후 COMMIT, 새 쿠키 3종 발급. 받은 값의 해시는 트랜잭션 전에 계산하고, 새 세션 토큰(`issueSessionTokens`: JWT·리프레시 값과 해시·CSRF)은 I/O 없는 동기 계산이라 트랜잭션 안 INSERT 직전에 만든다(DL-08) |
 | 로그아웃 | 리프레시 쿠키가 있으면 해시로 찾은 행의 계열을 `revokeFamily`. 실패해도 쿠키 3종은 지운다 |
 | 비밀번호 변경 | 트랜잭션: `password_hash` 갱신 + `revokeAllForUser` + 새 계열 INSERT, 이후 현재 세션에 새 쿠키 3종 |
 
@@ -157,7 +160,7 @@
 |----|--------|------|
 | `DATABASE_URL` | `backend` (`config.js`), `scripts/` | 로컬 설치 PostgreSQL 17 (`localhost:5432`) |
 | `JWT_SECRET`, `CSRF_SECRET` | `backend` | 5.3 |
-| `ACCESS_TOKEN_TTL_MINUTES`, `REFRESH_TOKEN_TTL_DAYS` | `backend` (`lib/token.js`, `lib/cookies.js`) | 액세스 토큰 유효 시간(분)·리프레시 토큰 유효 시간(일). 기본 15분·7일로 NFR-07 값이다. 내부에서는 초로 바꿔 쓴다. 양의 정수만, 리프레시가 액세스보다 길지 않으면 기동 거부. 액세스 값은 CSRF 쿠키 `Max-Age`에도 쓴다(5.1) |
+| `ACCESS_TOKEN_TTL_MINUTES`, `REFRESH_TOKEN_TTL_DAYS` | `backend` (`config.js`가 읽고 `lib/token.js`·`lib/cookies.js`가 그 값을 쓴다) | 액세스 토큰 유효 시간(분)·리프레시 토큰 유효 시간(일). 기본 15분·7일로 NFR-07 값이다. 내부에서는 초로 바꿔 쓴다. 양의 정수만, 리프레시가 액세스보다 길지 않으면 기동 거부. 액세스 값은 CSRF 쿠키 `Max-Age`에도 쓴다(5.1) |
 | `NODE_ENV` | `backend` | `development`/`test`/`production`만(SO-04) |
 | `PORT` | `backend` | 기본 3000 |
 | `TRUST_PROXY` | `backend` | 개발은 비움(앞단 프록시 없음, 불신). 운영은 리버스 프록시 주소만. `true` 거부. 4장 |
@@ -167,6 +170,7 @@
 | `UV_THREADPOOL_SIZE` | `backend` | 3장 |
 | `SEED_PASSWORD` | `seed.js` | 시드 계정 비밀번호(SO-11) |
 | `PG_POOL_MAX` | `backend` | pg 풀 크기, 기본 10. 조정 가능(NFR-05) |
+| `LOGIN_LIMIT_EXEMPT_IPS` | `backend` (`config.js`) | 쓰지 않는 키라 `.env.example`에 두지 않는다. `production`에 있으면 기동 거부(4장, SO-05) |
 
 ## 7. 잔여 위험
 

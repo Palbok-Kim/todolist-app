@@ -67,7 +67,7 @@ test('CORS: 허용 출처의 본 요청(가입)은 출처를 되돌려 주고 �
     headers: { origin: APP, 'content-type': 'application/json' },
     body: JSON.stringify({
       email: 'cors@example.test',
-      password: 'correct horse battery staple',
+      password: 'correct horse battery staple 1!',
       name: '홍길동',
     }),
   });
@@ -84,7 +84,7 @@ test('CORS: 허용하지 않은 출처에서 쿠키를 실어 보내도 CSRF 헤
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       email: 'csrf@example.test',
-      password: 'correct horse battery staple',
+      password: 'correct horse battery staple 1!',
       name: '홍길동',
     }),
   });

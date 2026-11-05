@@ -3,6 +3,7 @@
 import { pool, withTransaction } from '../src/db/pool.js';
 import { config } from '../src/config.js';
 import { hashPassword } from '../src/lib/password.js';
+import { checkPassword } from '../src/validation/user.validation.js';
 import * as userQueries from '../src/db/user.queries.js';
 import * as categoryQueries from '../src/db/category.queries.js';
 import * as todoQueries from '../src/db/todo.queries.js';
@@ -26,8 +27,7 @@ const mode = MODES[process.argv[2]];
 if (config.nodeEnv === 'production') fail('production에서는 실행하지 않는다');
 if (!mode) fail('사용법: npm run seed -- dev | load');
 const password = process.env.SEED_PASSWORD;
-if (!password || password.length < 15 || password.length > 128)
-  fail('SEED_PASSWORD는 15~128자여야 한다(VR-02)');
+if (checkPassword(password ?? '').error) fail('SEED_PASSWORD가 VR-02에 맞지 않는다');
 
 // 네 상태가 섞이도록 오늘 기준 -30~+29일 시작, 0~6일 기간, 5건 중 1건 완료 (BR-07: start <= end)
 function buildTodos(count, categoryIds) {

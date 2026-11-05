@@ -12,20 +12,44 @@ import {
 const fieldNames = (r) => r.fields.map((f) => f.field).sort();
 const okSignup = {
   email: 'a@example.com',
-  password: 'p'.repeat(15),
+  password: 'Passw0rd!',
   name: '홍길동',
   timezone: 'UTC',
 };
+const ok = (pw) => assert.deepEqual(checkPassword(pw), { value: pw }, pw);
+const bad = (pw) => assert.ok(checkPassword(pw).error, pw);
 
-test('VR-02: 비밀번호 14자는 거부, 15자·128자는 통과, 129자는 거부된다', () => {
-  assert.ok(checkPassword('p'.repeat(14)).error);
-  assert.deepEqual(checkPassword('p'.repeat(15)), { value: 'p'.repeat(15) });
-  assert.deepEqual(checkPassword('p'.repeat(128)), { value: 'p'.repeat(128) });
-  assert.ok(checkPassword('p'.repeat(129)).error);
+test('VR-02: 3종류 이상 섞으면 7자는 거부, 8자는 통과한다', () => {
+  bad('Abcde1!');
+  ok('Abcde12!');
+  ok('abcdef1!'); // 소문자·숫자·특수
+  ok('ABCDEF1a'); // 대문자·숫자·소문자
+});
+
+test('VR-02: 2종류만 섞으면 9자는 거부, 10자는 통과한다', () => {
+  bad('abcdefgh1');
+  ok('abcdefgh12');
+  ok('abcdefghi!'); // 소문자·특수
+  ok('ABCDEFGHIj'); // 대문자·소문자
+});
+
+test('VR-02: 1종류만이면 길이와 관계없이 거부된다', () => {
+  for (const pw of ['p'.repeat(20), '1'.repeat(20), '!'.repeat(20), 'P'.repeat(128)]) bad(pw);
+});
+
+test('VR-02: 공백·한글은 쓸 수 있지만 종류로 세지 않는다', () => {
+  bad('abcdefgh 가'); // 소문자 1종류
+  ok('abcdefg 1가나'); // 소문자·숫자 2종류, 11자
+  bad('abcdefg 1'); // 2종류인데 9자
+});
+
+test('VR-02: 128자는 통과, 129자는 거부된다', () => {
+  ok('Aa1!'.repeat(32));
+  bad('Aa1!'.repeat(32) + 'a');
 });
 
 test('VR-02: 앞뒤 공백이 있는 비밀번호는 그대로 반환된다', () => {
-  const pw = '  spaced password  ';
+  const pw = '  spaced Passw0rd  ';
   assert.equal(checkPassword(pw).value, pw);
 });
 

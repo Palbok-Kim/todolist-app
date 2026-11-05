@@ -1,0 +1,141 @@
+.header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  height: var(--header-height);
+  padding: 0 var(--space-5);
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.logo {
+  font: 700 var(--text-xl) var(--font-family);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.nav,
+.navOpen {
+  display: contents;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  font: var(--text-md) var(--font-family);
+  color: var(--color-text);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+
+.tabActive {
+  font-weight: 700;
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.newBtn {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-height);
+  margin-left: auto;
+  padding: 0 var(--space-3);
+  font: var(--text-md) var(--font-family);
+  color: #fff;
+  text-decoration: none;
+  background: var(--color-primary);
+  border-radius: var(--radius-md);
+  transition: background 120ms;
+}
+
+.newBtn:hover {
+  background: var(--color-primary-hover);
+}
+
+.logout,
+.menuBtn {
+  padding: 0;
+  font: var(--text-md) var(--font-family);
+  color: var(--color-text-muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  transition: color 120ms;
+}
+
+.user {
+  order: 1;
+  font: var(--text-sm) var(--font-family);
+  color: var(--color-text-muted);
+}
+
+.logout {
+  order: 1;
+}
+
+.logout:hover,
+.menuBtn:hover {
+  color: var(--color-text);
+}
+
+.logout:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.menuBtn {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .header {
+    gap: var(--space-3);
+    padding: 0 var(--space-4);
+  }
+
+  .menuBtn {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .wide {
+    display: none;
+  }
+
+  .nav {
+    display: none;
+  }
+
+  .navOpen {
+    position: absolute;
+    top: var(--header-height);
+    right: 0;
+    left: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg);
+    box-shadow: var(--shadow-pop);
+  }
+
+  .navOpen .user {
+    order: 0;
+    padding: var(--space-2) var(--space-4) 0;
+  }
+
+  .navOpen .tab,
+  .navOpen .logout {
+    order: 0;
+    justify-content: flex-start;
+    width: 100%;
+    height: 48px;
+    padding: 0 var(--space-4);
+    text-align: left;
+  }
+
+  .navOpen .tabActive {
+    border-bottom: 0;
+  }
+}

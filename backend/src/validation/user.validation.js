@@ -4,9 +4,11 @@ const REQUIRED = '필수 입력입니다.';
 // VR-01
 const EMAIL_MAX = 254;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// VR-02
-const PASSWORD_MIN = 15;
+// VR-02(KISA): 영대문자·영소문자·숫자·특수문자(공백 뺀 ASCII 기호) 중 섞은 종류 수로 최소 길이를 정한다
+const PASSWORD_KINDS = [/[A-Z]/, /[a-z]/, /[0-9]/, /[!-/:-@[-`{-~]/];
 const PASSWORD_MAX = 128;
+const PASSWORD_ERROR =
+  '비밀번호는 영대문자·영소문자·숫자·특수문자 중 3종류 이상이면 8자 이상, 2종류 이상이면 10자 이상이어야 합니다(최대 128자).';
 // VR-04: 가입 때 잘못된 값이면 기본값 사용(PRD 4.2)
 const DEFAULT_TIMEZONE = 'Asia/Seoul';
 
@@ -23,9 +25,9 @@ export function checkEmail(v) {
 // 비밀번호는 trim 하지 않는다(PRD 4.1)
 export function checkPassword(v) {
   if (typeof v !== 'string') return { error: REQUIRED };
-  if (v.length < PASSWORD_MIN || v.length > PASSWORD_MAX) {
-    return { error: '비밀번호는 15~128자여야 합니다.' };
-  }
+  const kinds = PASSWORD_KINDS.filter((re) => re.test(v)).length;
+  const min = kinds >= 3 ? 8 : kinds === 2 ? 10 : Infinity;
+  if (v.length < min || v.length > PASSWORD_MAX) return { error: PASSWORD_ERROR };
   return { value: v };
 }
 

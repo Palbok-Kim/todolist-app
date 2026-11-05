@@ -33,7 +33,7 @@ async function call(path, init) {
   }
 }
 
-const PASSWORD = 'correct horse battery staple';
+const PASSWORD = 'correct horse battery staple 1!';
 const INVALID_MESSAGE = '이메일 또는 비밀번호가 올바르지 않습니다.';
 let n = 0;
 const uniqueEmail = () => `u${++n}@example.test`;
@@ -176,7 +176,7 @@ test('AQ-04: 129자 비밀번호는 400 VALIDATION_ERROR이고 실패 횟수에 
   assert.equal((await loginCall(email)).status, 200);
 });
 
-test('AC-14: 로그인은 최소 길이를 검사하지 않아 틀린 14자 비밀번호는 401이다', async () => {
+test('AC-14: 로그인은 VR-02(길이·문자 종류)를 검사하지 않아 틀린 14자 비밀번호는 401이다', async () => {
   const { email } = await register();
   const res = await loginCall(email, 'a'.repeat(14));
   assert.equal(res.status, 401);

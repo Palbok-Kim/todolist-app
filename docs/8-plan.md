@@ -39,6 +39,18 @@
 | 0.33 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: k6 부하 테스트 제거. QA-04~06 삭제(Task 70 → 67개, P0 4.0h 감소: 79.0h → 75.0h, 합계 91.5h → 87.5h), 의존 그래프·Day 배치·16시간 범위·추적 표·리스크에서 참조 제거, XQ-08·XQ-13은 해당 없음 처리, DB-09 요약 위치를 docs/test/로 변경 |
 | 0.34 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: BE-03 수행 작업의 헬스 응답을 SO-14 v0.11(`db` 필드, 실패 503)에 맞춤. 완료 조건 체크 문구는 당시 기록이라 유지 |
 | 0.35 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: 프록시 → CORS. BE-01 수행 작업(`TRUST_PROXY` 개발 비움, `CORS_ORIGINS`·`COOKIE_DOMAIN`), FE-01 수행 작업(Vite 프록시 삭제·`strictPort`)·근거(SO-16 제거)·미체크 완료 조건(CORS 호출), FE-02 수행 작업(`VITE_API_BASE_URL`·`credentials: 'include'`) 수정. 체크된 완료 조건 문구는 당시 기록이라 유지. 단일 출처 링크 버전을 PRD v0.12·구조 설계 원칙 v0.12·아키텍처 다이어그램 v0.9에 맞춤 |
+| 0.36 | 2026-11-05 | MinjeYu | 진척 반영: FE-02·FE-03·FE-04 완료 조건 전부 체크(상태 ✅). 검증: Vitest 27개, lint·build 통과, 완료 조건 grep 4종, 브라우저(5173→3000)에서 CSRF 헤더 실린 POST 성공, 액세스 쿠키 삭제 후 갱신 1건·원 요청 1회 재전송, 동시 3건에도 갱신 1건, 리프레시까지 삭제 시 재전송 1회 후 `onUnauthorized` 1회, `ConfirmDialog` 취소·바탕 클릭이 `onConfirm`을 부르지 않음, `components/`의 `api`·`features` import 린트 오류. `todoFilterStore`의 setter는 `rg 'Todo\|Category\|User'` 0건 조건 때문에 `setCatId`로 둠 |
+| 0.37 | 2026-11-05 | MinjeYu | 백엔드 코드 대조 반영: BE-01에 CORS·쿠키 Domain·토큰 TTL 설정 수행 작업과 완료 조건(구현·테스트 완료라 체크), BE-03 수행 작업의 `app.js` 순서에 `cors`·개발 전용 `/api/docs`, 완료 조건에 CORS·Swagger UI(체크), 헬스 완료 조건 문구를 현재 응답 `{"status":"ok","db":"up"}`으로 수정. 단일 출처 링크 버전을 구조 설계 원칙 v0.13·아키텍처 다이어그램 v0.10에 맞춤 |
+| 0.38 | 2026-11-05 | MinjeYu | 진척 반영: FE-01 남은 완료 조건 2개(브라우저 첫 화면, 5173→3000 `/api/health` CORS 호출)와 FE-06 완료 조건 4개 체크(둘 다 ✅). 검증: Vitest 43개(auth 검증 16개 포함), lint·build 통과, 브라우저에서 로그아웃 상태 `/todos` → `/login`(갱신 1건·재전송 1회 뒤 만료 안내), 쿠키 전부 삭제 후 저장 → 만료 안내와 `/login`, 액세스만 삭제 후 `/todos` → 갱신 뒤 목록 유지(안내 없음). 만료 안내는 로그인하지 않은 접근에도 표시(WF-01 만료 행) |
+| 0.39 | 2026-11-05 | MinjeYu | 진척 반영: FE-05 완료 조건 3개 체크(✅). 검증: lint·build·Vitest 43개 통과, 브라우저 1280·768px에서 로그아웃이 헤더 오른쪽 끝(본문 여백 안쪽)이고 메뉴 버튼 없음, 360px에서는 메뉴를 펼쳐야 탭 3개·로그아웃(높이 48px)이 보이고 이동·뒤로 가기 때 메뉴가 닫힘, 가로 스크롤 없음. 로그아웃 → `POST /api/auth/logout` 200, 쿠키 삭제, 로고만 있는 로그인 화면. 뒤로 가기 → 보호 화면 데이터 없이 `/login`(갱신 실패 경로라 만료 안내 표시). `components/`의 `features` import 린트 오류 확인. 공개 화면(로그인·회원가입)도 같은 `Layout`을 로고만으로 써서 상단 알림이 보인다 |
+| 0.40 | 2026-11-05 | MinjeYu | 진척 반영: FE-07 완료 조건 5개 체크(✅). 검증: lint·build·Vitest 43개 통과, 브라우저에서 새 email 가입 → 자동 로그인 후 `/todos`(요청에 `timezone: Asia/Seoul` 자동 포함), 14자 비밀번호는 프런트 검증으로 요청 없이 사유 표시·요청 본문을 14자로 바꾼 서버 400 `fields`도 같은 자리에 표시, 중복 email은 email 아래, 틀린 비밀번호·없는 email·짧은 비밀번호의 상단 알림 문구 동일, 같은 email 5회 실패 뒤 6회째와 올바른 비밀번호 모두 제한 안내, `message ===` grep 0건(`api/client.ts`의 `typeof e.message` 검사를 `String(e.message ?? 기본 문구)`로 바꿈). 필드가 아닌 오류(ERR-03·06·07)는 WF 3.2 상단 알림에 서버 문구 그대로 표시 |
+| 0.41 | 2026-11-05 | MinjeYu | 진척 반영: FE-08 완료 조건 2개 체크(✅). 검증: lint·build 통과, `useQuery` grep(queries.ts 제외) 0건, 브라우저에서 사용자 A의 `CategorySelect`를 임시 렌더해 선택지가 A의 카테고리(기본·업무)와 같고 첫 선택값·폼 값이 `기본`의 id, 빈 선택지 없음, 다른 사용자 B의 카테고리 미노출. WF-03 필터의 `전체` 선택지는 FE-12에서 필터 바가 직접 그린다 |
+| 0.42 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: VR-02를 KISA 기준으로 변경(PRD v0.13). BE-05 수행 작업·완료 조건, FE-06·FE-07 완료 조건의 비밀번호 경계값을 새 규칙(3종류 7·8자, 2종류 9·10자, 1종류 거부, 128·129자)으로 수정하고 코드 수정 뒤 재확인해 체크 유지. 단일 출처 링크 버전을 PRD v0.13·사용자 시나리오 v0.7·와이어프레임 v0.6·아키텍처 다이어그램 v0.11·ERD v0.6에 맞춤. 구조 설계 원칙 v0.15 |
+| 0.43 | 2026-11-05 | MinjeYu | 진척 반영: FE-09 완료 조건 3개 체크(✅). 검증: Vitest 61개(할일 검증 14개: title 0·1·100·101자와 공백·이모지, description 1000·1001자, 없는 날짜·윤년, start>end 거부와 같은 날 통과, 필드 순서 — 백엔드 단위 테스트와 같은 경계값·문구), lint·build 통과, `statusLabel.ts`의 `completed` 0건, 프런트에 상태 값 판정 코드 없음(상태 문자열은 `statusLabel.ts`·`api/types.ts`에만), `setQueryData` 0건. 변경 성공 시 할일(`todoKeys.all`)과 카테고리(`todoCount`) 쿼리를 무효화하고, 삭제는 그 할일의 단건 캐시를 먼저 제거한다(재조회 404 방지) |
+| 0.44 | 2026-11-05 | MinjeYu | 진척 반영: FE-10 완료 조건 5개 체크(✅). 검증: lint·build·Vitest 61개 통과, `useForm\|zod` 0건. 브라우저에서 카테고리를 건드리지 않고 등록 → 요청·저장 모두 기본 카테고리 id, 시작일 11-10·종료일 11-05 저장 → 종료일 아래 사유·요청 없음·화면 유지, 편집에서 완료 체크 저장 → 다시 열면 `완료`·해제 저장 → `진행 중`, `마지막 수정`이 `updatedAt` 06:48Z를 Asia/Seoul 15:48·America/New_York 01:48로 표시, 없는 id·형식 오류 id는 `할일을 찾을 수 없습니다`와 목록 링크. 카테고리 드롭다운은 feature 간 컴포넌트 import 금지(DL-11) 때문에 페이지가 폼에 주입한다. 편집 저장은 전체 필드 PATCH |
+| 0.45 | 2026-11-05 | MinjeYu | 진척 반영: FE-11~FE-20 완료 조건 31개 체크(모두 ✅). 4개 묶음 병렬 구현(A 삭제·목록, B 캘린더, C 설정, D 카테고리)과 공용 `components/StatusBadge`. 검증: Vitest 93개(월 그리드·주 범위·카테고리 이름 경계 포함), lint·build·prettier 통과, features의 `new Date(`·`setQueryData` 0건. 브라우저: 삭제 취소/확인, 기한 초과·진행 중·카테고리 AND 필터와 편집 후 필터 유지, 3일짜리 할일 3칸 표시·4건 날짜 3건+`+1개 더`·모바일 개수와 그날 목록, 주간 11-02~11-08·전환 시 기준일 유지, UTC 선택 표시·시간대 변경 후 목록 상태와 마지막 수정 갱신, name 헤더 반영·틀린 현재 비밀번호 사유·변경 후 로그인 유지, 카테고리 추가 즉시 드롭다운·필터 반영·중복 사유·기본 행 버튼 없음·삭제 확인창 할일 2개·확인 후 기본으로 이동과 필터 해제. FE-16에서 태블릿 막대 상태 라벨 잘림·모바일 필터 잘림 보정, 결과를 `docs/test/manual-checklist.md` NFR-12 줄에 기록 |
+| 0.46 | 2026-11-05 | MinjeYu | 진척 반영: QA-07·QA-09 완료 조건 7개 체크(✅). `docs/test/manual-checklist.md` 결과 칸 기록: 자동 테스트 백엔드 259/259·프런트 93/93, P0 AC 18개·P1 AC 6개 화면 확인 통과(KPI-01 충족), 두 탭 동시 갱신(XQ-12) 재로그인 없음, 백엔드 `TZ=America/Los_Angeles`·브라우저 UTC에서 11-03 할일이 11-03으로 저장·조회·표시, Chromium 데스크톱·모바일 기기 모드 스모크, 두 개발 서버만으로 실행(KPI-03). NFR-11(PostgreSQL 중지)은 공유 DB 영향 때문에 미수행하고 BE-03 기록·자동 테스트로 대체. 확인 중 발견: 갱신 응답이 새로고침으로 끊기면 유예 안 재제출이 ERR-02가 되어 재로그인된다(OI-20 설계대로) |
+| 0.47 | 2026-11-05 | MinjeYu | 코드 리뷰 반영(완료 상태 변화 없음): `onUnauthorized`는 현재 사용자 캐시가 있을 때만·한 번만 동작(DL-14 v0.15), 로그인 상태의 로그인·가입 화면은 목록으로(`GuestOnly`, FE-06 수행 작업), 캘린더 보기 전환은 선택한 날짜 기준(WF v0.7), 시드 비밀번호 VR-02 검사(SO-11), 비밀번호 변경 129자 사례를 종류 혼합 값으로 교체. 검증: 백엔드 259/259·프런트 93/93, Playwright로 새 방문자 안내 없음·만료 시 갱신 1회와 안내 1회·로그아웃 뒤 /login 유지·12-17 선택 후 '주' 12.14 - 12.20 확인. 단일 출처 링크를 와이어프레임 v0.7·구조 설계 원칙 v0.15에 맞춤 |
 
 **표기 범례** (도메인 정의서·PRD·사용자 시나리오·와이어프레임·구조 설계 원칙과 같음)
 - **확정**: 요구사항 원문 또는 사용자 의사결정(2026-11-04)에 근거한 결정
@@ -47,7 +59,7 @@
 - **미결정**: 결정하기 전에는 구현을 보류한다
 - 이 문서에서 원문에 없는 결정은 모두 **가정**이다. 가정과 문서 사이의 공백·모순은 8장(`XQ-xx`)에 모은다
 
-**단일 출처 원칙**: 엔티티 속성·상태 판정·BR·UC·AC는 [도메인 정의서 v0.10](./1-domain-definition.md), FR 우선순위·VR·ERR·NFR·KPI·R·일정·컷 라인은 [PRD v0.12](./2-prd.md), SC는 [사용자 시나리오 v0.6](./3-user-scenario.md), WF는 [와이어프레임 v0.5](./4-wireframe.md), 디렉토리·원칙(PR/DL/CN/TQ/SO)은 [프로젝트 구조 설계 원칙 v0.12](./5-project-principle.md), AD는 [아키텍처 다이어그램 v0.9](./6-arch-diagram.md), 테이블은 [ERD v0.5](./7-erd.md)와 [`schema.sql`](./schema.sql)에만 둔다. 이 문서는 규칙 원문을 복사하지 않고 ID로 참조한다. 이 문서에서 새로 만든 ID는 Task ID(`COM-xx`, `DB-xx`, `BE-xx`, `FE-xx`, `QA-xx`)와 확인 필요 `XQ-xx`뿐이다.
+**단일 출처 원칙**: 엔티티 속성·상태 판정·BR·UC·AC는 [도메인 정의서 v0.10](./1-domain-definition.md), FR 우선순위·VR·ERR·NFR·KPI·R·일정·컷 라인은 [PRD v0.13](./2-prd.md), SC는 [사용자 시나리오 v0.7](./3-user-scenario.md), WF는 [와이어프레임 v0.7](./4-wireframe.md), 디렉토리·원칙(PR/DL/CN/TQ/SO)은 [프로젝트 구조 설계 원칙 v0.15](./5-project-principle.md), AD는 [아키텍처 다이어그램 v0.11](./6-arch-diagram.md), 테이블은 [ERD v0.6](./7-erd.md)와 [`schema.sql`](./schema.sql)에만 둔다. 이 문서는 규칙 원문을 복사하지 않고 ID로 참조한다. 이 문서에서 새로 만든 ID는 Task ID(`COM-xx`, `DB-xx`, `BE-xx`, `FE-xx`, `QA-xx`)와 확인 필요 `XQ-xx`뿐이다.
 
 **범위**: 구현 작업의 분해·순서·일정·검증 방법만 정한다. 코드 구현, Git 커밋, 기존 문서 수정은 이 문서의 범위가 아니다. 문서 사이의 모순은 수정하지 않고 8장에 남긴다.
 
@@ -153,26 +165,26 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 
 | ID | Task | 우선순위 | 시간 | 슬롯 | 선행 Task | 상태 |
 |----|------|----------|------|------|-----------|------|
-| FE-01 | 프런트 패키지·Vite·라우트 뼈대 | P0 | 1.5h | Day 1 오전 | COM-02 | 🔄 |
-| FE-02 | `api/client.ts`·`errorCodes.ts`·`types.ts` | P0 | 2.0h | Day 1 오후 | FE-01 | ⬜ |
-| FE-03 | `lib/date.ts`·`lib/validation.ts` (+ Vitest) | P0 | 1.0h | Day 1 오후 | FE-01 | ⬜ |
-| FE-04 | `store/`와 공용 컴포넌트 (알림·필드 오류·확인 대화상자) | P0 | 1.0h | Day 1 오후 | FE-01 | ⬜ |
-| FE-05 | 공통 레이아웃·헤더·모바일 메뉴·로그아웃 버튼 (WF-00) | P0 | 1.0h | Day 1 오후 | FE-04, FE-06 | ⬜ |
-| FE-06 | `features/auth` 데이터 계층·`RequireAuth`·`onUnauthorized` 연결 | P0 | 1.5h | Day 1 오후 | FE-02, FE-03, FE-04, BE-15 | ⬜ |
-| FE-07 | 로그인·회원가입 화면 (WF-01, WF-02) | P0 | 2.0h | Day 1 오후 | FE-06, FE-05 | ⬜ |
-| FE-08 | `features/category` 데이터 계층·`CategorySelect` | P0 | 0.5h | Day 1 오후 | FE-02, FE-04 | ⬜ |
-| FE-09 | `features/todo` 데이터 계층·검증·상태 라벨 | P0 | 1.0h | Day 1 오후 | FE-02, FE-03 | ⬜ |
-| FE-10 | 할일 등록·편집 화면 (WF-04) | P0 | 2.0h | Day 1 오후 | FE-09, FE-08, FE-05 | ⬜ |
-| FE-11 | 할일 삭제 버튼·확인 대화상자 (WF-04) | P0 | 0.5h | Day 1 오후 | FE-10 | ⬜ |
-| FE-12 | 할일 목록·필터 화면 (WF-03) | P0 | 2.0h | Day 2 오전 | FE-09, FE-08, FE-05 | ⬜ |
-| FE-13 | `features/calendar/buildMonthGrid.ts` (+ Vitest) | P0 | 1.0h | Day 2 오전 | FE-03 | ⬜ |
-| FE-14 | 월간 캘린더 화면 (WF-05) | P0 | 2.0h | Day 2 오전 | FE-13, FE-09, FE-05, BE-20 | ⬜ |
-| FE-15 | 설정 화면 시간대 변경 (WF-07 P0) | P0 | 1.0h | Day 2 오전 | FE-06, FE-09, BE-15 | ⬜ |
-| FE-16 | 반응형 점검·보정 (360 / 768 / 1280px) | P0 | 1.5h | Day 2 오전 | FE-07, FE-10, FE-12, FE-14, FE-15 | ⬜ |
-| FE-17 | 주간·일간 캘린더 (WF-06, P1) | P1 | 2.0h | Day 2 오후 남은 시간 (P1) | FE-14 | ⬜ |
-| FE-18 | 카테고리 등록 화면 (WF-08 등록, P1) | P1 | 1.0h | Day 2 오후 남은 시간 (P1) | FE-08, FE-09, BE-21 | ⬜ |
-| FE-19 | 카테고리 수정·삭제 화면 (WF-08, P1) | P1 | 1.5h | Day 2 오후 남은 시간 (P1) | FE-18, BE-22 | ⬜ |
-| FE-20 | name·비밀번호 변경 폼 (WF-07 P1) | P1 | 1.5h | Day 2 오후 남은 시간 (P1) | FE-15, BE-23 | ⬜ |
+| FE-01 | 프런트 패키지·Vite·라우트 뼈대 | P0 | 1.5h | Day 1 오전 | COM-02 | ✅ |
+| FE-02 | `api/client.ts`·`errorCodes.ts`·`types.ts` | P0 | 2.0h | Day 1 오후 | FE-01 | ✅ |
+| FE-03 | `lib/date.ts`·`lib/validation.ts` (+ Vitest) | P0 | 1.0h | Day 1 오후 | FE-01 | ✅ |
+| FE-04 | `store/`와 공용 컴포넌트 (알림·필드 오류·확인 대화상자) | P0 | 1.0h | Day 1 오후 | FE-01 | ✅ |
+| FE-05 | 공통 레이아웃·헤더·모바일 메뉴·로그아웃 버튼 (WF-00) | P0 | 1.0h | Day 1 오후 | FE-04, FE-06 | ✅ |
+| FE-06 | `features/auth` 데이터 계층·`RequireAuth`·`onUnauthorized` 연결 | P0 | 1.5h | Day 1 오후 | FE-02, FE-03, FE-04, BE-15 | ✅ |
+| FE-07 | 로그인·회원가입 화면 (WF-01, WF-02) | P0 | 2.0h | Day 1 오후 | FE-06, FE-05 | ✅ |
+| FE-08 | `features/category` 데이터 계층·`CategorySelect` | P0 | 0.5h | Day 1 오후 | FE-02, FE-04 | ✅ |
+| FE-09 | `features/todo` 데이터 계층·검증·상태 라벨 | P0 | 1.0h | Day 1 오후 | FE-02, FE-03 | ✅ |
+| FE-10 | 할일 등록·편집 화면 (WF-04) | P0 | 2.0h | Day 1 오후 | FE-09, FE-08, FE-05 | ✅ |
+| FE-11 | 할일 삭제 버튼·확인 대화상자 (WF-04) | P0 | 0.5h | Day 1 오후 | FE-10 | ✅ |
+| FE-12 | 할일 목록·필터 화면 (WF-03) | P0 | 2.0h | Day 2 오전 | FE-09, FE-08, FE-05 | ✅ |
+| FE-13 | `features/calendar/buildMonthGrid.ts` (+ Vitest) | P0 | 1.0h | Day 2 오전 | FE-03 | ✅ |
+| FE-14 | 월간 캘린더 화면 (WF-05) | P0 | 2.0h | Day 2 오전 | FE-13, FE-09, FE-05, BE-20 | ✅ |
+| FE-15 | 설정 화면 시간대 변경 (WF-07 P0) | P0 | 1.0h | Day 2 오전 | FE-06, FE-09, BE-15 | ✅ |
+| FE-16 | 반응형 점검·보정 (360 / 768 / 1280px) | P0 | 1.5h | Day 2 오전 | FE-07, FE-10, FE-12, FE-14, FE-15 | ✅ |
+| FE-17 | 주간·일간 캘린더 (WF-06, P1) | P1 | 2.0h | Day 2 오후 남은 시간 (P1) | FE-14 | ✅ |
+| FE-18 | 카테고리 등록 화면 (WF-08 등록, P1) | P1 | 1.0h | Day 2 오후 남은 시간 (P1) | FE-08, FE-09, BE-21 | ✅ |
+| FE-19 | 카테고리 수정·삭제 화면 (WF-08, P1) | P1 | 1.5h | Day 2 오후 남은 시간 (P1) | FE-18, BE-22 | ✅ |
+| FE-20 | name·비밀번호 변경 폼 (WF-07 P1) | P1 | 1.5h | Day 2 오후 남은 시간 (P1) | FE-15, BE-23 | ✅ |
 
 ### 2.5 검증 (QA)
 
@@ -181,9 +193,9 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 | QA-01 | 수동 체크리스트 `manual-checklist.md` 작성 | P0 | 1.0h | Day 2 오후 (P0) | 없음 | ✅ |
 | QA-02 | 소유권 교차 테스트 `ownership.test.js` | P0 | 1.5h | Day 2 오후 (P0) | BE-17, BE-18, BE-19, BE-20, BE-16 | ✅ |
 | QA-03 | 보안 통합 테스트 `security.test.js` | P0 | 2.0h | Day 2 오후 (P0) | BE-14, BE-17, BE-19 | ✅ |
-| QA-07 | 수동 체크리스트 수행 (UI·NFR-12·시간대) | P0 | 2.0h | Day 2 오후 (P0) | QA-01, FE-16, FE-11, FE-15, BE-19, QA-02, QA-03, QA-10 | ⬜ |
+| QA-07 | 수동 체크리스트 수행 (UI·NFR-12·시간대) | P0 | 2.0h | Day 2 오후 (P0) | QA-01, FE-16, FE-11, FE-15, BE-19, QA-02, QA-03, QA-10 | ✅ |
 | QA-08 | 보안·코드 리뷰 점검 (grep·npm audit) | P0 | 1.0h | Day 2 오후 (P0) | QA-03, COM-03, QA-02 | ✅ |
-| QA-09 | P1 AC 검증 (구현한 항목만) | P1 | 1.0h | Day 2 오후 남은 시간 (P1) | QA-01 | ⬜ |
+| QA-09 | P1 AC 검증 (구현한 항목만) | P1 | 1.0h | Day 2 오후 남은 시간 (P1) | QA-01 | ✅ |
 | QA-10 | 리프레시 통합 테스트 `refresh.test.js` | P0 | 1.5h | Day 1 오전 | BE-24, BE-14 | ✅ |
 
 ## 3. Task 상세
@@ -426,6 +438,7 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **수행 작업**
   - `backend/package.json`(`"type": "module"`, `engines` Node 22, scripts: `dev`, `test`, `lint`, `format:check`, `migrate`, `seed`), 의존성은 구조 원칙 2.3장 초기 허용 목록만(`express`, `pg`, `cookie-parser`, `jsonwebtoken`, 개발용 `eslint`, `prettier`)
   - `backend/src/config.js`(`process.env`를 읽는 유일한 곳, 필수 값 검증과 실패 시 종료, `NODE_ENV` 3값만 허용, `production`에서 자리표시자 거부와 JWT 서명 키 48바이트 미만 거부(모든 환경), `trust proxy` 설정값(`TRUST_PROXY`, 개발은 비움)과 `true` 거부, CORS 허용 출처(`CORS_ORIGINS`, 정확한 출처 형식 검증, production 필수)·CSRF 쿠키 `Domain`(`COOKIE_DOMAIN`, production 필수, SO-08·SO-12), 쿠키 `Secure` 플래그, 리프레시 재사용 감지 유예 시간(기본 10초, AQ-13))
+  - `config.js`에 `CORS_ORIGINS`(SO-08)·`COOKIE_DOMAIN`(CSRF 쿠키 Domain, SO-12)·`ACCESS_TOKEN_TTL_MINUTES`·`REFRESH_TOKEN_TTL_DAYS`(분·일 단위, 내부는 초, NFR-07) 검증 추가(사용자 결정·요청(2026-11-05))
   - `backend/src/server.js`는 `listen`만 한다. `dev`는 `node --watch --env-file-if-exists=../.env`(포트 3000, 루트 `.env`, SO-09). DB는 로컬에 설치된 PostgreSQL 17(`localhost:5432`)을 쓴다(사용자 결정(2026-11-04): Docker 미사용)
 - **완료 조건**
   - [x] `backend/`에서 `npm run dev`로 서버가 뜨고 계속 실행된다
@@ -435,6 +448,8 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
   - [x] 리프레시 재사용 감지 유예 시간이 `config.js`의 설정값(기본 10초)으로 있고 BE-24가 그 값을 쓴다(SO-17)
   - [x] `rg 'process\.env' backend/src`가 `config.js`에서만 나온다(SO-01)
   - [x] `backend/package.json`의 의존성이 구조 원칙 2.3장 초기 허용 목록 안이다(DL-16)
+  - [x] `CORS_ORIGINS`에 정확한 출처가 아닌 값이 있거나 production에 없으면, production에 `COOKIE_DOMAIN`이 없으면 종료한다(SO-08, `security.test.js`)
+  - [x] `ACCESS_TOKEN_TTL_MINUTES`·`REFRESH_TOKEN_TTL_DAYS`가 양의 정수가 아니거나 리프레시가 액세스보다 길지 않으면 종료한다(NFR-07, `security.test.js`)
 
 #### BE-02 `errors.js`·`logger.js`·요청 로거·`errorHandler`
 
@@ -456,13 +471,15 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **선행 Task**: BE-02, DB-03
 - **근거**: DL-05, SO-14, AD-02, AQ-06, XQ-04
 - **수행 작업**
-  - `backend/src/app.js`: 요청 로거 → 쿠키·JSON 파서 → 공개 라우트 → (authenticate·csrf는 BE-11) → 보호 라우트 → not found(ERR-05 형식) → `errorHandler` 순서의 뼈대(DL-05). Express 앱을 export(TQ-01)
+  - `backend/src/app.js`: 요청 로거 → `cors`(`middleware/cors.js`, SO-08) → 쿠키·JSON 파서 → 공개 라우트(개발 전용 `/api/docs` Swagger UI 포함) → (authenticate·csrf는 BE-11) → 보호 라우트 → not found(ERR-05 형식) → `errorHandler` 순서의 뼈대(DL-05). Express 앱을 export(TQ-01)
   - `routes/health.routes.js` + `services/health.service.js`(`select 1`, 가정 XQ-04)로 `GET /api/health`가 `{ "status": "ok", "db": "up" }`을 반환(DB 실패는 503 `db: down`, SO-14 v0.11). 기동 확인은 `curl http://localhost:3000/api/health`로 한다
 - **완료 조건**
-  - [x] `curl localhost:<port>/api/health`가 200 `{"status":"ok"}`이고 다른 필드가 없다
+  - [x] `curl localhost:<port>/api/health`가 200 `{"status":"ok","db":"up"}`이고 다른 필드가 없다(v0.37: 헬스 응답의 `db` 필드 추가에 맞춰 문구 수정)
   - [x] 존재하지 않는 경로가 404 ERR-05 형식이다
   - [x] 로컬 PostgreSQL 서비스를 멈추면 헬스 체크가 5xx이고 응답 본문에 pg 오류 메시지가 없다(SO-07)
   - [x] `curl http://localhost:3000/api/health`가 200이다
+  - [x] 허용 출처 요청에만 CORS 헤더가 붙고 사전 요청은 인증·CSRF 전에 204다(SO-08, `cors.test.js`)
+  - [x] `/api/docs`는 `NODE_ENV=development`가 아니면 공개 라우트로 열리지 않는다(`docs.test.js`). development에서 열리는 것은 브라우저로 확인
 
 #### BE-04 테스트 헬퍼 (`todolist_test`·TRUNCATE 가드·로그인 헬퍼)
 
@@ -484,11 +501,11 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **선행 Task**: BE-01
 - **근거**: PR-05, PQ-06, TQ-06, VR-01, VR-02, VR-03, VR-04, AQ-04, BR-15, CN-08
 - **수행 작업**
-  - `backend/src/validation/common.js`(trim, 길이, `YYYY-MM-DD` 형식), `user.validation.js`(email 정규화·형식·254자, 비밀번호 15~128자와 공백 미제거, name 1~50자, timezone IANA 검증, 로그인 입력 검증 AQ-04)
+  - `backend/src/validation/common.js`(trim, 길이, `YYYY-MM-DD` 형식), `user.validation.js`(email 정규화·형식·254자, 비밀번호 VR-02(KISA 기준 길이·문자 종류 조합, 최대 128자)와 공백 미제거, name 1~50자, timezone IANA 검증, 로그인 입력 검증 AQ-04)
   - 순수 함수. 검증 실패는 `fields` 키를 API 필드 이름(camelCase)으로 돌려준다(CN-08). 상수 위에 `// VR-02` 형식 ID 주석(PR-02)
   - `backend/test/unit/`에 경계값 단위 테스트(`VR-xx:` 이름)
 - **완료 조건**
-  - [x] 단위 테스트가 비밀번호 14자 거부·15자 통과·128자 통과·129자 거부, 앞뒤 공백이 있는 비밀번호가 그대로 유지됨을 확인한다(VR-02, PRD 4.1)
+  - [x] 단위 테스트가 비밀번호 3종류 7자 거부·8자 통과, 2종류 9자 거부·10자 통과, 1종류 거부, 128자 통과·129자 거부, 앞뒤 공백이 있는 비밀번호가 그대로 유지됨을 확인한다(VR-02, PRD 4.1)
   - [x] timezone `+09:00` 거부, `UTC`·`Asia/Seoul` 통과(PQ-06), email `A@Example.com`이 소문자로 정규화된다(VR-01)
   - [x] 로그인 입력: 비밀번호 10자는 통과하고 129자는 거부된다(AQ-04)
   - [x] `node --test backend/test/unit` 전체 통과
@@ -785,8 +802,8 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
   - `frontend/package.json`(React 19, TypeScript, Zustand, TanStack Query, `react-router`, 개발용 `vite`·`@vitejs/plugin-react`·`vitest`·`eslint` 계열·`prettier`만, DL-16), `vite.config.ts`(포트 5173 `strictPort: true`로 출처 고정, `/api` 프록시 없음, SO-08), `tsconfig.json`, `index.html`
   - `src/main.tsx`(QueryClientProvider, Router), `src/App.tsx`(WF↔경로 표 뼈대), `src/pages/`에 WF 1개당 빈 페이지 파일(DL-15). 스크립트: `dev`, `build`, `test`
 - **완료 조건**
-  - [ ] `frontend/`에서 `npm run dev` 후 브라우저 `http://localhost:5173`에서 앱 첫 화면이 열린다
-  - [ ] 브라우저(`http://localhost:5173`)에서 `http://localhost:3000/api/health`를 CORS로 호출하면 응답이 온다(SO-08)
+  - [x] `frontend/`에서 `npm run dev` 후 브라우저 `http://localhost:5173`에서 앱 첫 화면이 열린다
+  - [x] 브라우저(`http://localhost:5173`)에서 `http://localhost:3000/api/health`를 CORS로 호출하면 응답이 온다(SO-08)
   - [x] `npm run build`가 오류 없이 끝난다
   - [x] `frontend/package.json`의 의존성이 구조 원칙 2.3장 초기 허용 목록 안이다(DL-16)
 
@@ -800,12 +817,12 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
   - `src/api/errorCodes.ts`(ERR 코드 문자열 상수), `src/api/types.ts`(`DateString`, `IsoTimestamp`, 응답 타입을 설계서 API 명세와 대조해 손으로 작성, PQ-09)
   - single-flight 갱신은 TQ-06(프런트는 순수 함수만 자동 테스트) 때문에 자동 테스트하지 않고 수동으로 확인한다(XQ-14)
 - **완료 조건**
-  - [ ] `rg 'fetch\(' frontend/src`가 `api/client.ts`에서만 나온다(DL-14)
-  - [ ] `rg "'VALIDATION_ERROR'|'UNAUTHORIZED'" frontend/src --glob '!api/errorCodes.ts'`가 0건이다(CN-05)
-  - [ ] 로그인 후 `POST` 호출 요청에 CSRF 헤더가 실려 나간다(개발자 도구 네트워크 탭)
-  - [ ] 액세스 쿠키를 지운 상태(리프레시 쿠키는 유지)에서 보호 API를 호출하면 갱신 요청 1건 뒤 원 요청이 한 번 다시 나가 성공한다(네트워크 탭, SC-16, 수동)
-  - [ ] 같은 상태에서 보호 API 3개를 동시에 호출해도 갱신 요청은 1건뿐이다(single-flight, DL-14, 수동)
-  - [ ] 갱신이 401이면 원 요청이 한 번만 재전송되고 그것도 401이면 등록한 `onUnauthorized` 콜백이 호출되며 갱신·원 요청이 더 이상 재시도되지 않는다(임시 호출과 네트워크 탭으로 확인)
+  - [x] `rg 'fetch\(' frontend/src`가 `api/client.ts`에서만 나온다(DL-14)
+  - [x] `rg "'VALIDATION_ERROR'|'UNAUTHORIZED'" frontend/src --glob '!api/errorCodes.ts'`가 0건이다(CN-05)
+  - [x] 로그인 후 `POST` 호출 요청에 CSRF 헤더가 실려 나간다(개발자 도구 네트워크 탭)
+  - [x] 액세스 쿠키를 지운 상태(리프레시 쿠키는 유지)에서 보호 API를 호출하면 갱신 요청 1건 뒤 원 요청이 한 번 다시 나가 성공한다(네트워크 탭, SC-16, 수동)
+  - [x] 같은 상태에서 보호 API 3개를 동시에 호출해도 갱신 요청은 1건뿐이다(single-flight, DL-14, 수동)
+  - [x] 갱신이 401이면 원 요청이 한 번만 재전송되고 그것도 401이면 등록한 `onUnauthorized` 콜백이 호출되며 갱신·원 요청이 더 이상 재시도되지 않는다(임시 호출과 네트워크 탭으로 확인)
 
 #### FE-03 `lib/date.ts`·`lib/validation.ts` (+ Vitest)
 
@@ -816,10 +833,10 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
   - `src/lib/date.ts`: `YYYY-MM-DD` 문자열 비교·계산(UTC 기준, `new Date(` 호출은 이 파일만), 시각 표시 변환 함수 1개(`Intl.DateTimeFormat`, 사용자 timezone, CN-07). `src/lib/validation.ts`: 공백 제거·길이 도구
   - `lib/date.test.ts` 등 Vitest 순수 함수 테스트(백엔드와 같은 경계값, TQ-06)
 - **완료 조건**
-  - [ ] `npm test`(Vitest)가 통과한다
-  - [ ] 테스트: 같은 ISO 시각이 `Asia/Seoul`과 `UTC`에서 다른 표시 문자열로 변환된다(CN-07)
-  - [ ] `rg 'new Date\(' frontend/src`가 `lib/date.ts`에서만 나온다(CN-06)
-  - [ ] `lib/`가 `react`와 다른 앱 디렉토리를 import하지 않는다(린트 통과)
+  - [x] `npm test`(Vitest)가 통과한다
+  - [x] 테스트: 같은 ISO 시각이 `Asia/Seoul`과 `UTC`에서 다른 표시 문자열로 변환된다(CN-07)
+  - [x] `rg 'new Date\(' frontend/src`가 `lib/date.ts`에서만 나온다(CN-06)
+  - [x] `lib/`가 `react`와 다른 앱 디렉토리를 import하지 않는다(린트 통과)
 
 #### FE-04 `store/`와 공용 컴포넌트 (알림·필드 오류·확인 대화상자)
 
@@ -830,9 +847,9 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
   - `src/store/alertStore.ts`, `menuStore.ts`, `todoFilterStore.ts`, `calendarStore.ts`(UI 상태만, 서버 데이터 타입 없음, DL-12)
   - `src/components/TopAlert.tsx`, `FieldError.tsx`, `ConfirmDialog.tsx`(도메인을 모르는 공용 UI, WF-00)
 - **완료 조건**
-  - [ ] `rg 'Todo|Category|User' frontend/src/store`에 서버 엔티티 타입이 없다(DL-12)
-  - [ ] `ConfirmDialog`의 취소가 `onConfirm`을 호출하지 않는다(임시 화면에서 확인)
-  - [ ] 린트가 `components/`의 `features/`·`api/` import를 막는다(COM-03 이후 통과)
+  - [x] `rg 'Todo|Category|User' frontend/src/store`에 서버 엔티티 타입이 없다(DL-12)
+  - [x] `ConfirmDialog`의 취소가 `onConfirm`을 호출하지 않는다(임시 화면에서 확인)
+  - [x] 린트가 `components/`의 `features/`·`api/` import를 막는다(COM-03 이후 통과)
 
 #### FE-05 공통 레이아웃·헤더·모바일 메뉴·로그아웃 버튼 (WF-00)
 
@@ -843,9 +860,9 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
   - `src/components/Layout.tsx`, `Header.tsx`: 헤더 내비게이션(목록·캘린더·설정, '+ 새 할일'), 로그아웃은 헤더 오른쪽, 모바일(< 768px)에서는 펼침 메뉴 안(`menuStore`). 로그아웃 동작은 `features/auth`의 훅 사용(`components/`는 features를 import하지 않으므로 훅은 `pages/`나 `App.tsx`에서 주입)
   - 로그아웃 성공 시 쿼리 캐시를 비우고 로그인 화면으로 이동(AD-13)
 - **완료 조건**
-  - [ ] 1280px에서 로그아웃 버튼이 헤더 오른쪽에 있고, 360px에서는 메뉴를 펼쳐야 보인다
-  - [ ] 로그아웃을 누르면 로그인 화면으로 이동하고 뒤로 가기로 보호 화면이 데이터 없이 로그인으로 돌아간다
-  - [ ] 린트가 `components/` → `features/` import를 막는다(오류 0건)
+  - [x] 1280px에서 로그아웃 버튼이 헤더 오른쪽에 있고, 360px에서는 메뉴를 펼쳐야 보인다
+  - [x] 로그아웃을 누르면 로그인 화면으로 이동하고 뒤로 가기로 보호 화면이 데이터 없이 로그인으로 돌아간다
+  - [x] 린트가 `components/` → `features/` import를 막는다(오류 0건)
 
 #### FE-06 `features/auth` 데이터 계층·`RequireAuth`·`onUnauthorized` 연결
 
@@ -853,13 +870,13 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **선행 Task**: FE-02, FE-03, FE-04, BE-15
 - **근거**: DL-12, DL-14, AQ-02, AQ-03, FR-01, SC-03, SC-16, AC-02, AC-22, PR-05
 - **수행 작업**
-  - `src/features/auth/api.ts`, `queries.ts`(회원가입·로그인·로그아웃·현재 사용자 조회 훅, 쿼리 키 한 곳, DL-12), `validation.ts`(VR-01·02·03 프런트 반영, 로그인 입력은 AQ-04 범위), `RequireAuth.tsx`(현재 사용자 조회로 인증 판정)
+  - `src/features/auth/api.ts`, `queries.ts`(회원가입·로그인·로그아웃·현재 사용자 조회 훅, 쿼리 키 한 곳, DL-12), `validation.ts`(VR-01·02·03 프런트 반영, 로그인 입력은 AQ-04 범위), `RequireAuth.tsx`(현재 사용자 조회로 인증 판정, 로그인 상태의 로그인·가입 화면 접근은 `GuestOnly`로 목록 이동, WF 2장)
   - `main.tsx`에서 `onUnauthorized` 콜백에 만료 안내(`alertStore`)와 로그인 화면 이동을 연결(DL-14). `features/auth/validation.test.ts`
 - **완료 조건**
-  - [ ] 로그아웃 상태에서 `/todos` 접근 시 로그인 화면으로 이동한다(AC-02, 수동)
-  - [ ] 액세스·리프레시 쿠키를 모두 지우고 저장 동작을 하면 갱신도 실패해 만료 안내와 함께 로그인 화면으로 이동한다(SC-03, 수동)
-  - [ ] 리프레시 쿠키만 남기고 액세스 쿠키를 지운 뒤 `/todos`에 접근하면 로그인 화면 이동 없이 목록이 열린다(AC-22, 수동)
-  - [ ] Vitest: 비밀번호 14자·15자·128자·129자, 앞뒤 공백 유지가 백엔드 단위 테스트와 같은 결과다(TQ-06)
+  - [x] 로그아웃 상태에서 `/todos` 접근 시 로그인 화면으로 이동한다(AC-02, 수동)
+  - [x] 액세스·리프레시 쿠키를 모두 지우고 저장 동작을 하면 갱신도 실패해 만료 안내와 함께 로그인 화면으로 이동한다(SC-03, 수동)
+  - [x] 리프레시 쿠키만 남기고 액세스 쿠키를 지운 뒤 `/todos`에 접근하면 로그인 화면 이동 없이 목록이 열린다(AC-22, 수동)
+  - [x] Vitest: 비밀번호 VR-02 경계값(3종류 7·8자, 2종류 9·10자, 1종류, 128·129자), 앞뒤 공백 유지가 백엔드 단위 테스트와 같은 결과다(TQ-06)
 
 #### FE-07 로그인·회원가입 화면 (WF-01, WF-02)
 
@@ -869,11 +886,11 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **수행 작업**
   - `src/features/auth/LoginForm.tsx`, `SignupForm.tsx`, `src/pages/LoginPage.tsx`, `SignupPage.tsx`: 입력란 아래 `FieldError`로 서버 ERR-01 `fields` 표시, 가입 시 `Intl.DateTimeFormat().resolvedOptions().timeZone` 자동 감지 전송(입력란 없음, PRD 4.2), 가입·로그인 성공 시 목록 화면 이동, ERR-03·ERR-04·ERR-06은 `error.code`로 분기해 안내 문구 표시(PR-08)
 - **완료 조건**
-  - [ ] 새 email로 가입하면 자동 로그인되어 할일 목록 화면으로 간다(수동, SC-01)
-  - [ ] 14자 비밀번호 가입 시 비밀번호 입력란 아래에 사유가 표시된다(프런트 검증과 서버 `fields` 둘 다 경로 확인, PR-05)
-  - [ ] 틀린 비밀번호와 없는 email의 안내 문구가 같다(AC-14, 수동)
-  - [ ] 5회 실패 후 제한 안내가 표시된다(AC-15, 수동)
-  - [ ] `rg 'message ===|message ==' frontend/src`가 0건이다(PR-08)
+  - [x] 새 email로 가입하면 자동 로그인되어 할일 목록 화면으로 간다(수동, SC-01)
+  - [x] VR-02에 맞지 않는 비밀번호(예: 2종류 9자)로 가입 시 비밀번호 입력란 아래에 사유가 표시된다(프런트 검증과 서버 `fields` 둘 다 경로 확인, PR-05)
+  - [x] 틀린 비밀번호와 없는 email의 안내 문구가 같다(AC-14, 수동)
+  - [x] 5회 실패 후 제한 안내가 표시된다(AC-15, 수동)
+  - [x] `rg 'message ===|message ==' frontend/src`가 0건이다(PR-08)
 
 #### FE-08 `features/category` 데이터 계층·`CategorySelect`
 
@@ -883,8 +900,8 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **수행 작업**
   - `src/features/category/api.ts`, `queries.ts`(목록 훅), `CategorySelect.tsx`(빈 선택지 없는 드롭다운, 기본값 '기본')
 - **완료 조건**
-  - [ ] 드롭다운에 내 카테고리만 나오고 첫 선택값이 '기본'이다(수동, BE-16 연동)
-  - [ ] 쿼리 키·훅이 `queries.ts`에만 있다(DL-12 grep: `rg 'useQuery' frontend/src --glob '!**/queries.ts'` 0건)
+  - [x] 드롭다운에 내 카테고리만 나오고 첫 선택값이 '기본'이다(수동, BE-16 연동)
+  - [x] 쿼리 키·훅이 `queries.ts`에만 있다(DL-12 grep: `rg 'useQuery' frontend/src --glob '!**/queries.ts'` 0건)
 
 #### FE-09 `features/todo` 데이터 계층·검증·상태 라벨
 
@@ -895,9 +912,9 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
   - `src/features/todo/api.ts`, `queries.ts`(목록·단건·등록·수정·삭제·캘린더 기간 훅, 변경 성공 시 관련 쿼리 `invalidateQueries`), `validation.ts`(VR-05·06, BR-07~09 프런트 반영), `statusLabel.ts`(서버 `status` 값→한국어 표시, 상태 판정 함수 없음)
   - `validation.test.ts`: 백엔드 BE-06과 같은 경계값
 - **완료 조건**
-  - [ ] Vitest: title 0·1·100·101자와 start>end 거부가 백엔드 단위 테스트와 같은 결과다(TQ-06)
-  - [ ] `rg 'completed' frontend/src/features/todo/statusLabel.ts`가 0건이고 프런트에 상태 판정 함수가 없다(PR-06)
-  - [ ] 변경 훅이 `setQueryData` 없이 `invalidateQueries`만 쓴다(`rg setQueryData frontend/src` 0건)
+  - [x] Vitest: title 0·1·100·101자와 start>end 거부가 백엔드 단위 테스트와 같은 결과다(TQ-06)
+  - [x] `rg 'completed' frontend/src/features/todo/statusLabel.ts`가 0건이고 프런트에 상태 판정 함수가 없다(PR-06)
+  - [x] 변경 훅이 `setQueryData` 없이 `invalidateQueries`만 쓴다(`rg setQueryData frontend/src` 0건)
 
 #### FE-10 할일 등록·편집 화면 (WF-04)
 
@@ -908,11 +925,11 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
   - `src/features/todo/TodoForm.tsx`, `src/pages/TodoFormPage.tsx`(등록·편집 공용): 제목·설명·`input type="date"` 시작일·종료일·카테고리 드롭다운, 편집 화면의 완료 체크(OI-07), 편집 화면의 '마지막 수정'(`updatedAt`을 `lib/date.ts`로 사용자 시간대 표시, CN-07), 서버 `fields` 표시, 저장 성공 시 목록으로 이동
   - 폼 입력값은 컴포넌트 로컬 `useState`(DL-13)
 - **완료 조건**
-  - [ ] 카테고리를 건드리지 않고 등록하면 기본 카테고리로 목록에 나온다(AC-05, 수동)
-  - [ ] 시작일을 종료일보다 늦게 입력하고 저장하면 날짜 입력란 아래에 사유가 표시되고 저장되지 않는다(AC-06, 수동)
-  - [ ] 편집에서 완료 체크 후 저장→해제 후 저장 시 상태 표시가 바뀐다(AC-10, 수동)
-  - [ ] 편집 화면에 '마지막 수정'이 사용자 시간대 기준으로 표시된다(SC-12 전제)
-  - [ ] `rg 'useForm|zod' frontend/package.json`이 0건이다(DL-16)
+  - [x] 카테고리를 건드리지 않고 등록하면 기본 카테고리로 목록에 나온다(AC-05, 수동)
+  - [x] 시작일을 종료일보다 늦게 입력하고 저장하면 날짜 입력란 아래에 사유가 표시되고 저장되지 않는다(AC-06, 수동)
+  - [x] 편집에서 완료 체크 후 저장→해제 후 저장 시 상태 표시가 바뀐다(AC-10, 수동)
+  - [x] 편집 화면에 '마지막 수정'이 사용자 시간대 기준으로 표시된다(SC-12 전제)
+  - [x] `rg 'useForm|zod' frontend/package.json`이 0건이다(DL-16)
 
 #### FE-11 할일 삭제 버튼·확인 대화상자 (WF-04)
 
@@ -922,8 +939,8 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **수행 작업**
   - `TodoForm`(편집 모드)에 삭제 버튼과 `ConfirmDialog` 연결. 취소하면 아무것도 하지 않고, 확인하면 삭제 후 목록으로 이동(관련 쿼리 무효화)
 - **완료 조건**
-  - [ ] 삭제 확인 대화상자에서 취소하면 할일이 목록에 남아 있다(AC-11, 수동)
-  - [ ] 확인하면 목록에서 사라진다(수동)
+  - [x] 삭제 확인 대화상자에서 취소하면 할일이 목록에 남아 있다(AC-11, 수동)
+  - [x] 확인하면 목록에서 사라진다(수동)
 
 #### FE-12 할일 목록·필터 화면 (WF-03)
 
@@ -933,10 +950,10 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **수행 작업**
   - `src/features/todo/TodoTable.tsx`, `TodoFilterBar.tsx`, `src/pages/TodoListPage.tsx`: 카테고리·상태 필터(`todoFilterStore`, DL-13), 서버 `status` 표시(`statusLabel.ts`), 빈 결과 안내(SC-09 3a), 행 클릭 시 편집 화면, 모바일 360px에서 가로 스크롤 없는 표시
 - **완료 조건**
-  - [ ] 기한 초과 필터를 고르면 기한 초과 할일만, 진행 중 필터에는 나오지 않는다(AC-07, 수동)
-  - [ ] 카테고리와 상태를 함께 고르면 AND로 좁혀진다(수동)
-  - [ ] 편집 화면에 갔다 돌아와도 필터가 유지된다(PQ-04, 수동)
-  - [ ] 360px에서 가로 스크롤이 없다(수동)
+  - [x] 기한 초과 필터를 고르면 기한 초과 할일만, 진행 중 필터에는 나오지 않는다(AC-07, 수동)
+  - [x] 카테고리와 상태를 함께 고르면 AND로 좁혀진다(수동)
+  - [x] 편집 화면에 갔다 돌아와도 필터가 유지된다(PQ-04, 수동)
+  - [x] 360px에서 가로 스크롤이 없다(수동)
 
 #### FE-13 `features/calendar/buildMonthGrid.ts` (+ Vitest)
 
@@ -947,9 +964,9 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
   - `src/features/calendar/buildMonthGrid.ts`: 월요일 시작 월간 그리드(`YYYY-MM-DD` 문자열 배열, `lib/date.ts` 사용, UTC 기준 계산). 기간 조회용 첫날·마지막날 반환
   - `buildMonthGrid.test.ts`: 월 경계·윤년·월요일 시작
 - **완료 조건**
-  - [ ] Vitest: 2026-11 그리드가 10-26(월)에서 시작해 12-06(일)에서 끝난다
-  - [ ] Vitest: 2024-02의 29일이 포함되고 모든 행이 7칸이다
-  - [ ] `rg 'new Date\(' frontend/src/features`가 0건이다(CN-06)
+  - [x] Vitest: 2026-11 그리드가 10-26(월)에서 시작해 12-06(일)에서 끝난다
+  - [x] Vitest: 2024-02의 29일이 포함되고 모든 행이 7칸이다
+  - [x] `rg 'new Date\(' frontend/src/features`가 0건이다(CN-06)
 
 #### FE-14 월간 캘린더 화면 (WF-05)
 
@@ -960,10 +977,10 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
   - `src/features/calendar/MonthGrid.tsx`, `DayTodoList.tsx`, `src/pages/CalendarPage.tsx`(월간만): 그리드 기간으로 한 번에 조회, 데스크톱은 칸당 최대 3건과 '+N개 더'(누르면 그날 할일 목록), 모바일(< 768px)은 개수 표시와 날짜 탭 시 그날 할일 목록, 상태별 색과 텍스트 라벨 병행, 이전·다음·오늘 이동(`calendarStore`), 할일 클릭 시 편집 화면
   - '오늘' 강조는 `lib/date.ts`로 시간대 기준 계산한 표시 전용 값(PQ-02)
 - **완료 조건**
-  - [ ] start=11-03, end=11-05 할일이 3·4·5일 칸에 모두 표시된다(AC-12, 수동)
-  - [ ] 한 날짜에 할일 4개를 만들면 3건과 '+1개 더'가 표시되고 누르면 4건 목록이 열린다
-  - [ ] 360px에서 칸에 개수가 표시되고 날짜를 누르면 목록이 열린다
-  - [ ] 완료·기한 초과 할일이 색과 텍스트 라벨로 구분된다
+  - [x] start=11-03, end=11-05 할일이 3·4·5일 칸에 모두 표시된다(AC-12, 수동)
+  - [x] 한 날짜에 할일 4개를 만들면 3건과 '+1개 더'가 표시되고 누르면 4건 목록이 열린다
+  - [x] 360px에서 칸에 개수가 표시되고 날짜를 누르면 목록이 열린다
+  - [x] 완료·기한 초과 할일이 색과 텍스트 라벨로 구분된다
 
 #### FE-15 설정 화면 시간대 변경 (WF-07 P0)
 
@@ -973,9 +990,9 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **수행 작업**
   - `src/features/user/TimezoneForm.tsx`, `src/pages/SettingsPage.tsx`: `Intl.supportedValuesOf('timeZone')` 드롭다운(현재 값이 목록에 없으면 추가, PQ-06), 변경 성공 시 사용자·할일(목록·캘린더) 쿼리 함께 무효화(DL-12)
 - **완료 조건**
-  - [ ] 시간대를 바꾸고 저장하면 안내가 뜨고 목록의 상태 표시가 새 기준으로 갱신된다(AC-13, 수동)
-  - [ ] 편집 화면의 '마지막 수정' 표시가 새 시간대로 바뀐다(SC-12, 수동)
-  - [ ] 현재 값이 `UTC`여도 드롭다운에 선택된 항목으로 보인다(PQ-06)
+  - [x] 시간대를 바꾸고 저장하면 안내가 뜨고 목록의 상태 표시가 새 기준으로 갱신된다(AC-13, 수동)
+  - [x] 편집 화면의 '마지막 수정' 표시가 새 시간대로 바뀐다(SC-12, 수동)
+  - [x] 현재 값이 `UTC`여도 드롭다운에 선택된 항목으로 보인다(PQ-06)
 
 #### FE-16 반응형 점검·보정 (360 / 768 / 1280px)
 
@@ -985,9 +1002,9 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **수행 작업**
   - 개발자 도구 기기 모드로 360 / 768 / 1280px에서 P0 화면 전부(WF-01~05, WF-07)를 확인하고 CSS Modules로 보정한다. 가로 스크롤·잘림·헤더 메뉴를 점검한다
 - **완료 조건**
-  - [ ] 360px에서 P0 화면 전부에 가로 스크롤이 없고 P0 기능을 모두 쓸 수 있다
-  - [ ] 768px, 1280px에서 레이아웃이 깨지지 않는다
-  - [ ] 위 확인 결과를 수동 체크리스트(QA-01)의 NFR-12 줄에 기록했다
+  - [x] 360px에서 P0 화면 전부에 가로 스크롤이 없고 P0 기능을 모두 쓸 수 있다
+  - [x] 768px, 1280px에서 레이아웃이 깨지지 않는다
+  - [x] 위 확인 결과를 수동 체크리스트(QA-01)의 NFR-12 줄에 기록했다
 
 #### FE-17 주간·일간 캘린더 (WF-06, P1)
 
@@ -997,9 +1014,9 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **수행 작업**
   - `src/features/calendar/WeekView.tsx`, `DayView.tsx`, `CalendarPage.tsx`의 월/주/일 전환: 월요일 시작 주간(`lib/date.ts`), 모바일은 날짜별 세로 목록, 일간은 그날 할일 목록. 기간 조회는 BE-20 재사용. 주 계산에 Vitest 추가
 - **완료 조건**
-  - [ ] 오늘이 속한 주간이 월요일~일요일 7일로 표시되고 할일이 해당 날짜에 나온다(AC-18, 수동)
-  - [ ] Vitest: 2026-11-03이 속한 주의 시작이 11-02, 끝이 11-08이다
-  - [ ] 월/주/일 전환 시 기준일이 유지된다
+  - [x] 오늘이 속한 주간이 월요일~일요일 7일로 표시되고 할일이 해당 날짜에 나온다(AC-18, 수동)
+  - [x] Vitest: 2026-11-03이 속한 주의 시작이 11-02, 끝이 11-08이다
+  - [x] 월/주/일 전환 시 기준일이 유지된다
 
 #### FE-18 카테고리 등록 화면 (WF-08 등록, P1)
 
@@ -1009,9 +1026,9 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **수행 작업**
   - `src/features/category/CategoryManager.tsx`(등록 부분), `src/features/category/validation.ts`, `src/pages/CategoryManagePage.tsx`, 설정 화면의 링크, 이름 중복·공백 오류를 입력란 아래 표시
 - **완료 조건**
-  - [ ] 카테고리를 등록하면 목록 드롭다운과 필터에 즉시 나타난다(수동)
-  - [ ] 중복 이름 등록 시 입력란 아래에 사유가 표시된다(수동)
-  - [ ] Vitest: 이름 0·1·30·31자 경계가 백엔드와 같다(TQ-06)
+  - [x] 카테고리를 등록하면 목록 드롭다운과 필터에 즉시 나타난다(수동)
+  - [x] 중복 이름 등록 시 입력란 아래에 사유가 표시된다(수동)
+  - [x] Vitest: 이름 0·1·30·31자 경계가 백엔드와 같다(TQ-06)
 
 #### FE-19 카테고리 수정·삭제 화면 (WF-08, P1)
 
@@ -1021,9 +1038,9 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **수행 작업**
   - `CategoryManager.tsx`에 수정·삭제 추가: 기본 카테고리의 수정·삭제 버튼은 감춤(SC-13), 삭제 전 `ConfirmDialog`에 옮겨질 할일 개수 표시(카테고리 목록의 할일 수 사용, BR-06), 삭제 뒤 카테고리·할일 쿼리 함께 무효화(DL-12)
 - **완료 조건**
-  - [ ] '업무'(할일 2개) 삭제 확인창에 2개가 표시되고 취소하면 그대로다(수동)
-  - [ ] 확인하면 할일 2개가 기본 카테고리로 보인다(AC-04, 수동)
-  - [ ] 기본 카테고리 행에 수정·삭제 버튼이 없다
+  - [x] '업무'(할일 2개) 삭제 확인창에 2개가 표시되고 취소하면 그대로다(수동)
+  - [x] 확인하면 할일 2개가 기본 카테고리로 보인다(AC-04, 수동)
+  - [x] 기본 카테고리 행에 수정·삭제 버튼이 없다
 
 #### FE-20 name·비밀번호 변경 폼 (WF-07 P1)
 
@@ -1033,9 +1050,9 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **수행 작업**
   - `src/features/user/ProfileForm.tsx`, `PasswordForm.tsx`: name 변경, 비밀번호 변경(현재 비밀번호 불일치는 `currentPassword` 입력란 아래 표시, 비밀번호는 trim하지 않음). 성공 시 사용자 쿼리 무효화
 - **완료 조건**
-  - [ ] name 변경 후 헤더·설정에 새 name이 보인다(AC-19, 수동)
-  - [ ] 틀린 현재 비밀번호로 저장하면 '현재 비밀번호' 입력란 아래에 사유가 표시된다(AC-21, 수동)
-  - [ ] 비밀번호 변경 후에도 현재 화면의 로그인이 유지된다(AC-20, 수동)
+  - [x] name 변경 후 헤더·설정에 새 name이 보인다(AC-19, 수동)
+  - [x] 틀린 현재 비밀번호로 저장하면 '현재 비밀번호' 입력란 아래에 사유가 표시된다(AC-21, 수동)
+  - [x] 비밀번호 변경 후에도 현재 화면의 로그인이 유지된다(AC-20, 수동)
 
 ### 3.5 검증 (QA)
 
@@ -1090,11 +1107,11 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
   - 자동 테스트 항목은 `npm test` 결과로 체크한다. KPI-01을 P0 AC 기준으로 판정한다
   - 두 탭 동시 갱신(XQ-12): 같은 로그인으로 탭 2개를 열고 액세스 쿠키를 지운 뒤 두 탭에서 거의 동시에 보호 API를 호출해 결과(재로그인 요구 없이 둘 다 성공)를 체크리스트에 기록한다
 - **완료 조건**
-  - [ ] P0 AC 18개(AC-01, 02, 05~17, 22~24) 전부 통과로 체크돼 있고 실패 항목이 있으면 원인과 처리가 적혀 있다(KPI-01)
-  - [ ] 360 / 768 / 1280px 확인이 기록돼 있다(NFR-12)
-  - [ ] 두 탭 동시 갱신 결과가 기록돼 있고 재로그인 요구가 없다(XQ-12, OI-20)
-  - [ ] 서버 `TZ=America/Los_Angeles` + 브라우저 시간대 UTC에서 start=end=11-03 할일이 11-03으로 저장·조회·표시된다(PRD 4.2)
-  - [ ] `backend/`·`frontend/`의 `npm run dev` 두 개만으로 전 기능이 실행됨을 확인했다(KPI-03)
+  - [x] P0 AC 18개(AC-01, 02, 05~17, 22~24) 전부 통과로 체크돼 있고 실패 항목이 있으면 원인과 처리가 적혀 있다(KPI-01)
+  - [x] 360 / 768 / 1280px 확인이 기록돼 있다(NFR-12)
+  - [x] 두 탭 동시 갱신 결과가 기록돼 있고 재로그인 요구가 없다(XQ-12, OI-20)
+  - [x] 서버 `TZ=America/Los_Angeles` + 브라우저 시간대 UTC에서 start=end=11-03 할일이 11-03으로 저장·조회·표시된다(PRD 4.2)
+  - [x] `backend/`·`frontend/`의 `npm run dev` 두 개만으로 전 기능이 실행됨을 확인했다(KPI-03)
 
 #### QA-08 보안·코드 리뷰 점검 (grep·npm audit)
 
@@ -1118,8 +1135,8 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **수행 작업**
   - 구현한 P1 기능의 AC를 자동 테스트(AC-03, 04, 19~21)와 수동(AC-18, 화면)으로 확인하고 체크리스트의 P1 줄을 갱신한다. 구현하지 않은 P1 AC는 '다음 버전'으로 적는다(PRD 8장 컷 라인)
 - **완료 조건**
-  - [ ] 구현한 P1 AC(AC-03, 04, 18~21 중)의 테스트가 모두 통과하고 체크리스트에 기록됐다
-  - [ ] 구현하지 않은 P1 AC는 '다음 버전'으로 명시돼 있고 KPI-01 판정에서 제외됐다
+  - [x] 구현한 P1 AC(AC-03, 04, 18~21 중)의 테스트가 모두 통과하고 체크리스트에 기록됐다
+  - [x] 구현하지 않은 P1 AC는 '다음 버전'으로 명시돼 있고 KPI-01 판정에서 제외됐다
 
 #### QA-10 리프레시 통합 테스트 `refresh.test.js`
 

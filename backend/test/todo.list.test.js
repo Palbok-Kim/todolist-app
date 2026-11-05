@@ -34,7 +34,7 @@ async function quiet(fn) {
 const TZ = 'Asia/Seoul';
 const register = (email = 'a@example.test', timezone = TZ) =>
   quiet(() =>
-    signup(api, { email, password: 'correct horse battery staple', name: '홍길동', timezone }),
+    signup(api, { email, password: 'correct horse battery staple 1!', name: '홍길동', timezone }),
   );
 const req = (path, init) => quiet(() => api.request(path, init));
 // TQ-03: 시계를 mock하지 않고 오늘 기준 상대 날짜로 만든다

@@ -28,7 +28,7 @@ async function quiet(fn) {
 }
 
 const register = (email) =>
-  quiet(() => signup(api, { email, password: 'correct horse battery staple', name: '홍길동' }));
+  quiet(() => signup(api, { email, password: 'correct horse battery staple 1!', name: '홍길동' }));
 const list = (session) => quiet(() => api.request('/api/categories', { session }));
 
 // 할일 생성 API는 BE-17이라 DB에 직접 넣는다

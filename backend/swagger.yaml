@@ -1,19 +1,19 @@
 # =============================================================================
 # TodoList API 명세 (OpenAPI 3.0.3)
 # -----------------------------------------------------------------------------
-# 현재 버전   : 0.3.0
+# 현재 버전   : 0.4.1
 # 작성자      : MinjeYu
 # 최종 수정일 : 2026-11-05
 #
 # 근거 문서 (단일 출처, docs/ 아래. 규칙 원문은 복사하지 않고 ID로 참조한다, PR-01)
 #   - 1-domain-definition.md  v0.10  (엔티티, 상태 판정, BR, UC, AC)
-#   - 2-prd.md                v0.11  (FR 우선순위, VR, ERR, NFR, 11장 후속 설계 항목)
-#   - 3-user-scenario.md      v0.6   (SC)
-#   - 4-wireframe.md          v0.5   (WF, 화면이 요구하는 데이터)
-#   - 5-project-principle.md  v0.11  (/api 접두사, CN-04~09, DL-05, SO-07, SO-12, SO-14)
-#   - 6-arch-diagram.md       v0.8   (AD-06~AD-14 시퀀스)
-#   - 7-erd.md                v0.5, schema.sql (필드 이름·타입·NULL·길이)
-#   - 8-plan.md               v0.34  (COM-01 범위, BE-12~BE-24 완료 조건)
+#   - 2-prd.md                v0.13  (FR 우선순위, VR, ERR, NFR, 11장 후속 설계 항목)
+#   - 3-user-scenario.md      v0.7   (SC)
+#   - 4-wireframe.md          v0.6   (WF, 화면이 요구하는 데이터)
+#   - 5-project-principle.md  v0.14  (/api 접두사, CN-04~09, DL-05, SO-07, SO-12, SO-14)
+#   - 6-arch-diagram.md       v0.11  (AD-06~AD-14 시퀀스)
+#   - 7-erd.md                v0.6, schema.sql (필드 이름·타입·NULL·길이)
+#   - 8-plan.md               v0.46  (COM-01 범위, BE-12~BE-24 완료 조건)
 #
 # 이력 갱신 규칙: 이력을 추가할 때 이 주석 표와 info.description의 '변경 이력' 표를 둘 다 갱신하고, info.version은 SemVer로 올린다(호환 깨짐 major, 엔드포인트·필드 추가 minor, 설명 수정 patch).
 #
@@ -26,13 +26,16 @@
 # | 0.2.0 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: `GET /health` 응답에 `db` 필드(HealthResponse) 추가, DB 실패는 500 대신 503 (SO-14 v0.11) |
 # | 0.2.1 | 2026-11-05 | MinjeYu | 구현 대조 반영: 비밀번호 불일치 문구, 쿠키 삭제는 `Expires` 과거 시각, SQ-07 503 확정, 검사 순서 예외(할일 경로 ID), 본문 형식 오류 공통 400, 빈 수정 본문 400, 재완료 시 completedAt 유지, 카테고리 중복 409 예시, 비밀번호 길이 단위, Swagger UI는 개발 환경만, 근거 문서 버전 갱신 |
 # | 0.3.0 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: 프록시(같은 출처) → CORS. 개발 서버 주소를 `http://localhost:3000/api`로, 공통 규약에 CORS 허용 출처(`CORS_ORIGINS`)·사전 요청·CSRF 쿠키 Domain(`COOKIE_DOMAIN`) 추가, Swagger UI 주소 변경 |
+# | 0.3.1 | 2026-11-05 | MinjeYu | 백엔드 코드 대조 반영: CSRF 쿠키 `Domain=<COOKIE_DOMAIN>`(설정 시)을 `csrfCookie`·`SetCookieSession`·`SetCookieClear`에 명시, 토큰 수명 15분·7일과 `Max-Age=900`·`604800`을 `ACCESS_TOKEN_TTL_MINUTES`·`REFRESH_TOKEN_TTL_DAYS`의 기본값으로 표기, 근거 문서 버전 갱신 |
+# | 0.4.0 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: VR-02 비밀번호 규칙을 KISA 기준(3종류 이상 8자 이상 또는 2종류 이상 10자 이상, 최대 128자)으로 변경(PRD v0.13). `Password` minLength 15 → 8, 비밀번호 변경·로그인 설명의 '15자' 표현 수정 |
+# | 0.4.1 | 2026-11-05 | MinjeYu | 코드 리뷰 반영: 근거 문서 버전 갱신(실행 계획 v0.46) |
 #
 # 표기: description의 '가정 (설계서 COM-01에서 확정)'은 문서가 정하지 않아 이 명세에서 새로 둔 값이다.
 # =============================================================================
 openapi: 3.0.3
 info:
   title: TodoList API
-  version: 0.3.0
+  version: 0.4.1
   contact:
     name: MinjeYu
   description: |
@@ -51,6 +54,9 @@ info:
     | 0.2.0 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: `GET /health` 응답에 `db` 필드(HealthResponse) 추가, DB 실패는 500 대신 503 (SO-14 v0.11) |
     | 0.2.1 | 2026-11-05 | MinjeYu | 구현 대조 반영: 비밀번호 불일치 문구, 쿠키 삭제는 `Expires` 과거 시각, SQ-07 503 확정, 검사 순서 예외(할일 경로 ID), 본문 형식 오류 공통 400, 빈 수정 본문 400, 재완료 시 completedAt 유지, 카테고리 중복 409 예시, 비밀번호 길이 단위, Swagger UI는 개발 환경만, 근거 문서 버전 갱신 |
     | 0.3.0 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: 프록시(같은 출처) → CORS. 개발 서버 주소를 `http://localhost:3000/api`로, 공통 규약에 CORS 허용 출처(`CORS_ORIGINS`)·사전 요청·CSRF 쿠키 Domain(`COOKIE_DOMAIN`) 추가, Swagger UI 주소 변경 |
+    | 0.3.1 | 2026-11-05 | MinjeYu | 백엔드 코드 대조 반영: CSRF 쿠키 `Domain=<COOKIE_DOMAIN>`(설정 시)을 `csrfCookie`·`SetCookieSession`·`SetCookieClear`에 명시, 토큰 수명 15분·7일과 `Max-Age=900`·`604800`을 `ACCESS_TOKEN_TTL_MINUTES`·`REFRESH_TOKEN_TTL_DAYS`의 기본값으로 표기, 근거 문서 버전 갱신 |
+    | 0.4.0 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: VR-02 비밀번호 규칙을 KISA 기준(3종류 이상 8자 이상 또는 2종류 이상 10자 이상, 최대 128자)으로 변경(PRD v0.13). `Password` minLength 15 → 8, 비밀번호 변경·로그인 설명의 '15자' 표현 수정 |
+    | 0.4.1 | 2026-11-05 | MinjeYu | 코드 리뷰 반영: 근거 문서 버전 갱신(실행 계획 v0.46) |
 
     이력 갱신 규칙: 파일 상단 주석 표와 이 표를 함께 갱신한다. SemVer(호환 깨짐 major, 엔드포인트·필드 추가 minor, 설명 수정 patch).
 
@@ -63,7 +69,7 @@ info:
     - **본문 형식 오류**: 잘못된 JSON·크기 초과(413)·지원하지 않는 문자셋(415) 본문은 모든 경로에서 인증보다 먼저 400 `VALIDATION_ERROR`(`요청 형식이 올바르지 않습니다.`, `fields` 없음)이다. 각 operation의 응답 목록에는 따로 적지 않는다.
     - **오류**: 모든 오류는 `{ "error": { "code", "message", "fields?" } }`(PRD 4.3). 클라이언트는 `error.code`로만 분기한다(PR-08). `message`·`fields[].message`는 한국어다(CN-08).
     - **목록**: 페이지네이션 없이 전체를 `{ "items": [...] }`로 돌려준다(OI-15). 필드로 감싼 이유는 나중에 페이지 정보를 하위 호환으로 추가하기 위함이다(가정).
-    - **인증**: 액세스 토큰(JWT HS384, 15분)은 HttpOnly 쿠키, 리프레시 토큰(불투명 값, 7일 슬라이딩, 회전·재사용 감지·폐기 후 10초 유예)은 경로 한정 HttpOnly 쿠키다(NFR-07). 요청 헤더 `Authorization`은 쓰지 않는다.
+    - **인증**: 액세스 토큰(JWT HS384, 기본 15분 `ACCESS_TOKEN_TTL_MINUTES`)은 HttpOnly 쿠키, 리프레시 토큰(불투명 값, 기본 7일 슬라이딩 `REFRESH_TOKEN_TTL_DAYS`, 회전·재사용 감지·폐기 후 10초 유예)은 경로 한정 HttpOnly 쿠키다(NFR-07). 요청 헤더 `Authorization`은 쓰지 않는다.
     - **CORS**: 화면과 API는 다른 출처다(운영은 같은 사이트의 다른 서브도메인). 환경 변수 `CORS_ORIGINS`에 적은 출처만 `Access-Control-Allow-Origin`(그 출처 그대로)·`Access-Control-Allow-Credentials: true`를 받는다. `*`는 쓰지 않는다. 사전 요청(OPTIONS)은 인증·CSRF 전에 204로 응답하고 허용 출처에만 `GET, POST, PUT, PATCH, DELETE`와 `Content-Type, X-CSRF-Token` 헤더를 허용한다. 클라이언트는 `credentials: 'include'`로 호출한다.
     - **CSRF**: POST·PUT·PATCH·DELETE는 Signed Double-Submit(쿠키 값 = 헤더 값, HMAC 서명, 현재 JWT `jti` 연계)을 요구한다(NFR-15). 예외: 회원가입·로그인·토큰 갱신·로그아웃.
     - **검사 순서**: 인증(401 ERR-02) → CSRF(403 ERR-08) → 검증(400) → 소유권(404)(DL-05, AD-08). 예외: `/todos/{todoId}`의 GET·PATCH·DELETE는 경로 ID 형식 오류를 본문 검증보다 먼저 404로 응답한다. 액세스 토큰이 만료된 상태 변경 요청은 ERR-02이고 저장되지 않으므로, 클라이언트는 `POST /auth/refresh` 뒤 원 요청을 한 번만 재전송한다(DL-14).
@@ -202,7 +208,7 @@ paths:
       summary: 로그인
       description: |
         처리 순서(AD-07): 입력 형식 검사 → 로그인 제한 확인 → 사용자 조회·비밀번호 비교 → 세션 발급.
-        - 형식 검사(PRD 4.1 로그인 입력 검증): email 필수·형식·254자, 비밀번호 필수·128자 이하. 위반은 400이고 실패 횟수에 넣지 않는다. 15자 하한은 적용하지 않는다(AQ-04).
+        - 형식 검사(PRD 4.1 로그인 입력 검증): email 필수·형식·254자, 비밀번호 필수·128자 이하. 위반은 400이고 실패 횟수에 넣지 않는다. VR-02의 길이 하한·문자 종류 규칙은 적용하지 않는다(AQ-04).
         - IP별(15분 10회)·계정별(15분 5회) 실패가 한도에 이르면 다음 시도부터 429. 제한 중에는 비밀번호를 검증하지 않으므로 올바른 비밀번호도 거부된다(NFR-10, AC-15). 수치는 가정.
         - 없는 email과 틀린 비밀번호는 같은 401 `INVALID_CREDENTIALS`와 같은 문구다(ERR-03, AC-14).
         - 성공하면 새 계열의 리프레시 토큰을 발급하고 그 사용자의 만료 행을 정리한다(OI-21). 성공은 실패 횟수에 넣지 않는다.
@@ -401,7 +407,7 @@ paths:
       description: |
         PRD 4.4. FR-03의 P1 부분이며 컷 라인 1에서 가장 먼저 빠진다(PRD 8장).
         - 현재 비밀번호가 틀리면 400 `VALIDATION_ERROR`이고 `fields`의 필드는 `currentPassword`다(AC-21). 이 실패는 로그인 실패 횟수에 넣지 않는다.
-        - 새 비밀번호는 VR-02(15~128자, 문자 종류 조합 강제 없음). 두 값 모두 공백을 제거하지 않는다.
+        - 새 비밀번호는 VR-02(`Password` 스키마). 두 값 모두 공백을 제거하지 않는다.
         - 성공하면 그 사용자의 모든 리프레시 토큰을 폐기하고 현재 세션에 새 액세스·리프레시·CSRF 쿠키를 발급해 현재 기기의 로그인을 유지한다(AC-20, BR-16). 다른 기기는 액세스 토큰 만료(최대 15분) 뒤 로그인을 요구받는다(R-08).
 
         경로·메서드는 가정 (설계서 COM-01에서 확정). 근거: FR-03, UC-03, AC-20, AC-21, PRD 4.4, VR-02, NFR-06, BR-16, BE-23.
@@ -967,14 +973,14 @@ components:
       in: cookie
       name: access_token
       description: |
-        JWT 액세스 토큰(HS384만 허용, 클레임 `sub`·`iat`·`exp`·`jti`, 만료 15분). `HttpOnly; SameSite=Lax; Path=/api; Max-Age=900`, 운영 HTTPS에서 `Secure`(NFR-07, SO-12).
+        JWT 액세스 토큰(HS384만 허용, 클레임 `sub`·`iat`·`exp`·`jti`, 만료 기본 15분). `HttpOnly; SameSite=Lax; Path=/api; Max-Age=900`(기본값), 운영 HTTPS에서 `Secure`(NFR-07, SO-12).
         쿠키 이름과 `Path`는 가정 (설계서 COM-01에서 확정).
     refreshTokenCookie:
       type: apiKey
       in: cookie
       name: refresh_token
       description: |
-        불투명 리프레시 토큰(32바이트 이상 무작위, DB에는 SHA-256 해시만, 7일 슬라이딩). `HttpOnly; SameSite=Strict; Path=/api/auth; Max-Age=604800`, 운영 HTTPS에서 `Secure`.
+        불투명 리프레시 토큰(32바이트 이상 무작위, DB에는 SHA-256 해시만, 기본 7일 슬라이딩). `HttpOnly; SameSite=Strict; Path=/api/auth; Max-Age=604800`(기본값), 운영 HTTPS에서 `Secure`.
         `Path`는 갱신·로그아웃을 모두 포함하는 인증 API 공통 접두사 하나이며 그 아래의 회원가입·로그인 요청에도 전송되지만 쓰지 않는다(NFR-07, OI-19).
         토큰 갱신과 로그아웃만 읽는다. 쿠키 이름과 `/api/auth` 값은 가정 (설계서 COM-01에서 확정).
     csrfCookie:
@@ -982,7 +988,7 @@ components:
       in: cookie
       name: csrf_token
       description: |
-        Signed Double-Submit의 쿠키 쪽 값(현재 JWT `jti`에 묶어 서버 비밀 키로 HMAC 서명). HttpOnly가 아니다. `SameSite=Lax; Path=/; Max-Age=900`(NFR-15, PRD 11장).
+        Signed Double-Submit의 쿠키 쪽 값(현재 JWT `jti`에 묶어 서버 비밀 키로 HMAC 서명). HttpOnly가 아니다. `SameSite=Lax; Path=/; Max-Age=900`(액세스 수명과 같음, NFR-15, PRD 11장). `COOKIE_DOMAIN`을 설정하면(운영 필수) `Domain=<COOKIE_DOMAIN>`을 붙여 화면 서브도메인의 JS가 읽게 한다. 액세스·리프레시 쿠키에는 Domain이 없다(API 호스트 전용).
         로그인·회원가입·토큰 갱신·비밀번호 변경 때 발급, 로그아웃 때 삭제. 쿠키 이름·`SameSite`·`Path`는 가정 (설계서 COM-01에서 확정, SQ-08).
     csrfHeader:
       type: apiKey
@@ -998,9 +1004,9 @@ components:
         세션 쿠키 3종을 발급한다(Set-Cookie 헤더 3개). 운영 HTTPS에서는 세 쿠키 모두 `Secure`를 붙인다(로컬 HTTP 제외, NFR-07, SO-04).
         - `access_token=<JWT>; Path=/api; HttpOnly; SameSite=Lax; Max-Age=900`
         - `refresh_token=<opaque>; Path=/api/auth; HttpOnly; SameSite=Strict; Max-Age=604800`
-        - `csrf_token=<signed>; Path=/; SameSite=Lax; Max-Age=900`
+        - `csrf_token=<signed>; Path=/; SameSite=Lax; Max-Age=900` (+ `Domain=<COOKIE_DOMAIN>`, 설정 시)
 
-        이름·Path(리프레시 제외)·CSRF SameSite는 가정 (설계서 COM-01에서 확정). Max-Age는 PRD 11장(액세스·CSRF 15분, 리프레시 7일).
+        이름·Path(리프레시 제외)·CSRF SameSite는 가정 (설계서 COM-01에서 확정). Max-Age는 PRD 11장의 기본값(액세스·CSRF 15분, 리프레시 7일)이며 `ACCESS_TOKEN_TTL_MINUTES`·`REFRESH_TOKEN_TTL_DAYS`로 바꿀 수 있다.
       schema:
         type: string
       example: access_token=eyJhbGciOiJIUzM4NCJ9...; Path=/api; HttpOnly; SameSite=Lax; Max-Age=900
@@ -1009,7 +1015,7 @@ components:
         세션 쿠키 3종을 삭제한다(발급 때와 같은 이름·Path, 과거 `Expires`, BR-01, NFR-15). Express 5 `res.clearCookie`는 `Max-Age`를 보내지 않는다.
         - `access_token=; Path=/api; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
         - `refresh_token=; Path=/api/auth; HttpOnly; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
-        - `csrf_token=; Path=/; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+        - `csrf_token=; Path=/; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT` (+ 발급 때와 같은 `Domain`, 설정 시)
       schema:
         type: string
       example: refresh_token=; Path=/api/auth; HttpOnly; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT
@@ -1052,10 +1058,10 @@ components:
       example: '2026-11-04T05:10:00.000Z'
     Password:
       type: string
-      minLength: 15
+      minLength: 8
       maxLength: 128
       format: password
-      description: VR-02. 15~128자(길이는 UTF-16 코드 단위), 문자 종류 조합 강제 없음. 앞뒤 공백을 포함해 입력값 그대로 검증·해시한다(PRD 4.1, NFR-06).
+      description: VR-02(KISA 기준). 영대문자·영소문자·숫자·특수문자(공백을 뺀 ASCII 기호) 중 3종류 이상이면 8자 이상, 2종류만이면 10자 이상, 1종류는 거부. 최대 128자, 길이는 UTF-16 코드 단위. 그 밖의 문자(공백·한글 등)는 쓸 수 있지만 종류로 세지 않는다. 앞뒤 공백을 포함해 입력값 그대로 검증·해시한다(PRD 4.1, NFR-06).
     Email:
       type: string
       format: email
@@ -1112,7 +1118,7 @@ components:
     LoginRequest:
       type: object
       required: [email, password]
-      description: PRD 4.1 로그인 입력 검증. VR-02의 15자 하한은 적용하지 않는다(AQ-04).
+      description: PRD 4.1 로그인 입력 검증. VR-02의 길이 하한·문자 종류 규칙은 적용하지 않는다(AQ-04).
       properties:
         email:
           $ref: '#/components/schemas/Email'
@@ -1121,7 +1127,7 @@ components:
           format: password
           minLength: 1
           maxLength: 128
-          description: 필수, 128자 이하. 공백 제거 없음. 15자 미만이어도 형식 오류가 아니며 틀리면 401 `INVALID_CREDENTIALS`.
+          description: 필수, 128자 이하. 공백 제거 없음. VR-02에 맞지 않아도 형식 오류가 아니며 틀리면 401 `INVALID_CREDENTIALS`.
 
     UpdateUserRequest:
       type: object

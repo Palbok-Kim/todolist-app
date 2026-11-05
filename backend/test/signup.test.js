@@ -29,7 +29,7 @@ async function call(path, init) {
   }
 }
 
-const PASSWORD = 'correct horse battery staple';
+const PASSWORD = 'correct horse battery staple 1!';
 let n = 0;
 const uniqueEmail = () => `u${++n}@example.test`;
 const signupCall = (body) => call('/api/auth/signup', { method: 'POST', body });
@@ -158,7 +158,7 @@ test('SO-06: 비밀번호·리프레시 토큰·해시는 응답과 로그에 �
   for (const key of ['passwordHash', 'password_hash']) assert.ok(!text.includes(key), key);
 });
 
-test('ERR-01: 필수값 누락이나 14자 비밀번호는 400 VALIDATION_ERROR이고 사용자가 생기지 않는다', async () => {
+test('ERR-01: 필수값 누락이나 VR-02에 맞지 않는 비밀번호(2종류 9자)는 400 VALIDATION_ERROR이고 사용자가 생기지 않는다', async () => {
   const empty = await signupCall({});
   assert.equal(empty.status, 400);
   assert.equal(empty.body.error.code, ERR.VALIDATION_ERROR.code);
@@ -167,7 +167,7 @@ test('ERR-01: 필수값 누락이나 14자 비밀번호는 400 VALIDATION_ERROR�
   for (const f of ['email', 'password', 'name']) assert.ok(fields.has(f), f);
   assert.ok(!fields.has('timezone'));
 
-  const short = await signupCall(input({ password: 'a'.repeat(14) }));
+  const short = await signupCall(input({ password: 'abcdefgh1' }));
   assert.equal(short.status, 400);
   assert.equal(short.body.error.code, ERR.VALIDATION_ERROR.code);
   assert.equal(short.body.error.fields.length, 1);

@@ -35,8 +35,8 @@ async function call(path, init) {
 }
 
 const EMAIL = 'me@example.test';
-const OLD = 'correct horse battery staple';
-const NEW = ' new  passphrase with spaces ';
+const OLD = 'correct horse battery staple 1!';
+const NEW = ' new  passphrase 2 with spaces! ';
 const sha256 = (v) => createHash('sha256').update(v).digest('hex');
 const refreshOf = (headers) =>
   headers
@@ -127,11 +127,11 @@ test('AC-21: 틀린 현재 비밀번호로 6회 시도해도 모두 400이고 �
   assert.equal((await loginSession(OLD)).res.status, 200);
 });
 
-test('VR-02: 새 비밀번호 14자·129자, 현재 비밀번호 누락은 400이고 비밀번호가 바뀌지 않는다', async () => {
+test('VR-02: 새 비밀번호 2종류 9자·129자, 현재 비밀번호 누락은 400이고 비밀번호가 바뀌지 않는다', async () => {
   const current = await signupSession();
   const cases = [
-    [{ currentPassword: OLD, newPassword: 'x'.repeat(14) }, ['newPassword']],
-    [{ currentPassword: OLD, newPassword: 'x'.repeat(129) }, ['newPassword']],
+    [{ currentPassword: OLD, newPassword: 'abcdefgh1' }, ['newPassword']],
+    [{ currentPassword: OLD, newPassword: 'Aa1!'.repeat(32) + 'a' }, ['newPassword']],
     [{ newPassword: NEW }, ['currentPassword']],
     [{}, ['currentPassword', 'newPassword']],
   ];

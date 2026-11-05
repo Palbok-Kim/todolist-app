@@ -41,7 +41,7 @@ const req = (session, path, method = 'GET', body) =>
 
 async function setupUser(email) {
   const s = await quiet(() =>
-    signup(api, { email, password: 'correct horse battery staple', name: email }),
+    signup(api, { email, password: 'correct horse battery staple 1!', name: email }),
   );
   const category = (await req(s, '/api/categories', 'POST', { name: `${email} 업무` })).body;
   const todo = (

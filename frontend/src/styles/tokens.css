@@ -1,0 +1,70 @@
+:root {
+  --color-primary: #6a5ae0;
+  --color-primary-hover: #5847d1;
+  --color-primary-soft: #eeebfc;
+  --color-text: #222222;
+  --color-text-muted: #767676;
+  --color-text-disabled: #b4b4b4;
+  --color-bg: #ffffff;
+  --color-bg-subtle: #f7f7f9;
+  --color-border: #e3e3e8;
+  --color-border-strong: #c9c9d1;
+  --color-today-bg: #eef5fb;
+  --color-sunday: #e5383b;
+  --color-saturday: #3a6fd8;
+  --color-danger: #d93025;
+  --color-danger-soft: #fdecea;
+  --color-info-soft: #eef2ff;
+
+  --status-todo: #8a8f98;
+  --status-todo-soft: #f0f1f3;
+  --status-doing: #e07a4f;
+  --status-doing-soft: #fceee7;
+  --status-done: #3e9b6e;
+  --status-done-soft: #e6f4ec;
+  --status-overdue: #d93025;
+  --status-overdue-soft: #fdecea;
+
+  --font-family:
+    'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic',
+    '맑은 고딕', sans-serif;
+  --text-xs: 12px/16px;
+  --text-sm: 13px/18px;
+  --text-md: 14px/20px;
+  --text-lg: 18px/26px;
+  --text-xl: 22px/30px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --shadow-pop: 0 4px 16px rgb(0 0 0 / 12%);
+  --header-height: 56px;
+  --control-height: 32px;
+  --content-max: 1280px;
+  --form-max: 360px;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --control-height: 40px;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font: var(--text-md) var(--font-family);
+  color: var(--color-text);
+  background: var(--color-bg);
+}

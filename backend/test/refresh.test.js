@@ -37,7 +37,7 @@ async function call(path, init) {
   }
 }
 
-const PASSWORD = 'correct horse battery staple';
+const PASSWORD = 'correct horse battery staple 1!';
 const sha256 = (v) => createHash('sha256').update(v).digest('hex');
 const cookiesOf = (headers) =>
   Object.fromEntries(

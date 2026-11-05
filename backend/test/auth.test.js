@@ -36,7 +36,7 @@ async function call(path, init) {
   }
 }
 
-const PASSWORD = 'correct horse battery staple';
+const PASSWORD = 'correct horse battery staple 1!';
 const EMAIL = 'a@example.test';
 // 보호 라우트 대표로 내 정보 조회를 쓴다(인증되면 200, 아니면 401)
 const PROTECTED = '/api/users/me';

@@ -38,7 +38,7 @@ async function call(path, init) {
   }
 }
 
-const PASSWORD = 'correct horse battery staple';
+const PASSWORD = 'correct horse battery staple 1!';
 const cookieMap = (headers) =>
   Object.fromEntries(
     headers.getSetCookie().map((c) => {
@@ -88,7 +88,7 @@ test('NFR-06: 73자 이상 비밀번호도 끝 글자까지 구분하고 앞뒤 
   assert.equal((await login('long@example.test', long)).status, 200);
   assert.equal((await login('long@example.test', `${'a'.repeat(79)}Y`)).status, 401);
 
-  const spaced = '  spaced password here  ';
+  const spaced = '  spaced Password here  ';
   await signup('space@example.test', spaced);
   assert.equal((await login('space@example.test', spaced)).status, 200);
   assert.equal((await login('space@example.test', spaced.trim())).status, 401);
