@@ -29,11 +29,11 @@ async function call(path, init) {
 
 const notFound = { error: { code: ERR.NOT_FOUND.code, message: '대상을 찾을 수 없습니다.' } };
 
-test('GET /api/health는 DB 확인 후 200 { status: ok }만 준다', async () => {
+test('GET /api/health는 DB 연결 확인 후 200 { status: ok, db: up }을 준다', async () => {
   const { status, type, body } = await call('/api/health');
   assert.equal(status, 200);
   assert.match(type, /application\/json/);
-  assert.deepEqual(body, { status: 'ok' });
+  assert.deepEqual(body, { status: 'ok', db: 'up' });
 });
 
 test('AC-02: 인증 없이 없는 /api 경로는 GET·POST 모두 401 UNAUTHORIZED 공통 형식이다', async () => {
@@ -52,18 +52,18 @@ test('/api 밖 경로도 404 NOT_FOUND 공통 형식이다', async () => {
   assert.deepEqual(body, notFound);
 });
 
-test('DB 실패 시 500 INTERNAL_ERROR이고 내부 정보는 로그에만 있다', async (t) => {
+test('DB 실패 시 503 { status: error, db: down }이고 내부 정보는 로그에만 있다', async (t) => {
   t.mock.method(pool, 'query', async () => {
     throw Object.assign(new Error('terminating connection due to administrator command'), {
       code: '57P01',
     });
   });
   const { status, body, text, logs } = await call('/api/health');
-  assert.equal(status, 500);
-  assert.equal(body.error.code, ERR.INTERNAL_ERROR.code);
+  assert.equal(status, 503);
+  assert.deepEqual(body, { status: 'error', db: 'down' });
   for (const leak of ['terminating', '57P01', 'stack', 'select']) assert.ok(!text.includes(leak));
   const errLog = logs.find((l) => l.level === 'error');
-  assert.match(errLog.message, /terminating connection/);
+  assert.match(errLog.error, /terminating connection/);
 });
 
 test('유휴 클라이언트 error 이벤트가 프로세스를 죽이지 않는다', () => {

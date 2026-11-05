@@ -4,6 +4,6 @@ import { checkHealth } from '../services/health.service.js';
 export const healthRouter = Router();
 
 healthRouter.get('/health', async (req, res) => {
-  await checkHealth();
-  res.json({ status: 'ok' });
+  const health = await checkHealth();
+  res.status(health.db === 'up' ? 200 : 503).json(health);
 });

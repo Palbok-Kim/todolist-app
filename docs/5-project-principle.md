@@ -14,6 +14,8 @@
 | 0.8 | 2026-11-04 | MinjeYu | COM-03 진행: 2.3장 허용 의존성에 백엔드·프런트 개발 의존성 `@eslint/js` 추가(DL-16, TQ-10 권장 규칙) |
 | 0.9 | 2026-11-04 | MinjeYu | BE-04 진행: SO-01의 `process.env` 허용 위치에 테스트 DB 전환용 `backend/test/helpers/env.js` 추가(TQ-08) |
 | 0.10 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: k6 부하 테스트 제거. TQ-09 삭제(ID 유지), TQ-12·SO-11·디렉토리 구조(`loadtest/` 삭제, `docs/test/` 결과 기록 추가)·추적 표·PQ-11에서 k6 제거 |
+| 0.11 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: SO-14 헬스 응답에 DB 연결 상태(`db: up/down`) 추가, DB 실패는 500 ERR-07 대신 503 |
+| 0.12 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: 프록시 → CORS. SO-08(Vite 프록시 삭제·`strictPort`, `cors.js`, `CORS_ORIGINS`, `VITE_API_BASE_URL`, `credentials: 'include'`)·SO-12(CSRF 쿠키 `Domain`=`COOKIE_DOMAIN`)·SO-16(개발 `TRUST_PROXY` 비움)·SO-02·PQ-07(같은 출처 기본안 폐기, 서브도메인 + CORS) 수정, 2.3장 `cors` 항목을 직접 작성 미들웨어로, `vite` 용도 문구, 6장 트리 `middleware/cors.js`·`vite.config.ts`, 7장 추적 표 |
 
 **표기 범례** (도메인 정의서·PRD·사용자 시나리오·와이어프레임과 같음)
 - **확정**: 요구사항 원문 또는 사용자 의사결정(2026-11-04)에 근거한 결정
@@ -111,13 +113,13 @@
 | 프런트 | `react`, `react-dom`, `typescript`, `zustand`, `@tanstack/react-query` | 확정 스택 (PRD 6장) |
 | 프런트 | `react-router` | 화면 8개, 인증 가드, 뒤로 가기를 직접 구현하지 않기 위함 |
 | 프런트 개발 | `@types/react`, `@types/react-dom` | React 19는 타입 정의를 포함하지 않아 TypeScript 컴파일(`tsc --noEmit`)에 필요하다 (PRD 6장 TypeScript) |
-| 프런트 개발 | `vite`, `@vitejs/plugin-react` | 개발 서버와 `/api` 프록시 제공 (PRD 6장의 개발 서버 프록시), 설정이 적다 |
+| 프런트 개발 | `vite`, `@vitejs/plugin-react` | 개발 서버 제공 (PRD 6장), 설정이 적다 |
 | 프런트 개발 | `vitest` | Vite 설정을 공유해 TS 순수 함수를 바로 테스트 (TQ-06) |
 | 프런트 개발 | `eslint`, `typescript-eslint`, `eslint-plugin-react-hooks`, `prettier` | 훅 규칙 위반·레이어 규칙 검증 (TQ-10) |
 
 사용자 결정(2026-11-04)(HS384, Refresh Token)으로 추가하는 패키지는 없다. 리프레시 토큰의 무작위 값과 SHA-256 해시는 `node:crypto`(`randomBytes`, `createHash`)로 만들고, HS384 서명은 이미 허용된 `jsonwebtoken`이 지원하므로 의존성 목록은 바뀌지 않는다 (DL-16).
 
-**도입하지 않는 것과 대체 수단**: `bcrypt`(NFR-06이 금지, `node:crypto`의 scrypt), `dotenv`(`node --env-file`), `nodemon`(`node --watch`), `supertest`·`jest`(`node:test`와 내장 `fetch`), `cors`(개발·운영 모두 같은 출처 `/api`, PRD 6장 프록시), `axios`(`fetch`), `zod`·`react-hook-form`(폼 4개라 `features/*/validation.ts` 직접 작성), `date-fns`·`dayjs`(문자열과 `Intl`로 충분, 캘린더 라이브러리는 R-02에 따라 Day 2 오전에 판단하고 도입하면 이 표에 이유를 적는다), UI 킷·CSS-in-JS(Vite 기본 CSS Modules), 분석·로깅 SaaS(PRD 3장 범위 외).
+**도입하지 않는 것과 대체 수단**: `bcrypt`(NFR-06이 금지, `node:crypto`의 scrypt), `dotenv`(`node --env-file`), `nodemon`(`node --watch`), `supertest`·`jest`(`node:test`와 내장 `fetch`), `cors`(`middleware/cors.js` 직접 작성, 허용 출처 목록 하나와 사전 요청 응답이면 충분하다. SO-08), `axios`(`fetch`), `zod`·`react-hook-form`(폼 4개라 `features/*/validation.ts` 직접 작성), `date-fns`·`dayjs`(문자열과 `Intl`로 충분, 캘린더 라이브러리는 R-02에 따라 Day 2 오전에 판단하고 도입하면 이 표에 이유를 적는다), UI 킷·CSS-in-JS(Vite 기본 CSS Modules), 분석·로깅 SaaS(PRD 3장 범위 외).
 
 ## 3. 코드·네이밍 원칙
 
@@ -157,21 +159,21 @@
 | ID | 원칙 | 이유 | 근거 | 구분 |
 |----|------|------|------|------|
 | SO-01 | 환경 변수는 `backend/src/config.js`에서만 읽는다 (`process.env` grep이 그 파일과 `scripts/`, 테스트 DB로 전환하는 `backend/test/helpers/env.js`(TQ-08)에서만 나온다). 시작할 때 필수 값·형식을 검증하고 실패하면 프로세스를 종료한다. pg 풀 크기 등 조정 값도 여기서 설정값으로 노출한다 | 설정 누락을 기동 때 발견한다 | NFR-05 | 가정 |
-| SO-02 | `.env`는 `.gitignore`에 넣고, 키 이름과 안전한 예시 값만 담은 `.env.example`을 루트에 커밋한다. 비밀 값은 커밋하지 않는다 (`git ls-files`에 `.env.example` 외 `.env*` 없음). 프런트 `VITE_*` 변수는 번들에 노출되므로 비밀을 넣지 않는다 (API 주소는 상대 경로 `/api`라 변수가 필요 없다) | 비밀 유출 방지 | NFR-07, NFR-15 | 가정 |
+| SO-02 | `.env`는 `.gitignore`에 넣고, 키 이름과 안전한 예시 값만 담은 `.env.example`을 루트에 커밋한다. 비밀 값은 커밋하지 않는다 (`git ls-files`에 `.env.example` 외 `.env*` 없음). 프런트 `VITE_*` 변수는 번들에 노출되므로 비밀을 넣지 않는다 (API 기준 주소 `VITE_API_BASE_URL`은 공개 값이다. SO-08) | 비밀 유출 방지 | NFR-07, NFR-15 | 가정 |
 | SO-03 | JWT·CSRF 서명 키 같은 비밀은 코드에 값을 직접 쓰지 않고 `.env`로만 주입한다. `.env.example`의 값은 `change-me`를 반복해 48자 이상으로 만든 자리표시자이고, `production`에서 자리표시자이면 기동을 거부한다. JWT 서명 키(HS384)는 어느 환경에서든 48바이트(384비트) 미만이면 기동을 거부한다. 키 관리 세부는 11장을 따른다 | 기본 키로 운영되는 사고와 짧은 키로 HS384 서명을 쓰는 사고를 막는다 (자리표시자를 48자 이상으로 하는 이유는 개발·테스트 환경이 길이 검사에 막히지 않게 하기 위함) | NFR-07, NFR-15, R-13, PRD 11장 | 확정 (HS384: 사용자 결정(2026-11-04), 키 길이: 위임 결정(2026-11-04)) / 가정 (검사 위치) |
 | SO-04 | `NODE_ENV`는 `development` / `test` / `production`만 허용하고 그 밖은 기동을 거부한다. 환경별 차이는 `config.js`의 플래그(예: 쿠키 `Secure`)로만 두고 다른 파일에서 `NODE_ENV`를 분기하지 않는다 (grep). `production`에서는 HTTPS 쿠키 `Secure`를 켠다 | 환경 분기가 코드 곳곳에 퍼지는 것을 막는다 | NFR-07, NFR-09 | 확정 (Secure 요구) / 가정 (구조) |
 | SO-05 | NFR-10의 테스트 IP 예외는 기본적으로 구현하지 않는다. 격리 테스트 환경에 꼭 필요해지면 `test`에서만 읽는 설정으로 두고 `production`에서 그 설정 값이 있으면 `config.js`가 기동을 거부한다. 구현 방식은 11장을 따르며 이 가드는 TQ-05의 테스트로 확인한다 | 운영에서 켤 수 없어야 한다 | NFR-10, PRD 11장 | 확정 (원칙적 예외 금지, 운영 불가) / 가정 (가드 방식) |
 | SO-06 | 로그는 한 줄 JSON을 stdout으로 내보내는 `lib/logger.js` 하나로만 쓴다 (`console.*`는 그 파일 밖에서 린트 오류). 요청 로그는 `time`(`Date.now()`의 epoch 밀리초 숫자, `new Date(` 없이 CN-06을 지킨다. 8-plan.md XQ-10), `level`, `method`, `path`, `status`, `userId`, `durationMs`만 담고, 서버 오류는 요청 정보와 함께 `err.message`·`err.stack`을 남긴다. 평문 비밀번호, 토큰, 쿠키, `Authorization` 헤더, 요청 body 통째는 어떤 로그에도 넣지 않는다. 프런트도 비밀번호·토큰을 `console`로 출력하지 않는다 | 로그를 통한 비밀 유출 방지 | NFR-06, NFR-11 | 확정 (남길 것, 금지 값, `time` 값: 위임 결정(2026-11-04)) / 가정 (형식) |
 | SO-07 | 응답에 내부 정보를 넣지 않는다. 오류 응답은 `errorHandler` 한 곳에서만 만들고, 알 수 없는 예외는 ERR-07의 고정 문구로 바꾼다. 스택, SQL 문, pg 오류 메시지, 파일 경로는 응답에 들어가지 않는다. pg 오류 코드는 service가 번역한다(유니크 위반은 ERR-04, 카테고리 FK 위반은 ERR-05). uuid 형식이 아닌 경로·본문의 ID는 DB에 보내기 전에 ERR-05로 응답해 pg 형식 오류가 ERR-07로 새지 않게 한다(7-erd.md EQ-01). 로그인 실패는 email 존재 여부와 상관없이 ERR-03의 같은 문구다 (응답 시간 처리는 11장) | 내부 정보 노출을 막는다 | NFR-11, ERR-03, ERR-07, AC-14, BR-02 | 확정 (FK 위반·uuid 형식 오류의 ERR-05 번역은 위임 결정(2026-11-04), AQ-08, EQ-01) |
-| SO-08 | 로컬 실행 구성은 프로세스 3개다: 로컬에 직접 설치한 PostgreSQL 17(`localhost:5432`, 외부에 노출하지 않고 localhost만 연다), 백엔드 node(`backend/`에서 `npm run dev` = `node --watch --env-file-if-exists=../.env src/server.js`, 포트 3000, 루트 `.env`를 읽는다), Vite 개발 서버(`frontend/`에서 `npm run dev`, 포트 5173). `vite.config.ts`가 `/api`를 `http://localhost:3000`으로 프록시하고 `xfwd: true`로 클라이언트 IP를 `X-Forwarded-For`에 전달한다. 같은 출처 `/api`라 CORS·쿠키 설정이 단순하다. 기동 순서(DB 먼저)는 따로 보장하는 장치를 만들지 않고 README의 실행 순서로만 안내한다 | 같은 출처로 CORS·쿠키 설정을 단순하게 하고 로컬 설정을 줄인다 | PRD 6장 개발 환경, NFR-07 | 확정 (사용자 결정(2026-11-04): Docker 미사용) / 가정 (세부) |
+| SO-08 | 로컬 실행 구성은 프로세스 3개다: 로컬에 직접 설치한 PostgreSQL 17(`localhost:5432`, 외부에 노출하지 않고 localhost만 연다), 백엔드 node(`backend/`에서 `npm run dev` = `node --watch --env-file-if-exists=../.env src/server.js`, 포트 3000, 루트 `.env`를 읽는다), Vite 개발 서버(`frontend/`에서 `npm run dev`, 포트 5173, `strictPort: true`로 출처 고정). 화면↔API는 CORS다(사용자 결정(2026-11-05)): 브라우저가 `http://localhost:5173`에서 `http://localhost:3000/api`를 직접 호출하고 Vite `/api` 프록시는 없다. 백엔드 `middleware/cors.js`(직접 작성, 요청 로거 다음·파서·인증·CSRF 앞)가 `CORS_ORIGINS`(쉼표 구분 정확한 출처, `*`·경로·끝 슬래시는 기동 거부, 개발 기본 `http://localhost:5173`, production 필수)에 있는 출처에만 `Access-Control-Allow-Origin`(그 출처)·`Allow-Credentials: true`를 붙이고 항상 `Vary: Origin`을 둔다. 사전 요청은 인증·CSRF 전에 204로 끝낸다. 쿠키 인증이라 `*`는 쓰지 않는다. 프런트는 `VITE_API_BASE_URL`(개발 기본 `http://localhost:3000/api`)로 호출하고 `fetch`에 `credentials: 'include'`를 쓴다. localhost 쿠키는 포트와 무관하게 공유되고 같은 사이트라 SameSite가 그대로 동작한다. 허용 헤더·메서드·`Max-Age`는 설계서를 따른다. 기동 순서(DB 먼저)는 따로 보장하는 장치를 만들지 않고 README의 실행 순서로만 안내한다 | 같은 출처로 CORS·쿠키 설정을 단순하게 하고 로컬 설정을 줄인다 | PRD 6장 개발 환경, NFR-07 | 확정 (사용자 결정(2026-11-04): Docker 미사용) / 가정 (세부) |
 | SO-09 | 의존성은 `backend/`와 `frontend/` 각각 `package-lock.json`을 커밋하고 `npm ci`로 설치한다. 운영 배포 구성·HTTPS 종단은 이 문서의 범위 밖이다 (PQ-07) | 재현 가능한 설치 | OI-12 | 확정 (Docker 관련 내용 삭제: 사용자 결정(2026-11-04): Docker 미사용) / 가정 (`npm ci`) |
 | SO-10 | DDL은 `backend/migrations/NNN_<설명>.sql`에만 쓰고 앱 코드에 `CREATE`·`ALTER`를 두지 않는다. 파일은 번호 순서로 한 방향(forward-only)으로 적용하고 적용된 파일은 고치지 않고 새 파일로 바꾼다. 러너 `backend/scripts/migrate.js`가 `schema_migrations` 표에 적용 기록을 남기고 파일마다 트랜잭션으로 실행한다. DB가 보장할 수 있는 불변식은 제약으로도 둔다: 날짜 순서(BR-07), 카테고리 이름 중복(BR-14, 방법은 7-erd.md EQ-03), 사용자당 기본 카테고리 1개. 할일·카테고리 표에는 `user_id`로 시작하는 인덱스를 만든다 | 스키마 변경을 재현하고 검증을 DB에서도 한 번 더 막는다 | NFR-05, BR-07, BR-14, PRD 11장 | 가정 (러너·제약 방침) / 확정 (인덱스 요구) |
 | SO-11 | 시드는 `backend/scripts/seed.js` 하나에 `dev`(데모 사용자 2명과 소량 데이터)와 `load`(계정 1000개, 사용자당 할일 200개·카테고리 5개) 두 모드를 둔다. `NODE_ENV=production`이면 실행을 거부한다. 비밀번호는 `lib/password.js`로 사용자마다 따로 해시하고 기본 카테고리를 만들어(BR-03) 규칙을 우회하지 않는다. 시드 email은 `@example.test` 도메인이고 재실행하면 그 도메인 계정만 지우고 다시 만든다. 시드 계정 비밀번호는 환경 변수로 받는다 | 부하 데이터를 재현 가능하게 만든다 | NFR-04, NFR-06, BR-03 | 확정 (데이터 규모) / 가정 (스크립트 방식) |
-| SO-12 | 쿠키 속성(`HttpOnly`, `SameSite`, `Secure` 조건, `Path`, `Max-Age`)은 `lib/cookies.js` 한 곳에서 정한다. 액세스 쿠키는 `SameSite=Lax`, 리프레시 쿠키는 `SameSite=Strict`에 `Path`를 갱신·로그아웃 경로를 모두 포함하는 인증 API 공통 접두사 하나로 한정하고(그 접두사 아래의 다른 요청에도 전송되지만 쓰지 않는다, 구체 경로는 설계서), CSRF 쿠키는 `HttpOnly`가 아니다. JWT와 리프레시 토큰(무작위 값, SHA-256 해시)은 `lib/token.js`, CSRF 토큰은 `lib/csrfToken.js`에서만 만든다. 이름과 구조는 11장을 따른다. 서명 비교는 `node:crypto`의 `timingSafeEqual`을 쓴다 | 보안 코드를 한 곳에 모아 리뷰한다 | NFR-07, NFR-15, PRD 11장 | 확정 (속성, 리프레시 쿠키 속성: 사용자 결정(2026-11-04)의 후속, 위임 결정(2026-11-04)) / 가정 (위치) |
+| SO-12 | 쿠키 속성(`HttpOnly`, `SameSite`, `Secure` 조건, `Path`, `Max-Age`)은 `lib/cookies.js` 한 곳에서 정한다. 액세스 쿠키는 `SameSite=Lax`, 리프레시 쿠키는 `SameSite=Strict`에 `Path`를 갱신·로그아웃 경로를 모두 포함하는 인증 API 공통 접두사 하나로 한정하고(그 접두사 아래의 다른 요청에도 전송되지만 쓰지 않는다, 구체 경로는 설계서), CSRF 쿠키는 `HttpOnly`가 아니고, 화면(다른 서브도메인) JS가 읽어야 하므로 `COOKIE_DOMAIN`(상위 도메인, 개발은 비움, production 필수)을 `Domain`으로 붙인다. 액세스·리프레시 쿠키는 `Domain` 없이 API 호스트 전용이다. JWT와 리프레시 토큰(무작위 값, SHA-256 해시)은 `lib/token.js`, CSRF 토큰은 `lib/csrfToken.js`에서만 만든다. 이름과 구조는 11장을 따른다. 서명 비교는 `node:crypto`의 `timingSafeEqual`을 쓴다 | 보안 코드를 한 곳에 모아 리뷰한다 | NFR-07, NFR-15, PRD 11장 | 확정 (속성, 리프레시 쿠키 속성: 사용자 결정(2026-11-04)의 후속, 위임 결정(2026-11-04)) / 가정 (위치) |
 | SO-13 | 모든 SQL은 `$1, $2` 바인딩과 values 배열로 실행한다. 사용자 입력을 SQL 문자열에 이어 붙이지 않는다 (DL-10) | SQL 인젝션 방지 | NFR-08 | 확정 |
-| SO-14 | `GET /api/health`는 인증 없이 `select 1`을 실행하고 `{ "status": "ok" }`만 돌려준다. 내부 정보는 응답에 넣지 않는다. API 경로는 헬스 포함 `/api` 접두사로 통일한다 (PQ-05, DL-05의 공개 라우트) | 기동 확인용(수동·스크립트 `curl`) 최소 엔드포인트다 | SO-07 | 확정 (위임 결정(2026-11-04)) / 확정 (용도 변경: 사용자 결정(2026-11-04): Docker 미사용) |
+| SO-14 | `GET /api/health`는 인증 없이 `select 1`을 실행해 DB 연결 상태를 돌려준다. 정상은 200 `{ "status": "ok", "db": "up" }`, DB 실패는 503 `{ "status": "error", "db": "down" }`이고 실패 원인은 서버 로그에만 남긴다. 내부 정보는 응답에 넣지 않는다. API 경로는 헬스 포함 `/api` 접두사로 통일한다 (PQ-05, DL-05의 공개 라우트) | 기동 확인용(수동·스크립트 `curl`) 최소 엔드포인트다 | SO-07 | 확정 (위임 결정(2026-11-04)) / 확정 (용도 변경: 사용자 결정(2026-11-04): Docker 미사용) |
 | SO-15 | `npm audit`를 Day 2 보안 점검에서 1회 실행해 결과를 기록한다 | 의존성 취약점을 한 번은 확인한다 | PRD 8장 Day 2 오후 | 가정 |
-| SO-16 | Express `trust proxy`는 `config.js`의 설정값으로만 정하고 기본값은 프록시를 신뢰하지 않음이다. 클라이언트 IP(`req.ip`)는 신뢰하는 프록시가 보낸 전달 헤더에서만 얻는다. 로컬 개발에서는 Vite 프록시가 클라이언트 IP를 전달하도록 설정하고(`vite.config.ts`), Vite 프록시가 같은 장비에서 돌므로 신뢰 범위는 `loopback`(`TRUST_PROXY=loopback`)으로 한정한다. 값 `true`(모든 프록시 신뢰)는 쓰지 않으며 `config.js`가 기동을 거부한다. 운영의 신뢰 범위는 배포 문서에서 정한다(PQ-07, PRD 11장) | 모든 요청이 프록시 IP로 보이면 IP별 제한(NFR-10)이 전역 잠금이 되고, 신뢰 범위가 넓으면 헤더 위조로 제한을 피한다 | NFR-10, PRD 11장, SO-01, SO-08, PQ-07 | 확정 (위임 결정(2026-11-04), AQ-05) / 확정 (신뢰 범위 `loopback`: 사용자 결정(2026-11-04): Docker 미사용) / 가정 (세부) |
+| SO-16 | Express `trust proxy`는 `config.js`의 설정값으로만 정하고 기본값은 프록시를 신뢰하지 않음이다. 클라이언트 IP(`req.ip`)는 신뢰하는 프록시가 보낸 전달 헤더에서만 얻는다. 로컬 개발에서는 브라우저가 백엔드를 직접 호출해 앞단 프록시가 없으므로 `TRUST_PROXY`를 비운다(불신, 사용자 결정(2026-11-05)). 값 `true`(모든 프록시 신뢰)는 쓰지 않으며 `config.js`가 기동을 거부한다. 운영은 리버스 프록시 주소만 신뢰 범위로 정한다(배포 문서, PQ-07, PRD 11장) | 모든 요청이 프록시 IP로 보이면 IP별 제한(NFR-10)이 전역 잠금이 되고, 신뢰 범위가 넓으면 헤더 위조로 제한을 피한다 | NFR-10, PRD 11장, SO-01, SO-08, PQ-07 | 확정 (위임 결정(2026-11-04), AQ-05) / 확정 (신뢰 범위 `loopback`: 사용자 결정(2026-11-04): Docker 미사용) / 가정 (세부) |
 | SO-17 | 인증 토큰 규칙: (1) JWT 서명·검증(`jwt.sign`·`jwt.verify`)은 `lib/token.js`에서만 호출하고 알고리즘은 HS384 하나로 고정한다. 검증은 `algorithms: ['HS384']`를 명시하며 `lib/token.js` 밖의 `jsonwebtoken` import와 다른 알고리즘 문자열이 `src/`에 0건이다(grep). (2) 리프레시 토큰은 JWT가 아니라 `crypto.randomBytes(32)` 이상의 무작위 값이고 DB에는 SHA-256 해시만 저장한다. 원문은 쿠키 외의 어디에도 저장·로그하지 않고(SO-06) 조회는 해시로만 한다. (3) 갱신은 회전(이전 토큰 폐기 + 새 토큰 발급)이고 폐기된 토큰의 재제출은 폐기 후 유예 시간(10초) 이내이면 계열을 폐기하지 않고 ERR-02로 거부만 하며, 유예를 넘기면 그 계열 전체를 폐기하고 ERR-02다. 판단은 `revoked_at` 컬럼만 쓰고(스키마 변경 없음) 로그아웃·비밀번호 변경으로 이미 폐기된 계열은 어차피 거부되므로 구분하지 않는다. 유예 시간은 `config.js` 설정값이고 코드에 숫자를 직접 쓰지 않는다. 로그아웃은 리프레시 쿠키가 있으면 그 계열을 폐기하고 실패해도 쿠키는 지운다. 비밀번호 변경은 그 사용자의 모든 계열을 폐기하고 현재 세션에 새 토큰을 발급한다. (4) 세션 토큰 묶음(액세스 JWT + `jti`, 리프레시 값·해시·만료, CSRF 토큰) 발급은 DB를 모르는 순수 함수(`lib/token.js`)로 만들고, service가 `db/refreshToken.queries.js`로 행을 저장한다(DL-03, PQ-13). (5) 만료 행 정리는 로그인 때 그 사용자의 만료 행을 삭제하는 것으로 하고 `// LIMIT:` 주석(CN-10)을 단다(OI-21). 세부 값은 11장 | 토큰 코드를 한 곳에 모아 알고리즘 혼동·평문 저장·재사용 허용을 막는다 | NFR-07, NFR-15, BR-01, BR-16, R-13, R-14, PRD 4.4, 11장 | 확정 (HS384, 리프레시 토큰 적용: 사용자 결정(2026-11-04). 세부 규칙: 위임 결정(2026-11-04)) / 가정 (위치) |
 
 ## 6. 디렉토리 구조
@@ -214,6 +216,7 @@ backend/
 │  ├─ errors.js            # AppError, ERR 상수 (CN-05)
 │  ├─ middleware/          # 요청 앞뒤 처리, service·db를 호출하지 않음
 │  │  ├─ requestLogger.js
+│  │  ├─ cors.js           # 허용 출처 CORS 헤더·사전 요청 204, 인증·CSRF 앞 (SO-08)
 │  │  ├─ authenticate.js   # JWT 검증, req.user 설정 (DL-06)
 │  │  ├─ csrf.js           # Signed Double-Submit 검증
 │  │  └─ errorHandler.js   # 오류 응답을 만드는 유일한 곳 (SO-07)
@@ -262,7 +265,7 @@ backend/
 ```text
 frontend/
 ├─ package.json            # scripts: dev, build, test, lint, format:check
-├─ vite.config.ts          # 개발 서버, /api → backend 프록시와 클라이언트 IP 전달 (SO-08, SO-16)
+├─ vite.config.ts          # 개발 서버(포트 5173 `strictPort`, 프록시 없음) (SO-08)
 ├─ tsconfig.json
 ├─ eslint.config.js        # 레이어 import 제한, react-hooks (DL-11)
 ├─ index.html
@@ -328,10 +331,10 @@ frontend/
 | NFR-07, BR-16 | DL-05, DL-06, DL-08, SO-03, SO-04, SO-12, SO-17 | `middleware/authenticate.js`, `lib/token.js`, `lib/cookies.js`, `auth.service.js`, `db/refreshToken.queries.js` | TQ-05 (만료·위조 토큰, HS384 외 거부, 키 길이, 갱신·회전·재사용 감지, `refresh.test.js`) |
 | NFR-08 | DL-04, DL-10, SO-13 | `backend/src/db/` | grep `${`, 인젝션 문자열 테스트 |
 | NFR-09, BR-02, KPI-04 | DL-07, TQ-04 | `db/todo.queries.js`, `db/category.queries.js` | `ownership.test.js` |
-| NFR-10 | SO-05, SO-16, PQ-10 | `lib/loginAttempts.js`, `auth.service.js`, `config.js`, `vite.config.ts` | TQ-05 (AC-15, 운영 가드) |
+| NFR-10 | SO-05, SO-16, PQ-10 | `lib/loginAttempts.js`, `auth.service.js`, `config.js` | TQ-05 (AC-15, 운영 가드) |
 | NFR-11 | SO-06, SO-07 | `lib/logger.js`, `middleware/errorHandler.js` | 수동 확인, grep `console.` |
 | NFR-12 | TQ-05 (수동) | `features/calendar`, `components/Layout.tsx` | 360 / 768 / 1280px |
-| NFR-15 | DL-05, DL-14, SO-12 | `middleware/csrf.js`, `lib/csrfToken.js`, `api/client.ts` | TQ-05 (ERR-08 케이스, 갱신 뒤 새 CSRF 토큰) |
+| NFR-15 | DL-05, DL-14, SO-08, SO-12 | `middleware/csrf.js`, `middleware/cors.js`, `lib/csrfToken.js`, `api/client.ts` | TQ-05 (ERR-08 케이스, 갱신 뒤 새 CSRF 토큰) |
 | AC-22, AC-23, AC-24 | DL-14, SO-17 | `api/client.ts`(single-flight, 수동), `auth.service.js` | `refresh.test.js` (자동), 수동 체크리스트(15분 경과 저장) |
 | BR-03 | DL-08 | `auth.service.js` (트랜잭션) | AC-01 통합 테스트 |
 | BR-04, BR-13 | DL-03 | `todo.service.js` | AC-05, AC-10 |
@@ -356,7 +359,7 @@ frontend/
 | PQ-04 | 확정 (위임 결정(2026-11-04)) | 목록 필터와 캘린더 위치를 URL이 아닌 Zustand에 두므로 새로고침하면 초기화되고 링크로 공유할 수 없다 (DL-13) | 확정 (위임 결정(2026-11-04)): MVP에서는 Zustand에 둔다. 편집 화면에서 돌아올 때 유지되는 이점이 더 크다 |
 | PQ-05 | 확정 (위임 결정(2026-11-04)) | Node LTS(22)와 Express 5(비동기 핸들러 오류가 자동으로 `errorHandler`로 전달), ESM, API 접두사 `/api`를 가정했다. PRD는 버전과 경로를 정하지 않았다 | 확정 (위임 결정(2026-11-04)): Node 22 LTS, Express 5, ESM, `/api` 접두사로 정한다. `package.json`의 `engines`에 고정하고 설계서의 API 경로도 이를 따른다 |
 | PQ-06 | 확정 (위임 결정(2026-11-04)) | VR-04는 'IANA 이름만 허용'인데 `Intl.DateTimeFormat`은 오프셋 형식(`+09:00`)이나 대소문자 다른 이름을 받아들일 수 있고, 브라우저 목록 `Intl.supportedValuesOf`에 `UTC`가 없을 수 있다. 가입 시 자동 감지값이 목록과 다른 별칭일 수도 있다 | 확정 (위임 결정(2026-11-04)): 서버는 `resolvedOptions().timeZone`의 정규형으로 저장하고, 오프셋 형식(`+09:00`) 거부와 `UTC` 허용을 경계값 테스트(TQ-06)로 확인한다. 설정 드롭다운에는 현재 값이 목록에 없으면 추가한다. `Intl` 동작은 실행 환경(Node 22)에서 테스트로 검증하기 전까지 믿지 않는다 |
-| PQ-07 | 확정 (위임 결정(2026-11-04)) | 운영 배포(PRD 6장의 단일 서버)에서 `/api`를 같은 출처로 라우팅하는 방법, 프런트 빌드 결과 서빙, HTTPS 종단, 클라이언트 IP(PRD 11장)가 비어 있다. 이 문서는 로컬 실행 구성(SO-08)까지만 다룬다 (SO-09) | 확정 (위임 결정(2026-11-04)): 이 문서는 로컬 실행 구성까지만 다루고, 운영 배포는 로컬 검증 후 별도 배포 문서로 정한다. 리버스 프록시 한 개가 정적 파일과 `/api`를 같은 출처로 내보내고 HTTPS를 종단하는 구성을 기본안으로 한다. 클라이언트 IP 신뢰 범위는 그 문서와 PRD 11장에서 정한다 |
+| PQ-07 | 확정 (위임 결정(2026-11-04)) | 운영 배포(PRD 6장의 단일 서버)에서 화면과 API를 어떻게 노출하는지, 프런트 빌드 결과 서빙, HTTPS 종단, 클라이언트 IP(PRD 11장)가 비어 있다. 이 문서는 로컬 실행 구성(SO-08)까지만 다룬다 (SO-09) | 확정 (위임 결정(2026-11-04)): 이 문서는 로컬 실행 구성까지만 다루고, 운영 배포는 로컬 검증 후 별도 배포 문서로 정한다. 리버스 프록시 한 개가 정적 파일과 `/api`를 같은 출처로 내보내고 HTTPS를 종단하는 구성을 기본안으로 한다. 클라이언트 IP 신뢰 범위는 그 문서와 PRD 11장에서 정한다. **변경 (사용자 결정(2026-11-05))**: 같은 출처 기본안은 폐기하고 같은 사이트의 다른 서브도메인(예: 화면 `https://app.example.com`, API `https://api.example.com`) + CORS(SO-08)로 한다. 운영은 `CORS_ORIGINS`·`COOKIE_DOMAIN`이 필수다(SO-12) |
 | PQ-08 | 확정 (위임 결정(2026-11-04)) | 시스템 지침의 80% 커버리지와 달리 PRD에는 커버리지 수치가 없고 2일 일정이라 수치 목표를 두지 않았다 (TQ-11) | 확정 (위임 결정(2026-11-04)): 커버리지 수치 목표는 두지 않는다. TQ-05 범위를 합격 기준으로 하고 측정값은 참고용으로만 기록 |
 | PQ-09 | 확정 (위임 결정(2026-11-04)) | API 응답 타입(`api/types.ts`)을 프런트가 손으로 관리한다 (백엔드가 JS라 타입 공유가 없다) | 확정 (위임 결정(2026-11-04)): 설계서의 API 명세를 단일 출처로 하고 `api/types.ts`는 손으로 관리한다. Day 1 오후에 타입을 쓸 때 명세와 대조 |
 | PQ-10 | 확정 (위임 결정(2026-11-04)) | 로그인 실패 카운터를 메모리에 두면 서버 재시작 때 초기화되고 프로세스 다중화(R-03) 때 공유되지 않는다 (`lib/loginAttempts.js`, 저장 위치는 11장) | 확정 (위임 결정(2026-11-04)): MVP 단일 프로세스에서는 메모리로 시작하고 `// LIMIT:` 주석(CN-10)을 단다. 프로세스 다중화(R-03) 전에 공유 저장소로 바꾼다. 최종 저장 위치는 PRD 11장 설계서에서 정한다. 임의의 email·IP 키로 메모리가 계속 늘지 않도록 시간 창이 지난 항목은 접근할 때 지우고 시간 창 길이 간격으로 주기 정리한다. 보관 키 수 상한은 IP별·계정별 각각 10,000개(가정)이고, 상한을 넘으면 가장 오래된 항목부터 지운다(IP별 한도가 있어 한 IP가 키를 대량으로 만들 수 없다). 상한과 정리 방식은 `// LIMIT:` 주석(CN-10)으로 남긴다 (AQ-10) |

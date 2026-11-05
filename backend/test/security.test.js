@@ -195,7 +195,11 @@ test('NFR-10: 성공 로그인 20회와 토큰 갱신 실패는 제한에 들어
 });
 
 test('NFR-10: production에서 로그인 제한 IP 예외 설정이 있으면 기동을 거부한다(XQ-06)', () => {
-  const prod = { NODE_ENV: 'production' };
+  const prod = {
+    NODE_ENV: 'production',
+    CORS_ORIGINS: 'https://app.example.com',
+    COOKIE_DOMAIN: 'example.com',
+  };
   const refused = bootConfig({ ...prod, LOGIN_LIMIT_EXEMPT_IPS: '127.0.0.1' });
   assert.notEqual(refused.status, 0);
   assert.match(refused.stderr, /LOGIN_LIMIT_EXEMPT_IPS/);
@@ -257,4 +261,67 @@ test('NFR-15: 갱신 직후 새 CSRF 토큰으로는 성공하고 갱신 전 CSR
     });
   assert.equal((await patch(s.csrfToken)).status, 403);
   assert.equal((await patch(fresh[COOKIE_NAMES.csrf])).status, 200);
+});
+
+// CORS: 허용 출처는 정확한 출처 목록이어야 하고 production은 쿠키 도메인까지 있어야 기동한다
+test('CORS: production은 CORS_ORIGINS·COOKIE_DOMAIN이 없거나 출처가 아니면 기동을 거부한다', () => {
+  const prod = {
+    NODE_ENV: 'production',
+    CORS_ORIGINS: 'https://app.example.com',
+    COOKIE_DOMAIN: 'example.com',
+  };
+  for (const [over, pattern] of [
+    [{ CORS_ORIGINS: '' }, /CORS_ORIGINS/],
+    [{ CORS_ORIGINS: '*' }, /CORS_ORIGINS/],
+    [{ CORS_ORIGINS: 'https://app.example.com/' }, /CORS_ORIGINS/],
+    [{ CORS_ORIGINS: 'https://app.example.com,app2.example.com' }, /CORS_ORIGINS/],
+    [{ COOKIE_DOMAIN: '' }, /COOKIE_DOMAIN/],
+  ]) {
+    const r = bootConfig({ ...prod, ...over });
+    assert.notEqual(r.status, 0, JSON.stringify(over));
+    assert.match(r.stderr, pattern);
+  }
+  const multi = bootConfig({
+    ...prod,
+    CORS_ORIGINS: 'https://app.example.com, https://m.example.com',
+  });
+  assert.equal(multi.status, 0, multi.stderr);
+});
+
+test('NFR-07: 토큰 유효 시간은 환경 변수로 바꿀 수 있고, 양의 정수가 아니거나 리프레시가 더 짧으면 기동을 거부한다', () => {
+  for (const [over, pattern] of [
+    [{ ACCESS_TOKEN_TTL_MINUTES: '0' }, /ACCESS_TOKEN_TTL_MINUTES/],
+    [{ ACCESS_TOKEN_TTL_MINUTES: '15m' }, /ACCESS_TOKEN_TTL_MINUTES/],
+    [{ REFRESH_TOKEN_TTL_DAYS: '-1' }, /REFRESH_TOKEN_TTL_DAYS/],
+    [{ REFRESH_TOKEN_TTL_DAYS: '0.5' }, /REFRESH_TOKEN_TTL_DAYS/],
+    [
+      { ACCESS_TOKEN_TTL_MINUTES: '1440', REFRESH_TOKEN_TTL_DAYS: '1' }, // 하루 = 하루
+      /REFRESH_TOKEN_TTL_DAYS/,
+    ],
+  ]) {
+    const r = bootConfig(over);
+    assert.notEqual(r.status, 0, JSON.stringify(over));
+    assert.match(r.stderr, pattern);
+  }
+  const url = new URL('../src/lib/token.js', import.meta.url).href;
+  const r = spawnSync(
+    process.execPath,
+    [
+      '--input-type=module',
+      '-e',
+      `const t = await import(${JSON.stringify(url)}); console.log(t.ACCESS_TTL_SECONDS, t.REFRESH_TTL_SECONDS)`,
+    ],
+    {
+      env: {
+        NODE_ENV: 'test',
+        DATABASE_URL: config.databaseUrl,
+        JWT_SECRET: config.jwtSecret,
+        CSRF_SECRET: config.csrfSecret,
+        ACCESS_TOKEN_TTL_MINUTES: '5',
+        REFRESH_TOKEN_TTL_DAYS: '1',
+      },
+      encoding: 'utf8',
+    },
+  );
+  assert.equal(r.stdout.trim(), '300 86400', r.stderr);
 });

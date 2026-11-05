@@ -143,7 +143,7 @@ test('NFR-15: GET은 CSRF 검사를 생략해 유효 토큰만으로 통과한�
 test('DL-05: GET /api/health는 인증 없이 200이다', async () => {
   const { status, body } = await call('/api/health');
   assert.equal(status, 200);
-  assert.deepEqual(body, { status: 'ok' });
+  assert.deepEqual(body, { status: 'ok', db: 'up' });
 });
 
 // 토큰 갱신이 authenticate·csrf를 거치지 않는지는 test/refresh.test.js가 실제 리프레시 쿠키로 확인한다

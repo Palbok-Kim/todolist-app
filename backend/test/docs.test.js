@@ -20,12 +20,11 @@ async function quiet(fn) {
   }
 }
 
-test('개발 환경에서 /api/docs는 인증 없이 Swagger UI와 명세를 준다', async () => {
-  const page = await quiet(() => api.request('/api/docs'));
-  assert.equal(page.status, 200);
-  assert.match(page.headers.get('content-type'), /text\/html/);
-  assert.match(page.text, /SwaggerUIBundle/);
-  const spec = await quiet(() => api.request('/api/docs/swagger.yaml'));
-  assert.equal(spec.status, 200);
-  assert.match(spec.text, /^openapi: 3\.0\.3$/m);
+// development에서 열리는지는 npm run dev로 확인한다. 테스트(NODE_ENV=test)는 운영처럼 닫혀 있어야 한다
+test('development가 아니면 /api/docs와 명세가 공개 라우트로 열리지 않는다', async () => {
+  for (const path of ['/api/docs', '/api/docs/swagger.yaml']) {
+    const res = await quiet(() => api.request(path));
+    assert.equal(res.status, 401, path);
+    assert.ok(!res.text.includes('SwaggerUIBundle'), path);
+  }
 });

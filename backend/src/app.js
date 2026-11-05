@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import { config } from './config.js';
 import { AppError, ERR } from './errors.js';
 import { requestLogger } from './middleware/requestLogger.js';
+import { cors } from './middleware/cors.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { authenticate } from './middleware/authenticate.js';
 import { csrf } from './middleware/csrf.js';
@@ -18,10 +19,11 @@ export const app = express();
 app.set('trust proxy', config.trustProxy); // SO-16
 
 app.use(requestLogger);
+app.use(cors); // 사전 요청은 인증·CSRF보다 먼저 응답한다
 app.use(cookieParser());
 app.use(express.json());
-// 개발용 API 문서(swagger.yaml). /api 아래라 Vite 프록시로 같은 출처에서 Try it out이 된다. 운영에는 열지 않는다
-if (config.nodeEnv !== 'production') {
+// 개발용 API 문서(swagger.yaml). API와 같은 출처(localhost:3000)에서 열어 Try it out을 쓴다. development에서만 연다
+if (config.nodeEnv === 'development') {
   const spec = fileURLToPath(new URL('../swagger.yaml', import.meta.url));
   app.get('/api/docs/swagger.yaml', (req, res) => res.type('yaml').sendFile(spec));
   app.get('/api/docs', (req, res) => res.type('html').send(DOCS_HTML));

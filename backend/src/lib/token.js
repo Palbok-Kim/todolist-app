@@ -5,8 +5,9 @@ import { config } from '../config.js';
 import { createCsrfToken } from './csrfToken.js';
 import { toIsoTimestamp } from './today.js';
 
-export const ACCESS_TTL_SECONDS = 900; // 15분
-export const REFRESH_TTL_SECONDS = 604800; // 7일
+// 초 단위. 환경 변수 ACCESS_TOKEN_TTL_MINUTES·REFRESH_TOKEN_TTL_DAYS(config.js, 기본 15분·7일)에서 온다
+export const ACCESS_TTL_SECONDS = config.accessTtlSeconds;
+export const REFRESH_TTL_SECONDS = config.refreshTtlSeconds;
 
 const ALGORITHM = 'HS384';
 

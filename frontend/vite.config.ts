@@ -5,9 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    proxy: {
-      // 같은 출처로 API를 부른다(PRD 6장). xfwd로 클라이언트 IP를 X-Forwarded-For에 전달한다(SO-16)
-      '/api': { target: 'http://localhost:3000', xfwd: true },
-    },
+    // 백엔드 CORS_ORIGINS(기본 http://localhost:5173)와 출처가 같아야 하므로 다른 포트로 넘어가지 않는다
+    strictPort: true,
   },
 });

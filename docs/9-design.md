@@ -8,8 +8,11 @@
 | 0.2 | 2026-11-04 | MinjeYu | COM-01 재수행: 사용자 결정(2026-11-04: Docker 미사용) 반영. D-07 기동 확인을 `curl`로, libuv 스레드 풀 주입을 `.env`로, 로컬 클라이언트 IP 신뢰 범위를 `TRUST_PROXY=loopback`으로 변경, 6장에서 `POSTGRES_*` 키 삭제와 로컬 실행 구성 추가. 단일 출처 링크를 PRD v0.10·구조 설계 원칙 v0.7·아키텍처 다이어그램 v0.7로 갱신 |
 | 0.3 | 2026-11-04 | MinjeYu | BE-07 반영: 재해시 판단 기준을 `lib/password.js`의 현재 파라미터(`needsRehash`)로 명시, scrypt 해시 시간 측정값 기록 |
 | 0.4 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: k6 부하 테스트 제거. 7장 k6 스크립트 구성 삭제(잔여 위험이 7장), 6장 `SEED_PASSWORD` 사용처에서 k6 제거 |
+| 0.5 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: D-07·API 표의 헬스 실패를 500에서 503(`db: down`)으로 변경(SO-14 v0.11) |
+| 0.6 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: 프록시 → CORS. 4장 클라이언트 IP(프록시 없음, `TRUST_PROXY` 비움), 5.1 CSRF 쿠키 `Domain`, 5.6 `credentials: 'include'`·`VITE_API_BASE_URL`, 6장 로컬 실행 구성과 환경 변수 표(`CORS_ORIGINS`·`COOKIE_DOMAIN`·`VITE_API_BASE_URL` 추가, `TRUST_PROXY` 설명). 단일 출처 링크 버전을 PRD v0.12·구조 설계 원칙 v0.12·아키텍처 다이어그램 v0.9로 갱신 |
+| 0.7 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: 6장 환경 변수 표에 `ACCESS_TOKEN_TTL_MINUTES`(분)·`REFRESH_TOKEN_TTL_DAYS`(일) 추가(기본값은 NFR-07의 15분·7일, 5.1의 Max-Age는 기본값 기준) |
 
-**단일 출처 원칙**: 규칙 원문은 도메인 정의서 v0.10, PRD v0.10, 구조 설계 원칙 v0.7, 아키텍처 다이어그램 v0.7, ERD v0.5에만 있고 이 문서는 ID로 참조한다(PR-01). 이 문서는 PRD 11장이 넘긴 **구현 값·이름·절차**만 정한다. 요청·응답 필드의 상세 스키마는 [`backend/swagger.yaml`](../backend/swagger.yaml)이 단일 출처이며, 이 문서의 2장은 경로·메서드·상태 코드 목록이다.
+**단일 출처 원칙**: 규칙 원문은 도메인 정의서 v0.10, PRD v0.12, 구조 설계 원칙 v0.12, 아키텍처 다이어그램 v0.9, ERD v0.5에만 있고 이 문서는 ID로 참조한다(PR-01). 이 문서는 PRD 11장이 넘긴 **구현 값·이름·절차**만 정한다. 요청·응답 필드의 상세 스키마는 [`backend/swagger.yaml`](../backend/swagger.yaml)이 단일 출처이며, 이 문서의 2장은 경로·메서드·상태 코드 목록이다.
 
 **구분**: 이 문서의 결정은 모두 위임 결정(2026-11-04)에 따른 **확정**이다. 측정 후 조정할 수 있는 값은 '조정 가능'으로 표시한다.
 
@@ -23,7 +26,7 @@
 | D-04 | 성공 본문 | 로그아웃·갱신·비밀번호 변경은 200 `{ "status": "ok" }`, 삭제는 204(SQ-04) | BE-13, BE-24 |
 | D-05 | 할일 수정의 `categoryId` | 생략은 유지, `null`은 ERR-01(SQ-05) | BR-04, PRD 7장 |
 | D-06 | 카테고리 목록 정렬 | 기본 카테고리 먼저, 그다음 `createdAt` 오름차순(SQ-06) | WF-03, WF-04, WF-08 |
-| D-07 | 헬스 실패 | DB 오류는 500 ERR-07. 기동 확인(`curl http://localhost:3000/api/health`)은 2xx만 성공으로 본다(SQ-07) | SO-14 |
+| D-07 | 헬스 실패 | DB 오류는 503 `{ "status": "error", "db": "down" }`(ERR 형식 아님). 기동 확인(`curl http://localhost:3000/api/health`)은 2xx만 성공으로 본다(SQ-07) | SO-14 |
 | D-08 | 로그인 제한 응답 | `Retry-After` 헤더를 보내지 않는다(SQ-03) | NFR-10, WF-01 |
 | D-09 | pg `DATE` 처리 | `pg.types.setTypeParser(1082, (v) => v)`를 `db/pool.js`에서 한 번 설정해 `YYYY-MM-DD` 문자열 그대로 받는다 | PRD 6장, CN-06 |
 | D-10 | 카테고리 이름 중복 | `uq_categories_user_id_lower_name` 위반(pg `23505`)을 service가 ERR-04로 번역한다 | BR-14, EQ-03, SO-07 |
@@ -52,7 +55,7 @@
 | 할일 수정(완료 표시 포함) | PATCH | `/api/todos/{todoId}` | 액세스 | 예 | 200 | 400, 401, 403, 404 |
 | 할일 삭제 | DELETE | `/api/todos/{todoId}` | 액세스 | 예 | 204 | 401, 403, 404 |
 | 캘린더 기간 조회 | GET | `/api/calendar/todos?from&to` | 액세스 | — | 200 | 400, 401 |
-| 헬스 체크 | GET | `/api/health` | 없음 | — | 200 | 500 |
+| 헬스 체크 | GET | `/api/health` | 없음 | — | 200 | 503 |
 
 - **현재 사용자 조회**(AQ-03): `GET /api/users/me`가 `User`(`id`, `email`, `name`, `timezone`, `createdAt`, `updatedAt`)를 돌려준다. 회원가입·로그인 성공 본문도 같은 `User`이고 `passwordHash`는 어떤 응답에도 없다.
 - **캘린더 계약**(AQ-07): 파라미터는 `from`·`to`(`YYYY-MM-DD`, SQ-01. CN-06의 `*Date` 규칙은 JSON 필드에만 적용). 조회 조건은 BR-12, 응답 항목은 서버가 계산한 `status`를 포함한다. 형식 오류, `from > to`, 양 끝 포함 42일 초과(`to - from > 41일`, SQ-02)는 ERR-01이다.
@@ -83,8 +86,8 @@
 | 세는 것 | ERR-03 실패만. 제한 중 거부(ERR-06)와 형식 검사 거부(ERR-01, PRD 4.1)는 세지 않는다. 성공은 세지 않고 카운터를 지우지도 않는다 |
 | 키 | IP는 `req.ip`, 계정은 소문자 정규화한 email |
 | 정리·상한 | 접근할 때 창이 지난 항목을 지우고, `setInterval` 15분 간격(`unref()`)으로 일괄 정리한다. 키 수 상한은 각 10,000개, 넘으면 `Map` 삽입 순서상 가장 오래된 항목부터 지운다. `// LIMIT:` 주석 |
-| 클라이언트 IP(로컬) | Vite 프록시(`/api` → `http://localhost:3000`)를 `xfwd: true`로 두어 `X-Forwarded-For`를 전달한다. 프록시가 같은 장비이므로 `TRUST_PROXY=loopback`으로 루프백 주소만 신뢰한다. 기본값은 신뢰 안 함, `true`는 기동 거부(SO-16) |
-| 클라이언트 IP(운영) | 배포 문서에서 리버스 프록시 주소로 `TRUST_PROXY`를 정한다(PQ-07) |
+| 클라이언트 IP(로컬) | 브라우저가 백엔드를 직접 호출하므로 앞단 프록시가 없다. `TRUST_PROXY`를 비워(기본, 불신) `req.ip`가 소켓 주소가 되게 한다. `true`는 기동 거부(SO-16) |
+| 클라이언트 IP(운영) | 배포 문서에서 리버스 프록시 주소만 `TRUST_PROXY`로 정한다(PQ-07) |
 | 테스트 IP 예외 | 구현하지 않는다. 테스트는 IP별 시나리오마다 카운터를 초기화하는 `lib/loginAttempts.js`의 테스트용 `reset()` 함수를 쓴다. 나중에 예외가 필요하면 `test` 전용 설정으로 두고 `production`에 그 값이 있으면 `config.js`가 기동을 거부한다(SO-05) |
 
 ## 5. 인증 토큰 (NFR-07, NFR-15, SO-12, SO-17)
@@ -98,6 +101,7 @@
 | `csrf_token` | 5.4의 서명 토큰 | 아니오(스크립트가 읽음) | Lax | `/` | 900 (15분) |
 
 - `Secure`는 `config.js`의 `cookieSecure`(`NODE_ENV=production`일 때만 `true`)로 세 쿠키에 함께 붙인다(SO-04).
+- `Domain`은 `csrf_token`에만 `COOKIE_DOMAIN`(6장)으로 붙인다. 화면(다른 서브도메인) JS가 `document.cookie`로 읽어 `X-CSRF-Token` 헤더로 보내야 하기 때문이다(SO-12). `access_token`·`refresh_token`은 `Domain` 없이 API 호스트 전용이다. 개발은 `COOKIE_DOMAIN`을 비우며 localhost 쿠키는 포트와 무관하게 공유된다.
 - 리프레시 쿠키 `Path=/api/auth`는 갱신(`/api/auth/refresh`)과 로그아웃(`/api/auth/logout`)을 함께 포함하는 인증 API 공통 접두사다. 쿠키 Path는 하나뿐이라 **같은 접두사 아래의 회원가입·로그인 요청에도 리프레시 쿠키가 전송되지만 서버는 그 요청에서 읽지 않는다**(OI-19).
 - 삭제는 같은 이름·Path에 `Max-Age=0`이다(BR-01).
 
@@ -141,21 +145,25 @@
 
 ### 5.6 프런트 갱신 처리 (DL-14)
 
-`api/client.ts`가 DL-14를 그대로 구현한다. 갱신 요청은 `POST /api/auth/refresh`(본문 없음, `credentials: 'same-origin'`), 진행 중 Promise 하나로 single-flight. 갱신 성공·실패와 관계없이 원 요청을 한 번만 재전송하고, 그 결과도 ERR-02면 `onUnauthorized`를 호출한다. 갱신 요청과 재전송 요청에는 다시 갱신하지 않는다.
+`api/client.ts`가 DL-14를 그대로 구현한다. API 기준 주소는 `VITE_API_BASE_URL`(개발 기본 `http://localhost:3000/api`)이고 CSRF 쿠키는 `document.cookie`로 읽는다. 갱신 요청은 `POST /api/auth/refresh`(본문 없음, `credentials: 'include'`, 모든 요청이 같다), 진행 중 Promise 하나로 single-flight. 갱신 성공·실패와 관계없이 원 요청을 한 번만 재전송하고, 그 결과도 ERR-02면 `onUnauthorized`를 호출한다. 갱신 요청과 재전송 요청에는 다시 갱신하지 않는다.
 
 ## 6. 환경 변수
 
 `.env.example`이 키 목록의 단일 출처다. 비밀은 루트 `.env`로만 주입하고, 백엔드는 `node --env-file-if-exists=../.env`로 읽는다(SO-02, SO-03). Docker는 쓰지 않는다(사용자 결정(2026-11-04)).
 
-**로컬 실행 구성**: PostgreSQL 17(로컬 설치, `localhost:5432`) → `backend`의 `npm run dev`(포트 3000) → `frontend`의 `npm run dev`(포트 5173). 브라우저는 `http://localhost:5173`만 호출한다. 백엔드는 DB를 기다리지 않으므로 DB를 먼저 띄운다(README).
+**로컬 실행 구성**: PostgreSQL 17(로컬 설치, `localhost:5432`) → `backend`의 `npm run dev`(포트 3000) → `frontend`의 `npm run dev`(포트 5173). 브라우저는 `http://localhost:5173`(화면)과 `http://localhost:3000/api`(API, CORS)를 직접 호출한다(SO-08). 백엔드는 DB를 기다리지 않으므로 DB를 먼저 띄운다(README).
 
 | 키 | 사용처 | 비고 |
 |----|--------|------|
 | `DATABASE_URL` | `backend` (`config.js`), `scripts/` | 로컬 설치 PostgreSQL 17 (`localhost:5432`) |
 | `JWT_SECRET`, `CSRF_SECRET` | `backend` | 5.3 |
+| `ACCESS_TOKEN_TTL_MINUTES`, `REFRESH_TOKEN_TTL_DAYS` | `backend` (`lib/token.js`, `lib/cookies.js`) | 액세스 토큰 유효 시간(분)·리프레시 토큰 유효 시간(일). 기본 15분·7일로 NFR-07 값이다. 내부에서는 초로 바꿔 쓴다. 양의 정수만, 리프레시가 액세스보다 길지 않으면 기동 거부. 액세스 값은 CSRF 쿠키 `Max-Age`에도 쓴다(5.1) |
 | `NODE_ENV` | `backend` | `development`/`test`/`production`만(SO-04) |
 | `PORT` | `backend` | 기본 3000 |
-| `TRUST_PROXY` | `backend` | 4장 |
+| `TRUST_PROXY` | `backend` | 개발은 비움(앞단 프록시 없음, 불신). 운영은 리버스 프록시 주소만. `true` 거부. 4장 |
+| `CORS_ORIGINS` | `backend` | 쉼표 구분 허용 출처, 각 값은 `scheme://host[:port]` 정확한 출처(`*`·경로·슬래시 끝은 기동 거부). 개발·테스트 기본 `http://localhost:5173`, production 필수. 허용 출처에만 `Access-Control-Allow-Origin`(그 출처)·`Allow-Credentials: true`, 항상 `Vary: Origin`. 사전 요청(OPTIONS + `Access-Control-Request-Method`)은 인증·CSRF 전에 204로 끝내고 허용 출처에만 `Allow-Methods: GET, POST, PUT, PATCH, DELETE`, `Allow-Headers: Content-Type, X-CSRF-Token`, `Max-Age: 600`을 붙인다. 허용하지 않은 출처는 CORS 헤더 없음. `*`는 쓰지 않는다(SO-08) |
+| `COOKIE_DOMAIN` | `backend` | CSRF 쿠키에만 붙는 `Domain`(상위 도메인, 예 `example.com`). 개발은 비움, production 필수(없으면 기동 실패). 5.1 |
+| `VITE_API_BASE_URL` | `frontend` | API 기준 주소. 개발 기본 `http://localhost:3000/api`. 공개 값(SO-02) |
 | `UV_THREADPOOL_SIZE` | `backend` | 3장 |
 | `SEED_PASSWORD` | `seed.js` | 시드 계정 비밀번호(SO-11) |
 | `PG_POOL_MAX` | `backend` | pg 풀 크기, 기본 10. 조정 가능(NFR-05) |

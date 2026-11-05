@@ -14,7 +14,14 @@ const refreshMs = REFRESH_TTL_SECONDS * 1000;
 const attrs = (secure) => ({
   access: { httpOnly: true, sameSite: 'lax', path: '/api', secure },
   refresh: { httpOnly: true, sameSite: 'strict', path: '/api/auth', secure },
-  csrf: { httpOnly: false, sameSite: 'lax', path: '/', secure },
+  // 화면 출처의 JS가 읽어 헤더로 보내야 하므로 상위 도메인에 둔다(인증 쿠키는 API 호스트 전용)
+  csrf: {
+    httpOnly: false,
+    sameSite: 'lax',
+    path: '/',
+    secure,
+    domain: config.cookieDomain ?? undefined,
+  },
 });
 
 export function setSessionCookies(

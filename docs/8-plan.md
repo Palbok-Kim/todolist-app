@@ -37,6 +37,8 @@
 | 0.31 | 2026-11-05 | MinjeYu | 진척 반영: FE를 포함하지 않는 QA 수행. QA-02(`test/ownership.test.js` 11케이스, 엔드포인트 10개 점검표는 파일 머리 주석), QA-03(`test/security.test.js` 12케이스, `config.js`에 production의 `LOGIN_LIMIT_EXEMPT_IPS` 거부 가드 추가, XQ-06), QA-08(`docs/test/review-2026-11-05.md`), QA-10(`test/refresh.test.js`에 로그아웃 폐기 케이스 추가) 완료 조건 체크. QA-04~06은 k6 미설치로 보류, QA-07·09는 FE 포함이라 제외 |
 | 0.32 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: 부하 테스트를 하지 않기로 해 QA-04~06을 범위 제외로 표시(3장 각 Task에 `범위 제외` 항목, 2장 상태 열 ➖와 범례 추가). 컷 라인 설명(5.4)과 KPI 판정 문장(6.3)에 제외 사실을 덧붙였다. 완료 조건은 판정하지 않고 남겨 둔다 |
 | 0.33 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: k6 부하 테스트 제거. QA-04~06 삭제(Task 70 → 67개, P0 4.0h 감소: 79.0h → 75.0h, 합계 91.5h → 87.5h), 의존 그래프·Day 배치·16시간 범위·추적 표·리스크에서 참조 제거, XQ-08·XQ-13은 해당 없음 처리, DB-09 요약 위치를 docs/test/로 변경 |
+| 0.34 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: BE-03 수행 작업의 헬스 응답을 SO-14 v0.11(`db` 필드, 실패 503)에 맞춤. 완료 조건 체크 문구는 당시 기록이라 유지 |
+| 0.35 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: 프록시 → CORS. BE-01 수행 작업(`TRUST_PROXY` 개발 비움, `CORS_ORIGINS`·`COOKIE_DOMAIN`), FE-01 수행 작업(Vite 프록시 삭제·`strictPort`)·근거(SO-16 제거)·미체크 완료 조건(CORS 호출), FE-02 수행 작업(`VITE_API_BASE_URL`·`credentials: 'include'`) 수정. 체크된 완료 조건 문구는 당시 기록이라 유지. 단일 출처 링크 버전을 PRD v0.12·구조 설계 원칙 v0.12·아키텍처 다이어그램 v0.9에 맞춤 |
 
 **표기 범례** (도메인 정의서·PRD·사용자 시나리오·와이어프레임·구조 설계 원칙과 같음)
 - **확정**: 요구사항 원문 또는 사용자 의사결정(2026-11-04)에 근거한 결정
@@ -45,7 +47,7 @@
 - **미결정**: 결정하기 전에는 구현을 보류한다
 - 이 문서에서 원문에 없는 결정은 모두 **가정**이다. 가정과 문서 사이의 공백·모순은 8장(`XQ-xx`)에 모은다
 
-**단일 출처 원칙**: 엔티티 속성·상태 판정·BR·UC·AC는 [도메인 정의서 v0.10](./1-domain-definition.md), FR 우선순위·VR·ERR·NFR·KPI·R·일정·컷 라인은 [PRD v0.10](./2-prd.md), SC는 [사용자 시나리오 v0.6](./3-user-scenario.md), WF는 [와이어프레임 v0.5](./4-wireframe.md), 디렉토리·원칙(PR/DL/CN/TQ/SO)은 [프로젝트 구조 설계 원칙 v0.7](./5-project-principle.md), AD는 [아키텍처 다이어그램 v0.7](./6-arch-diagram.md), 테이블은 [ERD v0.5](./7-erd.md)와 [`schema.sql`](./schema.sql)에만 둔다. 이 문서는 규칙 원문을 복사하지 않고 ID로 참조한다. 이 문서에서 새로 만든 ID는 Task ID(`COM-xx`, `DB-xx`, `BE-xx`, `FE-xx`, `QA-xx`)와 확인 필요 `XQ-xx`뿐이다.
+**단일 출처 원칙**: 엔티티 속성·상태 판정·BR·UC·AC는 [도메인 정의서 v0.10](./1-domain-definition.md), FR 우선순위·VR·ERR·NFR·KPI·R·일정·컷 라인은 [PRD v0.12](./2-prd.md), SC는 [사용자 시나리오 v0.6](./3-user-scenario.md), WF는 [와이어프레임 v0.5](./4-wireframe.md), 디렉토리·원칙(PR/DL/CN/TQ/SO)은 [프로젝트 구조 설계 원칙 v0.12](./5-project-principle.md), AD는 [아키텍처 다이어그램 v0.9](./6-arch-diagram.md), 테이블은 [ERD v0.5](./7-erd.md)와 [`schema.sql`](./schema.sql)에만 둔다. 이 문서는 규칙 원문을 복사하지 않고 ID로 참조한다. 이 문서에서 새로 만든 ID는 Task ID(`COM-xx`, `DB-xx`, `BE-xx`, `FE-xx`, `QA-xx`)와 확인 필요 `XQ-xx`뿐이다.
 
 **범위**: 구현 작업의 분해·순서·일정·검증 방법만 정한다. 코드 구현, Git 커밋, 기존 문서 수정은 이 문서의 범위가 아니다. 문서 사이의 모순은 수정하지 않고 8장에 남긴다.
 
@@ -423,7 +425,7 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **근거**: PQ-05, SO-01, SO-03, SO-04, SO-05, SO-09, SO-16, DL-16, CN-11
 - **수행 작업**
   - `backend/package.json`(`"type": "module"`, `engines` Node 22, scripts: `dev`, `test`, `lint`, `format:check`, `migrate`, `seed`), 의존성은 구조 원칙 2.3장 초기 허용 목록만(`express`, `pg`, `cookie-parser`, `jsonwebtoken`, 개발용 `eslint`, `prettier`)
-  - `backend/src/config.js`(`process.env`를 읽는 유일한 곳, 필수 값 검증과 실패 시 종료, `NODE_ENV` 3값만 허용, `production`에서 자리표시자 거부와 JWT 서명 키 48바이트 미만 거부(모든 환경), `trust proxy` 설정값(`TRUST_PROXY`, 로컬 기본 `loopback`)과 `true` 거부, 쿠키 `Secure` 플래그, 리프레시 재사용 감지 유예 시간(기본 10초, AQ-13))
+  - `backend/src/config.js`(`process.env`를 읽는 유일한 곳, 필수 값 검증과 실패 시 종료, `NODE_ENV` 3값만 허용, `production`에서 자리표시자 거부와 JWT 서명 키 48바이트 미만 거부(모든 환경), `trust proxy` 설정값(`TRUST_PROXY`, 개발은 비움)과 `true` 거부, CORS 허용 출처(`CORS_ORIGINS`, 정확한 출처 형식 검증, production 필수)·CSRF 쿠키 `Domain`(`COOKIE_DOMAIN`, production 필수, SO-08·SO-12), 쿠키 `Secure` 플래그, 리프레시 재사용 감지 유예 시간(기본 10초, AQ-13))
   - `backend/src/server.js`는 `listen`만 한다. `dev`는 `node --watch --env-file-if-exists=../.env`(포트 3000, 루트 `.env`, SO-09). DB는 로컬에 설치된 PostgreSQL 17(`localhost:5432`)을 쓴다(사용자 결정(2026-11-04): Docker 미사용)
 - **완료 조건**
   - [x] `backend/`에서 `npm run dev`로 서버가 뜨고 계속 실행된다
@@ -455,7 +457,7 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **근거**: DL-05, SO-14, AD-02, AQ-06, XQ-04
 - **수행 작업**
   - `backend/src/app.js`: 요청 로거 → 쿠키·JSON 파서 → 공개 라우트 → (authenticate·csrf는 BE-11) → 보호 라우트 → not found(ERR-05 형식) → `errorHandler` 순서의 뼈대(DL-05). Express 앱을 export(TQ-01)
-  - `routes/health.routes.js` + `services/health.service.js`(`select 1`, 가정 XQ-04)로 `GET /api/health`가 `{ "status": "ok" }`만 반환. 기동 확인은 `curl http://localhost:3000/api/health`로 한다
+  - `routes/health.routes.js` + `services/health.service.js`(`select 1`, 가정 XQ-04)로 `GET /api/health`가 `{ "status": "ok", "db": "up" }`을 반환(DB 실패는 503 `db: down`, SO-14 v0.11). 기동 확인은 `curl http://localhost:3000/api/health`로 한다
 - **완료 조건**
   - [x] `curl localhost:<port>/api/health`가 200 `{"status":"ok"}`이고 다른 필드가 없다
   - [x] 존재하지 않는 경로가 404 ERR-05 형식이다
@@ -778,13 +780,13 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 
 - **우선순위 / 예상 시간**: P0 / 1.5h
 - **선행 Task**: COM-02
-- **근거**: PQ-05, SO-08, SO-09, SO-16, DL-16, DL-15, 구조 원칙 6.3장
+- **근거**: PQ-05, SO-08, SO-09, DL-16, DL-15, 구조 원칙 6.3장
 - **수행 작업**
-  - `frontend/package.json`(React 19, TypeScript, Zustand, TanStack Query, `react-router`, 개발용 `vite`·`@vitejs/plugin-react`·`vitest`·`eslint` 계열·`prettier`만, DL-16), `vite.config.ts`(`/api` → `http://localhost:3000` 프록시와 클라이언트 IP 전달(`xfwd: true`), SO-16), `tsconfig.json`, `index.html`
+  - `frontend/package.json`(React 19, TypeScript, Zustand, TanStack Query, `react-router`, 개발용 `vite`·`@vitejs/plugin-react`·`vitest`·`eslint` 계열·`prettier`만, DL-16), `vite.config.ts`(포트 5173 `strictPort: true`로 출처 고정, `/api` 프록시 없음, SO-08), `tsconfig.json`, `index.html`
   - `src/main.tsx`(QueryClientProvider, Router), `src/App.tsx`(WF↔경로 표 뼈대), `src/pages/`에 WF 1개당 빈 페이지 파일(DL-15). 스크립트: `dev`, `build`, `test`
 - **완료 조건**
   - [ ] `frontend/`에서 `npm run dev` 후 브라우저 `http://localhost:5173`에서 앱 첫 화면이 열린다
-  - [ ] 브라우저에서 `/api/health`를 호출하면 프록시를 거쳐 `{"status":"ok"}`가 온다
+  - [ ] 브라우저(`http://localhost:5173`)에서 `http://localhost:3000/api/health`를 CORS로 호출하면 응답이 온다(SO-08)
   - [x] `npm run build`가 오류 없이 끝난다
   - [x] `frontend/package.json`의 의존성이 구조 원칙 2.3장 초기 허용 목록 안이다(DL-16)
 
@@ -794,7 +796,7 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **선행 Task**: FE-01
 - **근거**: DL-14, CN-05, CN-06, PR-08, NFR-07, NFR-15, ERR-02, BR-16, PQ-09, PQ-14, AQ-02, SC-16, R-14
 - **수행 작업**
-  - `src/api/client.ts`: `fetch`의 유일한 호출 지점. 쿠키 전송, 상태 변경 요청에 CSRF 쿠키 값을 헤더로 부착(이름은 설계서), 응답 파싱, `ApiError` 변환. 보호 API가 ERR-02를 받으면 토큰 갱신을 한 번만 시도하고(동시에 ERR-02를 받은 요청은 진행 중인 갱신 Promise 하나를 공유, single-flight) 성공하면 원 요청을 새 CSRF 값으로 한 번만 재전송하고, 갱신이 ERR-02로 실패해도 원 요청을 한 번만 재전송한다(쿠키는 탭 간에 공유되어 다른 탭이 받은 새 쿠키가 있을 수 있음, DL-14, OI-20). 갱신 요청 자체와 재전송한 요청이 ERR-02여도 다시 갱신하지 않고 `onUnauthorized` 콜백을 호출한다. 콜백 등록 함수만 노출하고 `store`·router는 import하지 않는다
+  - `src/api/client.ts`: `fetch`의 유일한 호출 지점. API 기준 주소는 `VITE_API_BASE_URL`(개발 기본 `http://localhost:3000/api`), `credentials: 'include'`로 쿠키 전송, 상태 변경 요청에 CSRF 쿠키 값(`document.cookie`)을 헤더로 부착(이름은 설계서), 응답 파싱, `ApiError` 변환. 보호 API가 ERR-02를 받으면 토큰 갱신을 한 번만 시도하고(동시에 ERR-02를 받은 요청은 진행 중인 갱신 Promise 하나를 공유, single-flight) 성공하면 원 요청을 새 CSRF 값으로 한 번만 재전송하고, 갱신이 ERR-02로 실패해도 원 요청을 한 번만 재전송한다(쿠키는 탭 간에 공유되어 다른 탭이 받은 새 쿠키가 있을 수 있음, DL-14, OI-20). 갱신 요청 자체와 재전송한 요청이 ERR-02여도 다시 갱신하지 않고 `onUnauthorized` 콜백을 호출한다. 콜백 등록 함수만 노출하고 `store`·router는 import하지 않는다
   - `src/api/errorCodes.ts`(ERR 코드 문자열 상수), `src/api/types.ts`(`DateString`, `IsoTimestamp`, 응답 타입을 설계서 API 명세와 대조해 손으로 작성, PQ-09)
   - single-flight 갱신은 TQ-06(프런트는 순수 함수만 자동 테스트) 때문에 자동 테스트하지 않고 수동으로 확인한다(XQ-14)
 - **완료 조건**

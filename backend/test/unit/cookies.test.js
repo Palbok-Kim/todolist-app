@@ -123,10 +123,48 @@ test('SO-04: production에서만 cookieSecure가 true다', () => {
           JWT_SECRET: crypto.randomBytes(48).toString('base64url'),
           CSRF_SECRET: crypto.randomBytes(48).toString('base64url'),
           TRUST_PROXY: 'loopback',
+          CORS_ORIGINS: 'https://app.example.com',
+          COOKIE_DOMAIN: 'example.com',
         },
         encoding: 'utf8',
       },
     ).trim();
   assert.equal(run('production'), 'true');
   assert.equal(run('development'), 'false');
+});
+
+test('CORS: COOKIE_DOMAIN이 있으면 CSRF 쿠키에만 Domain이 붙는다', () => {
+  const out = execFileSync(
+    process.execPath,
+    [
+      '--input-type=module',
+      '-e',
+      `import express from 'express';
+       const { setSessionCookies } = await import('./src/lib/cookies.js');
+       const app = express();
+       app.get('/', (q, s) => { setSessionCookies(s, { accessToken: 'a', refreshToken: 'r', csrfToken: 'c' }, true); s.end(); });
+       const srv = app.listen(0, async () => {
+         const r = await fetch('http://127.0.0.1:' + srv.address().port);
+         console.log(JSON.stringify(r.headers.getSetCookie()));
+         srv.close();
+       });`,
+    ],
+    {
+      cwd: BACKEND_DIR,
+      env: {
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgres://x@localhost/x',
+        JWT_SECRET: crypto.randomBytes(48).toString('base64url'),
+        CSRF_SECRET: crypto.randomBytes(48).toString('base64url'),
+        CORS_ORIGINS: 'https://app.example.com',
+        COOKIE_DOMAIN: 'example.com',
+      },
+      encoding: 'utf8',
+    },
+  );
+  const lines = JSON.parse(out);
+  const of = (name) => lines.find((l) => l.startsWith(`${name}=`));
+  assert.match(of(COOKIE_NAMES.csrf), /Domain=example\.com/i);
+  assert.doesNotMatch(of(COOKIE_NAMES.access), /Domain=/i);
+  assert.doesNotMatch(of(COOKIE_NAMES.refresh), /Domain=/i);
 });

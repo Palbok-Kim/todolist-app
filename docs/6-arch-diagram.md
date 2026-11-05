@@ -12,6 +12,7 @@
 | 0.6 | 2026-11-04 | MinjeYu | 문서 간 일치화: AD-13(로그아웃)의 로그아웃 뒤 재접근 분기에 갱신 실패 뒤 원 요청 1회 재전송을 추가(DL-14, PRD NFR-07, AD-08·AD-14와 일치), 단일 출처 링크의 버전을 구조 설계 원칙 v0.6·ERD v0.5에 맞춤 |
 | 0.7 | 2026-11-04 | MinjeYu | 사용자 결정(2026-11-04: Docker 미사용) 반영: AD-01을 로컬 프로세스 3개 직접 실행(PostgreSQL 17 localhost:5432, 백엔드 3000, Vite 5173)으로 변경하고 컨테이너·볼륨 노드 삭제, 근거 표·가정·4.2 갱신, AQ-05(`TRUST_PROXY=loopback`, `xfwd: true`)·AQ-06(헬스는 기동 확인용 수동 `curl`) 수정, 단일 출처 링크의 버전을 PRD v0.10·구조 설계 원칙 v0.7에 맞춤 |
 | 0.8 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: k6 부하 테스트 제거. AQ-05 문제 설명에서 k6 부하 테스트 언급 삭제 |
+| 0.9 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: 프록시 → CORS. AD-01(Vite 프록시·같은 출처 삭제, 브라우저 직접 호출·운영 서브도메인), AD-02(`cors` 노드), AD-04(`api/client.ts` `credentials: 'include'`, 호출 대상), 2.3 가정·AQ-05(`TRUST_PROXY` 비움)·4장 AD-01 요약 수정, 단일 출처 링크 버전을 PRD v0.12·구조 설계 원칙 v0.12에 맞춤 |
 
 **표기 범례** (도메인 정의서·PRD·사용자 시나리오·와이어프레임·구조 설계 원칙과 같음)
 - **확정**: 요구사항 원문 또는 사용자 의사결정(2026-11-04)에 근거한 결정
@@ -20,7 +21,7 @@
 - **미결정**: 결정하기 전에는 구현을 보류한다
 - 이 문서에서 원문에 없는 내용은 모두 **가정**이며 각 다이어그램 아래 '가정'에 적고 4.2에 모은다. 문서 사이의 공백·모순은 4.3(`AQ-xx`)에 모은다
 
-**단일 출처 원칙**: 엔티티 속성·상태 판정·BR·UC·AC는 [도메인 정의서 v0.10](./1-domain-definition.md), FR·NFR·ERR·VR·KPI·R은 [PRD v0.10](./2-prd.md), SC는 [사용자 시나리오 v0.6](./3-user-scenario.md), WF는 [와이어프레임 v0.5](./4-wireframe.md), PR·DL·CN·TQ·SO·PQ와 디렉토리 구조는 [구조 설계 원칙 v0.7](./5-project-principle.md), 컬럼·타입·제약·인덱스 같은 데이터 모델(ERD, ER·EQ)은 [ERD v0.5](./7-erd.md)에만 둔다. 이 문서는 규칙 원문을 복사하지 않고 ID로 참조하며, 다이어그램 안의 짧은 문구는 해당 ID를 가리키는 표시일 뿐이다. 이 문서에서 새로 만든 ID는 다이어그램 `AD-xx`와 확인 필요 `AQ-xx`뿐이다.
+**단일 출처 원칙**: 엔티티 속성·상태 판정·BR·UC·AC는 [도메인 정의서 v0.10](./1-domain-definition.md), FR·NFR·ERR·VR·KPI·R은 [PRD v0.12](./2-prd.md), SC는 [사용자 시나리오 v0.6](./3-user-scenario.md), WF는 [와이어프레임 v0.5](./4-wireframe.md), PR·DL·CN·TQ·SO·PQ와 디렉토리 구조는 [구조 설계 원칙 v0.12](./5-project-principle.md), 컬럼·타입·제약·인덱스 같은 데이터 모델(ERD, ER·EQ)은 [ERD v0.5](./7-erd.md)에만 둔다. 이 문서는 규칙 원문을 복사하지 않고 ID로 참조하며, 다이어그램 안의 짧은 문구는 해당 ID를 가리키는 표시일 뿐이다. 이 문서에서 새로 만든 ID는 다이어그램 `AD-xx`와 확인 필요 `AQ-xx`뿐이다.
 
 **범위**: 구조와 흐름만 그린다. API 엔드포인트 경로, 요청·응답 필드 이름, 쿠키·헤더 이름, JWT·CSRF 토큰 구조, 리프레시 토큰 세부, scrypt 값, 카운터 저장 포맷, 컬럼 타입은 [ERD v0.5](./7-erd.md)가 단일 출처이므로 쓰지 않고, DDL은 후속 설계서(PRD 11장, PQ-01)에서 정하므로 쓰지 않는다. 필요한 곳은 '인증 쿠키', 'POST 로그인' 같은 일반 이름으로 쓰고 'PRD 11장 참조'로 표시한다.
 
@@ -63,10 +64,10 @@ flowchart LR
         end
     end
     subgraph OUT["가정 / 범위 밖 - PQ-07"]
-        RP["리버스 프록시 + HTTPS 종단 - 정적 파일과 /api를 같은 출처로"]
+        RP["운영: 화면 app.example.com, API api.example.com - 같은 사이트 다른 서브도메인, HTTPS 종단"]
     end
-    U -- "같은 출처 HTTP localhost:5173: 화면과 /api" --> VITE
-    VITE -- "/api 프록시 localhost:3000 - xfwd로 X-Forwarded-For 전달" --> API
+    U -- "화면 HTTP localhost:5173" --> VITE
+    U -- "CORS + 쿠키 직접 호출 http://localhost:3000/api - credentials include" --> API
     API -- "pg 커넥션 풀 localhost:5432 - 파라미터 바인딩" --> PG
     U -. "운영 배포 시 - 가정" .-> RP
     RP -. "운영 - 범위 밖" .-> API
@@ -77,21 +78,22 @@ flowchart LR
 | 로컬 프로세스 3개 직접 실행(PostgreSQL 17 `localhost:5432`, 백엔드 3000, Vite 5173), 실행 순서는 DB 먼저(기동 순서 보장 장치 없음), 백엔드는 루트 `.env`를 읽음. 출처: 사용자 결정(2026-11-04): Docker 미사용 | PRD 6장 개발 환경, SO-08 |
 | Node 22, Express 5, ESM, `/api` 접두사 | PQ-05 |
 | PostgreSQL 17, pg 직접 사용(Prisma 금지) | PRD 6장, NFR-08 |
-| 브라우저는 frontend만 본다: 같은 출처라 CORS 없이 쿠키 사용 (프록시 자체는 가정) | PRD 6장, NFR-07, SO-08 |
+| 브라우저가 화면(5173)과 API(3000)를 각각 호출한다: 프록시 없이 CORS + 쿠키(`credentials: 'include'`). 사용자 결정(2026-11-05) | PRD 6장, NFR-07, SO-08 |
 | 개발·빌드 서버 구성(운영 배포 구성은 범위 밖) | SO-09 |
 | 운영 배포(리버스 프록시, HTTPS, 클라이언트 IP)는 이 문서 범위 밖 | PQ-07, NFR-09, PRD 11장, OI-12 |
 | 기동 확인용 헬스 체크(`/api/health`, 수동 `curl`) | SO-14, AQ-06 |
-| 로컬 개발 프록시 뒤 클라이언트 IP: 프록시가 `xfwd: true`로 전달하고 `trust proxy`는 설정값(`TRUST_PROXY=loopback`)으로 로컬 루프백에 한정 | SO-16, NFR-10, AQ-05 |
+| 로컬 개발 클라이언트 IP: 앞단 프록시가 없으므로 `trust proxy`는 설정값(`TRUST_PROXY`)을 비워 불신 | SO-16, NFR-10, AQ-05 |
 
 **가정**
-- 점선 노드(운영 리버스 프록시)는 PQ-07의 '기본안'을 그대로 옮긴 것이다. 구성은 별도 배포 문서에서 정한다.
-- 브라우저는 `http://localhost:5173`(frontend)만 호출하고 backend·DB에 직접 접근하지 않는다(SO-08).
+- 점선 노드(운영)는 PQ-07의 변경된 결정(같은 사이트 서브도메인 + CORS)을 옮긴 것이다. 구성은 별도 배포 문서에서 정한다.
+- 브라우저는 DB에 직접 접근하지 않는다. 화면(`http://localhost:5173`)과 API(`http://localhost:3000/api`)만 호출한다(SO-08).
 
 ### 2.2 백엔드 미들웨어 순서 (AD-02)
 
 ```mermaid
 flowchart LR
-    M1["1 requestLogger"] --> M2["2 cookie-parser + JSON 파서"]
+    M1["1 requestLogger"] --> MC["1.5 cors - 사전 요청은 여기서 204"]
+    MC --> M2["2 cookie-parser + JSON 파서"]
     M2 --> M3["3 공개 라우트: 회원가입, 로그인, 토큰 갱신, 로그아웃, 헬스"]
     M3 -- "미매칭" --> M4["4 authenticate"]
     M4 --> M5["5 csrf"]
@@ -113,6 +115,7 @@ flowchart LR
 | `authenticate`는 JWT 검증(HS384만 허용)만, `req.user = { id }`만 채움 | DL-06, SO-17, NFR-07 |
 | 오류 응답은 `errorHandler` 한 곳, 내부 정보 미노출 | SO-07, ERR-07, NFR-11 |
 | 요청 로그 항목과 금지 값 | SO-06 |
+| `cors`는 로거 다음·파서와 인증·CSRF 앞(허용 출처에만 CORS 헤더, 사전 요청은 인증·CSRF 전에 종료) | SO-08 |
 
 **가정**
 - 안전한 메서드(GET)는 `csrf`가 검사하지 않는다. NFR-15가 상태 변경 API(POST·PUT·PATCH·DELETE)만 대상으로 정했기 때문이다.
@@ -172,7 +175,7 @@ flowchart TB
 
 **가정**
 - 리프레시 토큰 행은 `auth.service`가 `refreshToken.queries`로 저장하고, 세션 토큰 묶음 발급은 DB를 모르는 `lib/token.js` 순수 함수가 한다(PQ-13). 그림에서는 `SV --> DQ` 선에 포함된다.
-- 클라이언트 IP는 routes가 요청에서 꺼내 service에 인자로 넘기고, service가 `loginAttempts`를 호출한다(PRD 7장 매핑의 `auth.service`, `lib/loginAttempts`). 프록시 뒤 IP 취득은 SO-16과 PRD 11장 참조(AQ-05).
+- 클라이언트 IP는 routes가 요청에서 꺼내 service에 인자로 넘기고, service가 `loginAttempts`를 호출한다(PRD 7장 매핑의 `auth.service`, `lib/loginAttempts`). IP 취득과 프록시 신뢰 범위는 SO-16과 PRD 11장 참조(AQ-05).
 - 쿠키 설정은 routes가 service가 돌려준 토큰으로 `lib/cookies.js`를 호출해 한다(DL-02, AQ-01). 이 한 줄이 DL-01 표의 유일한 routes → `lib/` 허용이다.
 
 ### 2.4 프런트엔드 구조 (AD-04)
@@ -187,9 +190,9 @@ flowchart TB
     end
     CMP["components - Layout, Header, TopAlert, ConfirmDialog, FieldError"]
     ZS["store - Zustand UI 상태만: alertStore, menuStore, todoFilterStore, calendarStore"]
-    CLI["api/client.ts - fetch 유일: 쿠키 전송, CSRF 헤더, 응답 파싱, ApiError, ERR-02 시 single-flight 갱신 후 1회 재시도"]
+    CLI["api/client.ts - fetch 유일: 쿠키 전송(`credentials: 'include'`), CSRF 헤더, 응답 파싱, ApiError, ERR-02 시 single-flight 갱신 후 1회 재시도"]
     LB["lib - date.ts, validation.ts 순수 함수"]
-    BEX["backend /api - Vite 프록시"]
+    BEX["backend /api - CORS 직접 호출, VITE_API_BASE_URL"]
     PAGES --> FC
     PAGES --> FQ
     PAGES --> CMP
@@ -827,7 +830,7 @@ sequenceDiagram
 
 | 위치 | 가정 |
 |------|------|
-| AD-01 | 로컬 프로세스 3개 직접 실행(사용자 결정(2026-11-04): Docker 미사용), 개발 서버 프록시 구성과 운영 리버스 프록시 점선 표시는 PQ-07 기본안 그대로이며 구성은 범위 밖 |
+| AD-01 | 로컬 프로세스 3개 직접 실행(사용자 결정(2026-11-04): Docker 미사용), 화면↔API는 프록시 없이 CORS(사용자 결정(2026-11-05)), 운영은 같은 사이트 서브도메인 점선 표시(PQ-07 변경안)이며 구성은 범위 밖 |
 | AD-02 | GET은 `csrf` 검사 제외, 매칭되지 않는 경로는 ERR-05 형식, 토큰 갱신은 공개 라우트(사용자 결정(2026-11-04)의 후속, 위임 결정(2026-11-04)으로 확정) |
 | AD-03 | 클라이언트 IP는 routes가 service에 인자로 전달 (쿠키 설정 주체는 AQ-01로 확정, 가정 아님), 세션 토큰 묶음 발급은 `lib/token.js` 순수 함수 (PQ-13) |
 | AD-04 | 새 가정 없음 (사용자 정보 조회와 `onUnauthorized` 콜백은 AQ-03·AQ-02로 확정) |
@@ -851,7 +854,7 @@ sequenceDiagram
 | AQ-02 | 확정 (위임 결정(2026-11-04)) | DL-14, 2.2장 의존 표 | DL-14는 `api/client.ts`가 ERR-02 때 로그인 화면 이동과 만료 안내를 맡는다고 하지만, 같은 문서의 표는 `api/`가 `store/`를 import하지 못하게 한다(만료 안내는 `alertStore`가 자연스러움) | `client.ts`는 `onUnauthorized` 콜백 등록 함수만 노출하고 `main.tsx`가 `alertStore`와 router를 연결한다 (반영: 5번 DL-14, 6.3장 `main.tsx`) | AD-04, AD-08 |
 | AQ-03 | 확정 (위임 결정(2026-11-04)) | PRD 4.2, 6장, PQ-02, CN-07, WF-07, DL-12 | 프런트는 인증 여부 판정(`RequireAuth`), 사용자 timezone(캘린더 오늘 강조·'마지막 수정' 변환·설정 현재 값), name·email을 서버에서 읽어야 하나, 현재 사용자 조회 경로와 가입·로그인 응답의 사용자 정보 포함 여부가 문서에 없다. 또 DL-12는 시간대 변경 뒤 할일·캘린더 쿼리 무효화를 명시하지 않았다 | PRD 11장에 '현재 사용자 조회'를 추가하고 `RequireAuth`·`features/user`가 쓴다. 가입·로그인 성공 응답도 사용자 정보를 담는다. DL-12에 '시간대 변경 성공 뒤 사용자·할일·캘린더 쿼리 무효화'를 추가한다 (반영: PRD 11장, 5번 DL-12) | AD-04, AD-06, AD-07, AD-12 |
 | AQ-04 | 확정 (위임 결정(2026-11-04)) | PRD 4.1, VR-02, NFR-06, NFR-10, ERR-01, ERR-03 | 로그인 입력에 VR-02(15~128자)를 적용하는지 불명하다. 적용하면 15자 미만 비밀번호가 ERR-01이 되어 ERR-03과 응답이 갈린다. 적용하지 않으면 길이 상한 없는 입력이 scrypt에 들어간다 | 로그인은 필수 값, email 형식(254자), 비밀번호 128자 초과만 ERR-01로 거부하고 15자 미만은 검증 없이 ERR-03으로 처리한다. 이 ERR-01 거부는 실패 횟수에 넣지 않고 제한 확인보다 먼저 한다 (반영: PRD 4.1·4.3, SC-02 1a, WF-01) | AD-07 |
-| AQ-05 | 확정 (위임 결정(2026-11-04), 개발 환경 부분은 사용자 결정(2026-11-04): Docker 미사용) | NFR-10, PRD 11장, SO-08, PQ-07 | NFR-10은 IP별 제한(PRD 11장은 운영 리버스 프록시 뒤 IP만 언급)인데, 로컬 개발에서는 브라우저 요청이 Vite 프록시를 거쳐 backend에 오므로 `req.ip`가 모두 프록시(루프백) 주소가 된다. IP 한도가 사용자 전체에 걸려 사실상 전역 잠금이 되고, AC-15 테스트 해석도 달라진다 | 개발 프록시가 `xfwd: true`로 클라이언트 IP(`X-Forwarded-For`)를 전달하게 하고 Express `trust proxy`를 `config.js`의 설정값(`TRUST_PROXY=loopback`)으로, 신뢰 범위를 로컬 루프백으로 한정한다 (반영: 5번 SO-16, PRD 11장 클라이언트 IP 항목) | AD-01, AD-03, AD-07 |
+| AQ-05 | 확정 (위임 결정(2026-11-04), 개발 환경 부분은 사용자 결정(2026-11-04): Docker 미사용) | NFR-10, PRD 11장, SO-08, PQ-07 | NFR-10은 IP별 제한(PRD 11장은 운영 리버스 프록시 뒤 IP만 언급)인데, 로컬 개발에서는 브라우저 요청이 Vite 프록시를 거쳐 backend에 오므로 `req.ip`가 모두 프록시(루프백) 주소가 된다. IP 한도가 사용자 전체에 걸려 사실상 전역 잠금이 되고, AC-15 테스트 해석도 달라진다 | 개발 프록시가 `xfwd: true`로 클라이언트 IP(`X-Forwarded-For`)를 전달하게 하고 Express `trust proxy`를 `config.js`의 설정값(`TRUST_PROXY=loopback`)으로, 신뢰 범위를 로컬 루프백으로 한정한다 (반영: 5번 SO-16, PRD 11장 클라이언트 IP 항목). **변경 (사용자 결정(2026-11-05))**: 프록시가 없어져 브라우저가 백엔드를 직접 호출하므로 `req.ip`가 클라이언트 주소다. 개발은 `TRUST_PROXY`를 비우고(불신), 운영은 리버스 프록시 주소만 신뢰한다(SO-16) | AD-01, AD-03, AD-07 |
 | AQ-06 | 확정 (위임 결정(2026-11-04), 헬스 용도는 사용자 결정(2026-11-04): Docker 미사용) | SO-14, PQ-05, DL-05 | SO-14는 `GET /health`라고 쓰면서 같은 항목에서 API 경로를 `/api` 접두사로 통일한다고 한다. 헬스 경로가 `/health`인지 `/api/health`인지 모순이다 | `/api/health` 하나로 통일하고 기동 확인용(수동 `curl`)과 DL-05의 공개 라우트가 같은 경로를 쓴다 (반영: 5번 SO-14, 6.2장 `health.routes.js`) | AD-01, AD-02 |
 | AQ-07 | 확정 (위임 결정(2026-11-04)) | BR-12, PR-06, NFR-05, NFR-12, WF-05, OI-15 | 캘린더 기간 조회 계약이 없다. 기간 파라미터, 응답에 `status` 포함 여부(상태 시각 구분은 BR-12, 프런트는 서버 `status`만 표시는 PR-06이므로 포함해야 함), 기간 형식·최대 길이 검증, 월간 그리드의 앞뒤 달 날짜 포함 여부(WF-05는 10월 30·31일 칸을 보여 줌)가 비어 있다 | `YYYY-MM-DD` 시작·종료일과 겹침 조건으로 조회하고 `status`를 포함하며 앞뒤 달 날짜 칸까지 조회한다. 형식 오류, 시작일 > 종료일, 42일 초과 기간은 ERR-01이다 (반영: PRD 11장 캘린더 기간 조회 계약) | AD-11 |
 | AQ-08 | 확정 (위임 결정(2026-11-04)) | BR-06, OI-04, DL-08, SO-10, SO-07 | 카테고리 삭제의 무결성 공백이다. (1) `todos`의 카테고리 FK 삭제 동작이 정해지지 않았다. CASCADE이면 BR-06이 지키려는 할일 보존이 깨질 수 있다. (2) 확인 대화상자의 개수는 조회 시점 값이라 실제 이동 건수와 다를 수 있다. (3) 삭제 트랜잭션 중 다른 요청이 삭제 대상 카테고리로 할일을 등록·수정하면 FK 오류가 ERR-07로 샐 수 있다 | (1) FK는 RESTRICT(복합 FK, EQ-04)로 두어 이동이 실패하면 삭제도 실패한다. (2) 개수는 안내용이다. (3) 삭제 트랜잭션은 대상 카테고리 행을 `FOR UPDATE`로 잠그고 FK 위반은 service가 ERR-05로 번역한다 (반영: [7-erd.md](./7-erd.md) 4장·EQ-04, 5번 DL-08·SO-07, PRD 11장) | AD-10 |
