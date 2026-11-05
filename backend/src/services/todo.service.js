@@ -23,11 +23,12 @@ function toTodo(row) {
 }
 
 // SO-07: 확인 뒤 카테고리가 동시에 삭제되면 FK(RESTRICT) 위반이 난다. 500이 아니라 404로 돌려준다
+// 사용자 FK 위반(요청 중 계정 삭제)은 그대로 둬 다른 곳처럼 401·500 경로를 탄다
 async function guardFk(promise) {
   try {
     return await promise;
   } catch (err) {
-    if (err.code === '23503') throw notFound();
+    if (err.code === '23503' && err.constraint === 'fk_todos_category_id_user_id') throw notFound();
     throw err;
   }
 }

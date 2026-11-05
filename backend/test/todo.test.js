@@ -119,10 +119,17 @@ test('VR-05: 제목 누락·잘못된 날짜는 400이고 행이 생기지 않�
 test('SO-07: 본문의 형식이 틀린 categoryId는 등록·수정 모두 없는 카테고리와 같은 404다', async () => {
   const a = await register();
   const missing = await create(a, { ...base, categoryId: randomUUID() });
-  for (const categoryId of ['abc', 123]) {
-    const res = await create(a, { ...base, categoryId });
-    assert.equal(res.status, 404, String(categoryId));
-    assert.deepEqual(res.body, missing.body);
+  const res404 = await create(a, { ...base, categoryId: 'abc' });
+  assert.equal(res404.status, 404);
+  assert.deepEqual(res404.body, missing.body);
+  // 빈 값·문자열이 아닌 값은 형식 오류가 아니라 입력 누락이라 400이다
+  for (const categoryId of ['', '  ', 123, false]) {
+    const bad = await create(a, { ...base, categoryId });
+    assert.equal(bad.status, 400, String(categoryId));
+    assert.deepEqual(
+      bad.body.error.fields.map((x) => x.field),
+      ['categoryId'],
+    );
   }
   const todo = (await create(a, base)).body;
   const res = await req(`/api/todos/${todo.id}`, {

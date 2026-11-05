@@ -1,5 +1,9 @@
 import { asObject, checkDate, checkDateOrder, checkText } from './common.js';
 
+// 빈 값·문자열이 아닌 값은 400, 형식만 틀린 문자열은 service가 없는 카테고리와 같은 404로 판정한다(SO-07)
+const checkCategoryId = (v) =>
+  typeof v === 'string' && v.trim() !== '' ? { value: v } : { error: '카테고리를 선택해 주세요.' };
+
 // VR-05
 const TITLE_MAX = 100;
 // VR-06
@@ -22,8 +26,9 @@ export function validateTodoCreate(body) {
     const msg = checkDateOrder(s.value, e.value);
     if (msg) fields.push({ field: 'endDate', message: msg });
   }
-  // BR-02, SO-07: uuid 형식 오류는 없는 카테고리와 같은 404라 service가 판정한다
-  value.categoryId = b.categoryId ?? null;
+  // BR-04: 생략·null은 기본 카테고리
+  if (b.categoryId === undefined || b.categoryId === null) value.categoryId = null;
+  else run('categoryId', checkCategoryId(b.categoryId));
   return { value, fields };
 }
 
@@ -42,8 +47,8 @@ export function validateTodoUpdate(body) {
   run('description', (v) => checkText(v, { max: DESCRIPTION_MAX, required: false }));
   run('startDate', checkDate);
   run('endDate', checkDate);
-  // D-05: categoryId null은 ERR-01, 형식 오류는 service가 404로 판정한다(SO-07)
-  run('categoryId', (v) => (v === null ? { error: '카테고리를 선택해 주세요.' } : { value: v }));
+  // D-05: categoryId null은 ERR-01
+  run('categoryId', checkCategoryId);
   run('completed', (v) =>
     typeof v === 'boolean' ? { value: v } : { error: '완료 여부를 확인해 주세요.' },
   );

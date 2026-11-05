@@ -28,6 +28,8 @@ export function isLimited({ ip, email }, now = Date.now(), windowMs = WINDOW_MS)
 
 // 확인과 집계를 await 없이 한 번에 해, 동시 요청이 모두 한도 확인을 통과하지 못하게 한다.
 // 검증 전에 실패로 미리 세고 성공하면 release로 되돌린다(성공은 집계하지 않는다)
+// shortcut: 검증 중인 성공 요청도 잠시 한도를 차지하고(같은 IP 동시 11건이면 마지막은 429),
+// release는 그 시점 항목을 줄여 창이 바뀌는 순간 새 실패 1회를 지울 수 있다. 오탐이 보고되면 요청별 토큰으로 바꾼다
 export function reserve(key, now = Date.now(), windowMs = WINDOW_MS) {
   if (isLimited(key, now, windowMs)) return false;
   recordFailure(key, now, windowMs);

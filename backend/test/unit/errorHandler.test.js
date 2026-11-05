@@ -17,6 +17,9 @@ app.post('/validation', () => {
 app.get('/boom', () => {
   throw new Error('relation "users" SELECT * FROM users at /app/src/db/x.js');
 });
+app.get('/http-error', () => {
+  throw Object.assign(new Error('forbidden'), { status: 403, expose: true });
+});
 app.use(errorHandler);
 
 async function call(path, init) {
@@ -110,4 +113,10 @@ test('ERR-01: 본문 크기 초과(413)·지원하지 않는 문자셋(415)도 5
     assert.equal(res.body.error.code, ERR.VALIDATION_ERROR.code);
     assert.ok(!res.logs.some((l) => l.level === 'error'));
   }
+});
+
+test('ERR-01 변환은 body-parser 오류에만 적용되고 다른 http 오류는 500 ERR-07이다', async () => {
+  const res = await call('/http-error');
+  assert.equal(res.status, 500);
+  assert.equal(res.body.error.code, ERR.INTERNAL_ERROR.code);
 });

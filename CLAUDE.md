@@ -27,6 +27,6 @@
 | [docs/8-plan.md](docs/8-plan.md)                           | v0.33           | 실행 계획(WBS): COM, DB, BE, FE, QA Task와 일정                  |
 | [docs/9-design.md](docs/9-design.md)                       | v0.4            | 설계서: PRD 11장 구현 값, API 엔드포인트 표, 토큰·쿠키·키 관리   |
 | [docs/schema.sql](docs/schema.sql)                         | 7-erd v0.5 기준 | PostgreSQL 17 DDL                                                |
-| [backend/swagger.yaml](backend/swagger.yaml)               | 0.1.1           | API 명세(OpenAPI 3.0.3)                                          |
+| [backend/swagger.yaml](backend/swagger.yaml)               | 0.1.2           | API 명세(OpenAPI 3.0.3)                                          |
 
 문서를 수정하면 그 문서의 버전과 이력을 올리고, 위 표의 버전도 함께 갱신한다.
