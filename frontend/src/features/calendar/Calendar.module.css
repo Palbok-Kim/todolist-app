@@ -1,3 +1,21 @@
+/* 스타일 가이드 5.5: 왼쪽 카테고리 목록 + 캘린더, 모바일은 위아래 */
+.layout {
+  display: flex;
+  gap: var(--space-5);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .layout {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;

@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { translate, type Lang, type Vars } from '../lib/i18n';
 
-export type Theme = 'light' | 'dark';
+export type Theme = 'light' | 'dark' | 'blue-black' | 'blue-white' | 'orange-white' | 'green-white';
 
 interface S {
   lang: Lang;

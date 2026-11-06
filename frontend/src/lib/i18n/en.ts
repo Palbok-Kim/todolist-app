@@ -2,6 +2,11 @@
 export const en: Record<string, string> = {
   라이트: 'Light',
   다크: 'Dark',
+  '블루/블랙': 'Blue/Black',
+  '블루/화이트': 'Blue/White',
+  '오렌지/화이트': 'Orange/White',
+  '그린/화이트': 'Green/White',
+  프로필: 'Profile',
   화면: 'Display',
   테마: 'Theme',
   언어: 'Language',

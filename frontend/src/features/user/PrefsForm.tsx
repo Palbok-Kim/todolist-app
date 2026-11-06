@@ -4,8 +4,16 @@ import styles from './Settings.module.css';
 
 // 언어 이름은 그 언어로 적어 어떤 화면 언어에서도 찾을 수 있게 한다
 const LANG_NAMES: Record<Lang, string> = { ko: '한국어', en: 'English', ja: '日本語' };
-const THEMES: Theme[] = ['light', 'dark'];
-const THEME_LABEL: Record<Theme, string> = { light: '라이트', dark: '다크' };
+// FR-10, 스타일 가이드 2.1
+const THEME_LABEL: Record<Theme, string> = {
+  light: '라이트',
+  dark: '다크',
+  'blue-black': '블루/블랙',
+  'blue-white': '블루/화이트',
+  'orange-white': '오렌지/화이트',
+  'green-white': '그린/화이트',
+};
+const THEMES = Object.keys(THEME_LABEL) as Theme[];
 
 // FR-09·10, WF-07: 고르면 저장 버튼 없이 바로 적용·저장한다(PRD 4.5)
 export function PrefsForm() {

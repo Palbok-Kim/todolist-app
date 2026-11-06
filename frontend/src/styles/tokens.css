@@ -53,8 +53,9 @@
   --form-max: 360px;
 }
 
-/* style-guide 2.1 다크 모드: 같은 토큰의 값만 바꾼다(CN-13) */
-:root[data-theme='dark'] {
+/* style-guide 2.1 다크 모드: 같은 토큰의 값만 바꾼다(CN-13). 블루/블랙은 다크를 기준으로 덮어쓴다 */
+:root[data-theme='dark'],
+:root[data-theme='blue-black'] {
   color-scheme: dark;
   --color-primary: #8b7cf0;
   --color-primary-hover: #9d90f3;
@@ -80,6 +81,38 @@
   --status-overdue-soft: #3a1f1d;
   --color-overlay: rgb(0 0 0 / 60%);
   --shadow-pop: 0 4px 16px rgb(0 0 0 / 48%);
+}
+
+/* style-guide 2.1 추가 테마: 표에 적은 토큰만 바꾼다 */
+:root[data-theme='blue-black'] {
+  --color-primary: #3b82f6;
+  --color-primary-hover: #5b96f7;
+  --color-primary-soft: #172a4a;
+  --color-bg: #0a0a0c;
+  --color-bg-subtle: #151518;
+  --color-surface: #151518;
+  --color-border: #26262c;
+  --color-border-strong: #3c3c45;
+  --color-today-bg: #13233d;
+  --color-info-soft: #16213a;
+}
+
+:root[data-theme='blue-white'] {
+  --color-primary: #1a73e8;
+  --color-primary-hover: #1765cc;
+  --color-primary-soft: #e8f0fe;
+}
+
+:root[data-theme='orange-white'] {
+  --color-primary: #e8710a;
+  --color-primary-hover: #c95f06;
+  --color-primary-soft: #fef0e3;
+}
+
+:root[data-theme='green-white'] {
+  --color-primary: #188038;
+  --color-primary-hover: #137333;
+  --color-primary-soft: #e6f4ea;
 }
 
 @media (max-width: 767px) {

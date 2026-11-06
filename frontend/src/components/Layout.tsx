@@ -6,7 +6,7 @@ import styles from './Layout.module.css';
 interface Props {
   onLogout?: () => void;
   logoutPending?: boolean;
-  userName?: string;
+  user?: { name: string; email: string };
 }
 
 export function Layout(props: Props) {

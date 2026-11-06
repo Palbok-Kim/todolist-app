@@ -13,10 +13,8 @@ import { CategoryManagePage } from './pages/CategoryManagePage';
 // 조립 파일이라 features 훅을 직접 쓴다(DL-14 예외)
 function AppLayout() {
   const logout = useLogout();
-  const userName = useMe().data?.name;
-  return (
-    <Layout onLogout={() => logout.mutate()} logoutPending={logout.isPending} userName={userName} />
-  );
+  const user = useMe().data;
+  return <Layout onLogout={() => logout.mutate()} logoutPending={logout.isPending} user={user} />;
 }
 
 // WF ↔ 경로 표

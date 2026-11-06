@@ -42,7 +42,9 @@ setOnUnauthorized(() => {
   if (expiring || !queryClient.getQueryData(userKeys.me)) return;
   expiring = true;
   devLog('session expired: redirect to /login', undefined, 'warn');
-  useAlertStore.getState().showAlert('info', '로그인이 만료되었습니다. 다시 로그인해 주세요.');
+  useAlertStore
+    .getState()
+    .showAlert('info', '로그인이 만료되었습니다. 다시 로그인해 주세요.', true);
   void router
     .navigate('/login', { replace: true, state: { signedOut: true } })
     .then(() => queryClient.clear())

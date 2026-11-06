@@ -59,6 +59,9 @@
 | 0.53 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: FE-24(개발 모드 콘솔 로깅, SO-06) Task 추가(P1, ⬜), 의존 그래프 갱신. 구조 설계 원칙 v0.19 링크 |
 | 0.54 | 2026-11-05 | MinjeYu | 진척 반영: FE-24 완료 조건 2개 체크(✅). 검증: tsc·ESLint·Prettier 통과, Vitest 103개, `lib/logger.ts` 밖 `console.` 0건. Playwright(개발 서버): 로그인 실패 `api … 401 INVALID_CREDENTIALS`·`mutation error`, 가입 201, `route`, 목록·캘린더 조회, `prefs` 변경 로그가 남고 비밀번호 문자열은 없음. 운영 빌드 번들에 `[todolist]` 0건(남은 `console.*`는 React 라이브러리 것) |
 | 0.55 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: 환경 변수를 디렉토리별로 정리(`backend/.env`·`backend/.env.example`, 루트는 공용 도구 키 `DB_CONN_STRING`만). BE-01 수행 작업의 `--env-file-if-exists` 경로를 `.env`로. 완료 상태 변화 없음. 구조 설계 원칙 v0.20 링크 |
+| 0.56 | 2026-11-06 | MinjeYu | 사용자 요청(2026-11-06) 반영: FE-25(헤더 프로필 팝업·카테고리 체크 목록·추가 테마 4개) Task 추가(P1, ⬜), 의존 그래프 갱신. 헤더 검색은 범위 외. 단일 출처 링크를 도메인 정의서 v0.12·PRD v0.16·와이어프레임 v0.10·구조 설계 원칙 v0.21에 맞춤 |
+| 0.57 | 2026-11-06 | MinjeYu | 진척 반영: FE-25 완료 조건 4개 체크(✅). `CategorySidebar.tsx`는 레이어 규칙(다른 feature의 `validation.ts` 금지)에 따라 `features/category/`에 둠. 검증: tsc·ESLint·Prettier 통과, Vitest 104개(`calendarStore` 숨김 토글 1개 추가). Playwright: 헤더 '로고·캘린더·목록·+ 새 할일·설정·프로필', 프로필 팝업 이름·이메일·로그아웃, 밖 클릭으로 닫힘, 로그아웃 → /login. 사이드바로 카테고리 생성·중복 409 사유 표시, 체크 해제 시 월·주에서 해당 할일 숨김·다시 체크 시 표시. 테마 6개 선택·`--color-primary` 적용·새로고침 유지. 360px 가로 스크롤 없음, 모바일 메뉴 '캘린더·목록·설정' |
+| 0.58 | 2026-11-06 | MinjeYu | 최종 코드 기준 일치화: FE-25 보완(프로필 팝업을 연 경로를 기억해 뒤로 가기 등 경로 변경 때도 닫힘, WF 3.1). 완료 상태 변화 없음. `docs/test/manual-checklist.md`에 FE-25 화면 확인 결과 추가. 단일 출처 링크를 와이어프레임 v0.11·구조 설계 원칙 v0.22·아키텍처 다이어그램 v0.13에 맞춤 |
 
 **표기 범례** (도메인 정의서·PRD·사용자 시나리오·와이어프레임·구조 설계 원칙과 같음)
 - **확정**: 요구사항 원문 또는 사용자 의사결정(2026-11-04)에 근거한 결정
@@ -67,7 +70,7 @@
 - **미결정**: 결정하기 전에는 구현을 보류한다
 - 이 문서에서 원문에 없는 결정은 모두 **가정**이다. 가정과 문서 사이의 공백·모순은 8장(`XQ-xx`)에 모은다
 
-**단일 출처 원칙**: 엔티티 속성·상태 판정·BR·UC·AC는 [도메인 정의서 v0.11](./1-domain-definition.md), FR 우선순위·VR·ERR·NFR·KPI·R·일정·컷 라인은 [PRD v0.15](./2-prd.md), SC는 [사용자 시나리오 v0.7](./3-user-scenario.md), WF는 [와이어프레임 v0.9](./4-wireframe.md), 디렉토리·원칙(PR/DL/CN/TQ/SO)은 [프로젝트 구조 설계 원칙 v0.15](./5-project-principle.md), AD는 [아키텍처 다이어그램 v0.11](./6-arch-diagram.md), 테이블은 [ERD v0.6](./7-erd.md)와 [`schema.sql`](./schema.sql)에만 둔다. 이 문서는 규칙 원문을 복사하지 않고 ID로 참조한다. 이 문서에서 새로 만든 ID는 Task ID(`COM-xx`, `DB-xx`, `BE-xx`, `FE-xx`, `QA-xx`)와 확인 필요 `XQ-xx`뿐이다.
+**단일 출처 원칙**: 엔티티 속성·상태 판정·BR·UC·AC는 [도메인 정의서 v0.12](./1-domain-definition.md), FR 우선순위·VR·ERR·NFR·KPI·R·일정·컷 라인은 [PRD v0.16](./2-prd.md), SC는 [사용자 시나리오 v0.7](./3-user-scenario.md), WF는 [와이어프레임 v0.11](./4-wireframe.md), 디렉토리·원칙(PR/DL/CN/TQ/SO)은 [프로젝트 구조 설계 원칙 v0.22](./5-project-principle.md), AD는 [아키텍처 다이어그램 v0.13](./6-arch-diagram.md), 테이블은 [ERD v0.6](./7-erd.md)와 [`schema.sql`](./schema.sql)에만 둔다. 이 문서는 규칙 원문을 복사하지 않고 ID로 참조한다. 이 문서에서 새로 만든 ID는 Task ID(`COM-xx`, `DB-xx`, `BE-xx`, `FE-xx`, `QA-xx`)와 확인 필요 `XQ-xx`뿐이다.
 
 **범위**: 구현 작업의 분해·순서·일정·검증 방법만 정한다. 코드 구현, Git 커밋, 기존 문서 수정은 이 문서의 범위가 아니다. 문서 사이의 모순은 수정하지 않고 8장에 남긴다.
 
@@ -197,6 +200,7 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 | FE-22 | 라이트·다크 모드 (FR-10 P1) | P1 | 1.5h | Day 3 (추가 요청) | FE-11~FE-20 | ✅ |
 | FE-23 | 헤더 재배치·설정의 언어·테마·빈 목록 표 머리 (WF v0.9) | P1 | 1h | Day 3 (추가 요청) | FE-21, FE-22 | ✅ |
 | FE-24 | 개발 모드 콘솔 로깅 (SO-06) | P1 | 0.5h | Day 3 (추가 요청) | FE-23 | ✅ |
+| FE-25 | 헤더 프로필 팝업·카테고리 체크 목록·추가 테마 (WF v0.10) | P1 | 2h | Day 3 (추가 요청) | FE-24 | ✅ |
 
 ### 2.5 검증 (QA)
 
@@ -1120,6 +1124,21 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
   - [x] 개발 서버에서 로그인·목록 조회·저장 실패·화면 이동·언어 변경 때 콘솔에 `[todolist]` 로그가 남고, 요청·응답 body와 비밀번호·토큰은 없다(수동)
   - [x] 운영 빌드 번들에 `[todolist]` 문자열이 없고 `lib/logger.ts` 밖에 `console.`이 0건이다(grep, SO-06)
 
+#### FE-25 헤더 프로필 팝업·카테고리 체크 목록·추가 테마 (WF v0.10)
+
+- **우선순위 / 예상 시간**: P1 / 2h
+- **선행 Task**: FE-24
+- **근거**: 사용자 요청(2026-11-06), WF 3.1, WF-05, WF-07, FR-10, FR-11, PRD 4.5·4.6·7장, DL-13, CN-13, 스타일 가이드 2.1·3장·5.5
+- **수행 작업**
+  - `components/Header.tsx`: 사용자 이름·로그아웃을 빼고 맨 오른쪽 프로필 버튼(이름 첫 글자) + 팝업(이름·이메일·로그아웃). 밖 클릭·Esc·경로 변경 때 닫기. 모바일 펼침 메뉴는 캘린더·목록·설정만
+  - `features/category/CategorySidebar.tsx`: 카테고리 체크 목록(해제 = 숨김)과 새 카테고리 입력란(`useCreateCategory`, `validateCategoryName`). `store/calendarStore.ts`에 `hiddenCategoryIds`(저장 안 함). `CalendarPage`에서 숨긴 카테고리의 할일을 걸러 월·주·일·그날 목록에 넘김
+  - `styles/tokens.css`: `blue-black`·`blue-white`·`orange-white`·`green-white` 테마 토큰, `store/prefsStore.ts` `Theme` 확장, `PrefsForm` 테마 6개, `lib/i18n` 테마 이름 번역
+- **완료 조건**
+  - [x] 헤더가 '로고 · 캘린더 · 목록 … + 새 할일 · ⚙ 설정 · 프로필' 순서이고, 프로필을 누르면 이름·이메일·로그아웃 팝업이 열리며 로그아웃이 동작한다. 밖을 누르면 닫힌다(수동)
+  - [x] 캘린더 왼쪽 목록에서 카테고리 체크를 해제하면 그 할일이 월·주·일에서 사라지고, 입력란으로 만든 카테고리가 목록에 체크된 채 나타난다. 중복 이름은 입력란 아래 사유(수동)
+  - [x] 설정에서 테마 6개를 고를 수 있고 각 테마가 바로 적용·새로고침 뒤 유지된다. `*.module.css`에 색 직접 값 0건(수동, grep)
+  - [x] Vitest·tsc·ESLint·Prettier 통과, 360px에서 가로 스크롤 없음(수동)
+
 ### 3.5 검증 (QA)
 
 #### QA-01 수동 체크리스트 `manual-checklist.md` 작성
@@ -1296,6 +1315,7 @@ flowchart LR
     FE_22["FE-22 라이트·다크 모드 (FR-10 P1)"]
     FE_23["FE-23 헤더 재배치·설정의 언어·테마 (P1)"]
     FE_24["FE-24 개발 모드 콘솔 로깅 (P1)"]
+    FE_25["FE-25 프로필 팝업·카테고리 체크 목록·추가 테마 (P1)"]
   end
   subgraph QAG["검증 (QA)"]
     QA_01["QA-01 수동 체크리스트 manual-checklist.md 작성"]
@@ -1420,6 +1440,7 @@ flowchart LR
   FE_21 --> FE_23
   FE_22 --> FE_23
   FE_23 --> FE_24
+  FE_24 --> FE_25
   BE_18 --> QA_02
   BE_20 --> QA_02
   BE_14 --> QA_03
@@ -1434,7 +1455,7 @@ flowchart LR
   QA_02 --> QA_08
   QA_01 --> QA_09
   classDef p1 stroke-dasharray: 5 5,stroke:#888
-  class DB_10,DB_11,BE_21,BE_22,BE_23,FE_17,FE_18,FE_19,FE_20,FE_21,FE_22,FE_23,FE_24,QA_09 p1
+  class DB_10,DB_11,BE_21,BE_22,BE_23,FE_17,FE_18,FE_19,FE_20,FE_21,FE_22,FE_23,FE_24,FE_25,QA_09 p1
 ```
 
 ## 5. 일정 배치와 크리티컬 패스

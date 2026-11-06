@@ -66,14 +66,49 @@
   transition: color 120ms;
 }
 
-.user {
-  order: 1;
-  font: var(--text-sm) var(--font-family);
-  color: var(--color-text-muted);
+/* 설정은 '+ 새 할일' 뒤, 프로필은 맨 오른쪽(WF 3.1) */
+.profile {
+  position: relative;
+  order: 2;
 }
 
-.logout {
-  order: 1;
+.avatar {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font: 700 var(--text-md) var(--font-family);
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.popup {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 20;
+  width: 240px;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+}
+
+.popupName {
+  font: 700 var(--text-md) var(--font-family);
+  overflow-wrap: anywhere;
+}
+
+.popupEmail {
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-3);
+  font: var(--text-sm) var(--font-family);
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
+  overflow-wrap: anywhere;
 }
 
 .settings {
@@ -137,14 +172,8 @@
     box-shadow: var(--shadow-pop);
   }
 
-  .navOpen .user {
-    order: 0;
-    padding: var(--space-2) var(--space-4) 0;
-  }
-
   .navOpen .tab,
-  .navOpen .settings,
-  .navOpen .logout {
+  .navOpen .settings {
     order: 0;
     justify-content: flex-start;
     width: 100%;

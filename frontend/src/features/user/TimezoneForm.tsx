@@ -6,7 +6,9 @@ import { useT } from '../../store/prefsStore';
 import { ERR, useUpdateMe } from './queries';
 import styles from './Settings.module.css';
 
-const zones = Intl.supportedValuesOf('timeZone');
+// Chromium 목록에는 'UTC'가 없어 앞에 붙인다(SC-12 예시, VR-04는 허용)
+const all = Intl.supportedValuesOf('timeZone');
+const zones = all.includes('UTC') ? all : ['UTC', ...all];
 
 // FR-03: 시간대는 PATCH /users/me의 timezone으로 저장한다
 export function TimezoneForm({ user }: { user: User }) {
