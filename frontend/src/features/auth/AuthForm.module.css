@@ -7,6 +7,7 @@
   margin: 0 0 var(--space-5);
   font: 700 var(--text-xl) var(--font-family);
   text-align: center;
+  color: var(--color-primary);
 }
 
 .field + .field {
