@@ -19,8 +19,9 @@
 | 0.13 | 2026-11-06 | MinjeYu | 사용자 결정(2026-11-06) 반영: CSRF 방어 제거. 2장 API 표에서 CSRF 열·403 삭제와 세션 쿠키 3종 → 2종, 검사 순서에서 CSRF 단계 삭제, 5.1 `csrf_token` 쿠키·`Domain` 삭제, 5.3 `CSRF_SECRET` 삭제, 5.4를 'SameSite + CORS 허용 목록뿐'으로 교체, 6장 `CSRF_SECRET`·`COOKIE_DOMAIN` 행 삭제와 CORS `Allow-Headers: Content-Type`. 단일 출처 머리말의 참조 버전 갱신 |
 | 0.14 | 2026-11-06 | MinjeYu | 단일 출처 참조를 ERD v0.8·아키텍처 다이어그램 v0.15에 맞춤(ERD·`schema.sql` 표기 일치화, 스키마 변경 없음) |
 | 0.15 | 2026-11-06 | MinjeYu | Vercel 배포 반영: 6장 `VITE_API_BASE_URL` 운영 값 `/api`와 `frontend/vercel.json` rewrite(API 같은 출처 프록시, SPA 새로고침 대체) |
+| 0.16 | 2026-11-06 | MinjeYu | 사용자 결정(2026-11-06) 반영: 운영은 화면이 백엔드를 직접 호출하는 다른 사이트. 5.1 운영 쿠키 `SameSite=None; Secure; Partitioned`(개발·테스트 Lax·Strict 유지), 5.4 SameSite=None 잔여 위험(강제 로그아웃, Safari), 6장 `VITE_API_BASE_URL` 운영 값을 백엔드 전체 주소로(`/api` + rewrite 프록시는 대안). 단일 출처 머리말 참조를 PRD v0.18·구조 설계 원칙 v0.25·아키텍처 다이어그램 v0.16·ERD v0.9로 |
 
-**단일 출처 원칙**: 규칙 원문은 도메인 정의서 v0.13, PRD v0.17, 구조 설계 원칙 v0.24, 아키텍처 다이어그램 v0.15, ERD v0.8에만 있고 이 문서는 ID로 참조한다(PR-01). 이 문서는 PRD 11장이 넘긴 **구현 값·이름·절차**만 정한다. 요청·응답 필드의 상세 스키마는 [`backend/swagger.yaml`](../backend/swagger.yaml)이 단일 출처이며, 이 문서의 2장은 경로·메서드·상태 코드 목록이다.
+**단일 출처 원칙**: 규칙 원문은 도메인 정의서 v0.13, PRD v0.18, 구조 설계 원칙 v0.25, 아키텍처 다이어그램 v0.16, ERD v0.9에만 있고 이 문서는 ID로 참조한다(PR-01). 이 문서는 PRD 11장이 넘긴 **구현 값·이름·절차**만 정한다. 요청·응답 필드의 상세 스키마는 [`backend/swagger.yaml`](../backend/swagger.yaml)이 단일 출처이며, 이 문서의 2장은 경로·메서드·상태 코드 목록이다.
 
 **구분**: 이 문서의 결정은 모두 위임 결정(2026-11-04)에 따른 **확정**이다. 측정 후 조정할 수 있는 값은 '조정 가능'으로 표시한다.
 
@@ -102,10 +103,12 @@
 
 ### 5.1 쿠키
 
-| 쿠키 | 값 | HttpOnly | SameSite | Path | Max-Age (기본값) |
+| 쿠키 | 값 | HttpOnly | SameSite (개발·테스트 / 운영) | Path | Max-Age (기본값) |
 |------|----|----------|----------|------|---------|
-| `access_token` | JWT(HS384) | 예 | Lax | `/api` | 900 (15분) |
-| `refresh_token` | 불투명 값 32바이트 base64url | 예 | Strict | `/api/auth` | 604800 (7일) |
+| `access_token` | JWT(HS384) | 예 | Lax / None | `/api` | 900 (15분) |
+| `refresh_token` | 불투명 값 32바이트 base64url | 예 | Strict / None | `/api/auth` | 604800 (7일) |
+
+- 운영(`cookieSecure`=true)은 두 쿠키 모두 `SameSite=None; Secure; Partitioned`다. 운영 화면(`todolist-ymj.vercel.app`)과 API(`todolist-ymj-be.vercel.app`)는 `*.vercel.app`이 공개 접미사라 다른 사이트이기 때문이다(사용자 결정(2026-11-06)). `Partitioned`(CHIPS)는 서드파티 쿠키를 차단해도 Chrome이 쿠키를 유지하게 한다.
 
 - Max-Age는 6장 `ACCESS_TOKEN_TTL_MINUTES`·`REFRESH_TOKEN_TTL_DAYS`에서 정하며 위 값은 기본값이다.
 - `Secure`는 `config.js`의 `cookieSecure`(`NODE_ENV=production`일 때만 `true`)로 두 쿠키에 함께 붙인다(SO-04).
@@ -132,6 +135,7 @@
 ### 5.4 교차 사이트 요청 방어 (NFR-15)
 
 - 쿠키의 SameSite(5.1)와 CORS 허용 목록(6장 `CORS_ORIGINS`)만 쓴다. JSON `Content-Type`이 사전 요청(preflight)을 강제하므로 허용 목록 밖 출처는 상태 변경 요청을 보내지 못한다. 별도의 요청 토큰은 없다.
+- **잔여 위험**: 운영 쿠키는 `SameSite=None`이라 다른 사이트의 HTML 폼이 쿠키를 실은 단순 POST를 보낼 수 있다. JSON 엔드포인트는 `express.json`이 text/plain·폼 본문을 파싱하지 않아 검증 실패(400)로 거부되지만, 본문 없는 `POST /api/auth/logout`은 강제될 수 있다(강제 로그아웃). Safari(ITP)는 서드파티 쿠키를 막을 수 있어 로그인이 안 될 수 있다. 완화책은 같은 출처 프록시(`frontend/vercel.json` rewrite + `VITE_API_BASE_URL=/api`)다(6장).
 
 ### 5.5 리프레시 토큰 저장·갱신 (BR-16, OI-18, OI-20, OI-21, AQ-11, AQ-13)
 
@@ -167,7 +171,7 @@
 | `PORT` | `backend` | 기본 3000 |
 | `TRUST_PROXY` | `backend` | 개발은 비움(앞단 프록시 없음, 불신). 운영은 리버스 프록시 주소만. `true` 거부. 4장 |
 | `CORS_ORIGINS` | `backend` | 쉼표 구분 허용 출처, 각 값은 `scheme://host[:port]` 정확한 출처(`*`·경로·슬래시 끝은 기동 거부). 개발·테스트 기본 `http://localhost:5173`, production 필수. 허용 출처에만 `Access-Control-Allow-Origin`(그 출처)·`Allow-Credentials: true`, 항상 `Vary: Origin`. 사전 요청(OPTIONS + `Access-Control-Request-Method`)은 인증 전에 204로 끝내고 허용 출처에만 `Allow-Methods: GET, POST, PUT, PATCH, DELETE`, `Allow-Headers: Content-Type`, `Max-Age: 600`을 붙인다. 허용하지 않은 출처는 CORS 헤더 없음. `*`는 쓰지 않는다(SO-08) |
-| `VITE_API_BASE_URL` | `frontend` | API 기준 주소. 개발 서버(`npm run dev`)는 없으면 `http://localhost:3000/api`를 쓴다. 운영 빌드(`npm run build`)는 필수이고 없으면 `vite.config.ts`가 빌드를 멈춘다(번들이 localhost를 가리키지 않게). Vite는 `frontend/`의 `.env`만 읽으므로 값은 `frontend/.env`에 두고 예시는 `frontend/.env.example`에 있다. 공개 값(SO-02). 운영(Vercel)은 `/api`로 두고 `frontend/vercel.json` rewrite가 백엔드로 넘긴다. 화면과 API가 같은 출처가 되어 SameSite 쿠키가 붙는다(`*.vercel.app`은 공개 접미사라 하위 도메인끼리도 다른 사이트) |
+| `VITE_API_BASE_URL` | `frontend` | API 기준 주소. 개발 서버(`npm run dev`)는 없으면 `http://localhost:3000/api`를 쓴다. 운영 빌드(`npm run build`)는 필수이고 없으면 `vite.config.ts`가 빌드를 멈춘다(번들이 localhost를 가리키지 않게). Vite는 `frontend/`의 `.env`만 읽으므로 값은 `frontend/.env`에 두고 예시는 `frontend/.env.example`에 있다. 공개 값(SO-02). 운영(Vercel)은 백엔드 전체 주소 `https://todolist-ymj-be.vercel.app/api`로 두고 화면이 직접 호출한다(다른 사이트, 쿠키는 5.1의 `SameSite=None; Secure; Partitioned`, `*.vercel.app`은 공개 접미사). `/api`로 두고 `frontend/vercel.json` rewrite가 백엔드로 넘기는 같은 출처 프록시는 대안이다(Safari 등 서드파티 쿠키 차단 대응, 5.4). `vercel.json`의 SPA 새로고침 대체 규칙은 어느 쪽이든 필요하다 |
 | `UV_THREADPOOL_SIZE` | `backend` | 3장 |
 | `SEED_PASSWORD` | `seed.js` | 시드 계정 비밀번호(SO-11) |
 | `PG_POOL_MAX` | `backend` | pg 풀 크기, 기본 10. 조정 가능(NFR-05) |

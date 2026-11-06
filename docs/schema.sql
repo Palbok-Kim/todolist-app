@@ -1,5 +1,5 @@
 -- TodoList 데이터베이스 스키마 (PostgreSQL 17)
--- 근거: docs/7-erd.md v0.8 (단일 출처). 규칙 원문은 ERD와 도메인 정의서·PRD를 따른다.
+-- 근거: docs/7-erd.md v0.9 (단일 출처). 규칙 원문은 ERD와 도메인 정의서·PRD를 따른다.
 -- 작성: MinjeYu, 2026-11-04
 --
 -- 범위

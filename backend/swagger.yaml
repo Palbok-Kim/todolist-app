@@ -1,19 +1,19 @@
 # =============================================================================
 # TodoList API 명세 (OpenAPI 3.0.3)
 # -----------------------------------------------------------------------------
-# 현재 버전   : 0.4.3
+# 현재 버전   : 0.4.4
 # 작성자      : MinjeYu
 # 최종 수정일 : 2026-11-06
 #
 # 근거 문서 (단일 출처, docs/ 아래. 규칙 원문은 복사하지 않고 ID로 참조한다, PR-01)
 #   - 1-domain-definition.md  v0.13  (엔티티, 상태 판정, BR, UC, AC)
-#   - 2-prd.md                v0.17  (FR 우선순위, VR, ERR, NFR, 11장 후속 설계 항목)
+#   - 2-prd.md                v0.18 (FR 우선순위, VR, ERR, NFR, 11장 후속 설계 항목)
 #   - 3-user-scenario.md      v0.8   (SC)
-#   - 4-wireframe.md          v0.13  (WF, 화면이 요구하는 데이터)
-#   - 5-project-principle.md  v0.24  (/api 접두사, CN-04~09, DL-05, SO-07, SO-12, SO-14)
-#   - 6-arch-diagram.md       v0.14  (AD-06~AD-14 시퀀스)
-#   - 7-erd.md                v0.7, schema.sql (필드 이름·타입·NULL·길이)
-#   - 8-plan.md               v0.60  (COM-01 범위, BE-12~BE-24 완료 조건)
+#   - 4-wireframe.md          v0.14 (WF, 화면이 요구하는 데이터)
+#   - 5-project-principle.md  v0.25 (/api 접두사, CN-04~09, DL-05, SO-07, SO-12, SO-14)
+#   - 6-arch-diagram.md       v0.16 (AD-06~AD-14 시퀀스)
+#   - 7-erd.md                v0.9,schema.sql (필드 이름·타입·NULL·길이)
+#   - 8-plan.md               v0.62 (COM-01 범위, BE-12~BE-24 완료 조건)
 #
 # 이력 갱신 규칙: 이력을 추가할 때 이 주석 표와 info.description의 '변경 이력' 표를 둘 다 갱신하고, info.version은 SemVer로 올린다(호환 깨짐 major, 엔드포인트·필드 추가 minor, 설명 수정 patch).
 #
@@ -31,13 +31,14 @@
 # | 0.4.1 | 2026-11-05 | MinjeYu | 코드 리뷰 반영: 근거 문서 버전 갱신(실행 계획 v0.46) |
 # | 0.4.2 | 2026-11-06 | MinjeYu | 구현 대조 반영: 비밀번호 예시를 VR-02(KISA)에 맞는 값으로(가입·로그인·비밀번호 변경), `ErrorResponse.fields`는 ERR-01·ERR-04(409)에 있음, `currentPassword` maxLength 128, PATCH /users/me의 name은 구현됨(컷 가정 삭제), 개발 밖 `/api/docs`와 없는 `/api/*` 경로는 인증 전이라 401, 근거 문서 버전 갱신 |
 # | 0.4.3 | 2026-11-06 | MinjeYu | 사용자 결정(2026-11-06) 반영: CSRF 방어 제거. `csrfCookie`·`csrfHeader` 보안 스킴, 상태 변경 operation의 CSRF security·403 응답(`CsrfFailed`), ERR-08(`CSRF_FAILED`), 세션 쿠키 3종 → 2종, CORS `Allow-Headers`를 `Content-Type`으로, 근거 문서 버전 갱신 |
+# | 0.4.4 | 2026-11-06 | MinjeYu | 사용자 결정(2026-11-06) 반영: 운영 쿠키를 `SameSite=None; Secure; Partitioned`로(개발·테스트 Lax·Strict 유지), 쿠키 스킴·헤더 설명·예시 수정, CORS 설명의 운영 구성을 다른 사이트 직접 호출로 바로잡고 SameSite=None 잔여 위험 명시, 근거 문서 버전 갱신 |
 #
 # 표기: description의 '가정 (설계서 COM-01에서 확정)'은 문서가 정하지 않아 이 명세에서 새로 둔 값이다.
 # =============================================================================
 openapi: 3.0.3
 info:
   title: TodoList API
-  version: 0.4.3
+  version: 0.4.4
   contact:
     name: MinjeYu
   description: |
@@ -61,6 +62,7 @@ info:
     | 0.4.1 | 2026-11-05 | MinjeYu | 코드 리뷰 반영: 근거 문서 버전 갱신(실행 계획 v0.46) |
     | 0.4.2 | 2026-11-06 | MinjeYu | 구현 대조 반영: 비밀번호 예시를 VR-02(KISA)에 맞는 값으로(가입·로그인·비밀번호 변경), `ErrorResponse.fields`는 ERR-01·ERR-04(409)에 있음, `currentPassword` maxLength 128, PATCH /users/me의 name은 구현됨(컷 가정 삭제), 개발 밖 `/api/docs`와 없는 `/api/*` 경로는 인증 전이라 401, 근거 문서 버전 갱신 |
     | 0.4.3 | 2026-11-06 | MinjeYu | 사용자 결정(2026-11-06) 반영: CSRF 방어 제거. `csrfCookie`·`csrfHeader` 보안 스킴, 상태 변경 operation의 CSRF security·403 응답(`CsrfFailed`), ERR-08(`CSRF_FAILED`), 세션 쿠키 3종 → 2종, CORS `Allow-Headers`를 `Content-Type`으로, 근거 문서 버전 갱신 |
+    | 0.4.4 | 2026-11-06 | MinjeYu | 사용자 결정(2026-11-06) 반영: 운영 쿠키를 `SameSite=None; Secure; Partitioned`로(개발·테스트 Lax·Strict 유지), 쿠키 스킴·헤더 설명·예시 수정, CORS 설명의 운영 구성을 다른 사이트 직접 호출로 바로잡고 SameSite=None 잔여 위험 명시, 근거 문서 버전 갱신 |
 
     이력 갱신 규칙: 파일 상단 주석 표와 이 표를 함께 갱신한다. SemVer(호환 깨짐 major, 엔드포인트·필드 추가 minor, 설명 수정 patch).
 
@@ -74,7 +76,7 @@ info:
     - **오류**: 모든 오류는 `{ "error": { "code", "message", "fields?" } }`(PRD 4.3). 클라이언트는 `error.code`로만 분기한다(PR-08). `message`·`fields[].message`는 한국어다(CN-08).
     - **목록**: 페이지네이션 없이 전체를 `{ "items": [...] }`로 돌려준다(OI-15). 필드로 감싼 이유는 나중에 페이지 정보를 하위 호환으로 추가하기 위함이다(가정).
     - **인증**: 액세스 토큰(JWT HS384, 기본 15분 `ACCESS_TOKEN_TTL_MINUTES`)은 HttpOnly 쿠키, 리프레시 토큰(불투명 값, 기본 7일 슬라이딩 `REFRESH_TOKEN_TTL_DAYS`, 회전·재사용 감지·폐기 후 10초 유예)은 경로 한정 HttpOnly 쿠키다(NFR-07). 요청 헤더 `Authorization`은 쓰지 않는다.
-    - **CORS**: 화면과 API는 다른 출처다(운영은 같은 사이트의 다른 서브도메인). 환경 변수 `CORS_ORIGINS`에 적은 출처만 `Access-Control-Allow-Origin`(그 출처 그대로)·`Access-Control-Allow-Credentials: true`를 받는다. `*`는 쓰지 않는다. 사전 요청(OPTIONS)은 인증 전에 204로 응답하고 허용 출처에만 `GET, POST, PUT, PATCH, DELETE`와 `Content-Type` 헤더를 허용한다. 클라이언트는 `credentials: 'include'`로 호출한다. 교차 사이트 요청 방어는 쿠키의 SameSite와 이 CORS 허용 목록만으로 한다(JSON `Content-Type`이 사전 요청을 강제, NFR-15).
+    - **CORS**: 화면과 API는 다른 출처다(운영은 `https://todolist-ymj.vercel.app` → `https://todolist-ymj-be.vercel.app/api` 직접 호출이며 `*.vercel.app`이 공개 접미사라 서로 다른 사이트다). 환경 변수 `CORS_ORIGINS`에 적은 출처만 `Access-Control-Allow-Origin`(그 출처 그대로)·`Access-Control-Allow-Credentials: true`를 받는다. `*`는 쓰지 않는다. 사전 요청(OPTIONS)은 인증 전에 204로 응답하고 허용 출처에만 `GET, POST, PUT, PATCH, DELETE`와 `Content-Type` 헤더를 허용한다. 클라이언트는 `credentials: 'include'`로 호출한다. 교차 사이트 요청 방어는 쿠키의 SameSite와 이 CORS 허용 목록만으로 한다(JSON `Content-Type`이 사전 요청을 강제, NFR-15). 잔여 위험: 운영 쿠키가 `SameSite=None`이라 다른 사이트 폼의 단순 POST에 쿠키가 실린다. JSON 엔드포인트는 폼·text/plain 본문을 파싱하지 않아 400이지만 본문 없는 `POST /auth/logout`은 강제될 수 있고(강제 로그아웃), Safari(ITP)는 서드파티 쿠키를 막아 로그인이 안 될 수 있다(완화책: 같은 출처 프록시).
     - **검사 순서**: 인증(401 ERR-02) → 검증(400) → 소유권(404)(DL-05, AD-08). 예외: `/todos/{todoId}`의 GET·PATCH·DELETE는 경로 ID 형식 오류를 본문 검증보다 먼저 404로 응답한다. 액세스 토큰이 만료된 상태 변경 요청은 ERR-02이고 저장되지 않으므로, 클라이언트는 `POST /auth/refresh` 뒤 원 요청을 한 번만 재전송한다(DL-14).
     - **ERR-02 클라이언트 처리**: 보호 API가 401을 받으면 갱신을 한 번(single-flight) 시도하고, 성공·실패와 관계없이 원 요청을 한 번만 재전송한 뒤에도 401이면 로그인을 요구한다(PRD 4.3 ERR-02, NFR-07, DL-14).
 
@@ -940,36 +942,39 @@ components:
       in: cookie
       name: access_token
       description: |
-        JWT 액세스 토큰(HS384만 허용, 클레임 `sub`·`iat`·`exp`·`jti`, 만료 기본 15분). `HttpOnly; SameSite=Lax; Path=/api; Max-Age=900`(기본값), 운영 HTTPS에서 `Secure`(NFR-07, SO-12).
+        JWT 액세스 토큰(HS384만 허용, 클레임 `sub`·`iat`·`exp`·`jti`, 만료 기본 15분). 개발·테스트는 `HttpOnly; SameSite=Lax; Path=/api; Max-Age=900`(기본값), 운영 HTTPS는 `HttpOnly; SameSite=None; Secure; Partitioned; Path=/api; Max-Age=900`(화면과 API가 다른 사이트, NFR-07, NFR-15, SO-12).
         쿠키 이름과 `Path`는 가정 (설계서 COM-01에서 확정).
     refreshTokenCookie:
       type: apiKey
       in: cookie
       name: refresh_token
       description: |
-        불투명 리프레시 토큰(32바이트 이상 무작위, DB에는 SHA-256 해시만, 기본 7일 슬라이딩). `HttpOnly; SameSite=Strict; Path=/api/auth; Max-Age=604800`(기본값), 운영 HTTPS에서 `Secure`.
+        불투명 리프레시 토큰(32바이트 이상 무작위, DB에는 SHA-256 해시만, 기본 7일 슬라이딩). 개발·테스트는 `HttpOnly; SameSite=Strict; Path=/api/auth; Max-Age=604800`(기본값), 운영 HTTPS는 `HttpOnly; SameSite=None; Secure; Partitioned; Path=/api/auth; Max-Age=604800`.
         `Path`는 갱신·로그아웃을 모두 포함하는 인증 API 공통 접두사 하나이며 그 아래의 회원가입·로그인 요청에도 전송되지만 쓰지 않는다(NFR-07, OI-19).
         토큰 갱신과 로그아웃만 읽는다. 쿠키 이름과 `/api/auth` 값은 가정 (설계서 COM-01에서 확정).
 
   headers:
     SetCookieSession:
       description: |
-        세션 쿠키 2종을 발급한다(Set-Cookie 헤더 2개). 운영 HTTPS에서는 두 쿠키 모두 `Secure`를 붙인다(로컬 HTTP 제외, NFR-07, SO-04).
-        - `access_token=<JWT>; Path=/api; HttpOnly; SameSite=Lax; Max-Age=900`
-        - `refresh_token=<opaque>; Path=/api/auth; HttpOnly; SameSite=Strict; Max-Age=604800`
+        세션 쿠키 2종을 발급한다(Set-Cookie 헤더 2개). 운영 HTTPS에서는 두 쿠키 모두 `SameSite=None; Secure; Partitioned`를 붙인다(로컬 HTTP 제외, NFR-07, NFR-15, SO-04).
+        - 운영: `access_token=<JWT>; Path=/api; HttpOnly; SameSite=None; Secure; Partitioned; Max-Age=900`
+        - 운영: `refresh_token=<opaque>; Path=/api/auth; HttpOnly; SameSite=None; Secure; Partitioned; Max-Age=604800`
+        - 개발·테스트: `access_token=<JWT>; Path=/api; HttpOnly; SameSite=Lax; Max-Age=900`
+        - 개발·테스트: `refresh_token=<opaque>; Path=/api/auth; HttpOnly; SameSite=Strict; Max-Age=604800`
 
         이름·Path(리프레시 제외)는 가정 (설계서 COM-01에서 확정). Max-Age는 PRD 11장의 기본값(액세스 15분, 리프레시 7일)이며 `ACCESS_TOKEN_TTL_MINUTES`·`REFRESH_TOKEN_TTL_DAYS`로 바꿀 수 있다.
       schema:
         type: string
-      example: access_token=eyJhbGciOiJIUzM4NCJ9...; Path=/api; HttpOnly; SameSite=Lax; Max-Age=900
+      example: access_token=eyJhbGciOiJIUzM4NCJ9...; Path=/api; HttpOnly; SameSite=None; Secure; Partitioned; Max-Age=900
     SetCookieClear:
       description: |
         세션 쿠키 2종을 삭제한다(발급 때와 같은 이름·Path, 과거 `Expires`, BR-01). Express 5 `res.clearCookie`는 `Max-Age`를 보내지 않는다.
-        - `access_token=; Path=/api; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
-        - `refresh_token=; Path=/api/auth; HttpOnly; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+        - 운영: `access_token=; Path=/api; HttpOnly; SameSite=None; Secure; Partitioned; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+        - 운영: `refresh_token=; Path=/api/auth; HttpOnly; SameSite=None; Secure; Partitioned; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+        - 개발·테스트는 `SameSite=Lax`(액세스)·`SameSite=Strict`(리프레시)이고 `Secure; Partitioned`가 없다.
       schema:
         type: string
-      example: refresh_token=; Path=/api/auth; HttpOnly; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT
+      example: refresh_token=; Path=/api/auth; HttpOnly; SameSite=None; Secure; Partitioned; Expires=Thu, 01 Jan 1970 00:00:00 GMT
 
   parameters:
     CategoryId:

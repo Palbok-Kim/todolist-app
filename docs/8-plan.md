@@ -65,6 +65,7 @@
 | 0.59 | 2026-11-06 | MinjeYu | 진척 반영: QA-11(사용자 시나리오 E2E 통합 테스트, `test/e2e/report.md`)과 FE-26(E2E 결함 D-1 만료 안내 덮임·D-2 시간대 UTC 없음 수정) 추가·완료(✅), 의존 그래프 갱신. 검증: Vitest 105개, Playwright 재테스트 46/46. 단일 출처 링크를 와이어프레임 v0.12·구조 설계 원칙 v0.23에 맞춤                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | 0.60 | 2026-11-06 | MinjeYu | 사용자 결정(2026-11-06) 반영: CSRF 방어 제거. BE-08(`csrfToken.js` 삭제, 쿠키 2종)·BE-11(`csrf` 미들웨어·ERR-08 삭제)·BE-02(ERR-01~ERR-07)·회원가입·로그인·로그아웃·비밀번호 변경·토큰 갱신·`config.js` Task의 CSRF 쿠키·`COOKIE_DOMAIN` 문구·FE-02(CSRF 헤더 부착)·QA-03(NFR-15 CSRF 테스트)에서 CSRF 문구 삭제(완료 체크 상태는 유지), 추적 표의 NFR-15를 '교차 사이트 요청 (CORS)'로 변경, 의존 그래프 라벨 갱신. 단일 출처 링크를 도메인 정의서 v0.13·PRD v0.17·사용자 시나리오 v0.8·와이어프레임 v0.13·구조 설계 원칙 v0.24·아키텍처 다이어그램 v0.14·ERD v0.7에 맞춤 |
 | 0.61 | 2026-11-06 | MinjeYu | 단일 출처 링크를 ERD v0.8·아키텍처 다이어그램 v0.15에 맞춤(ERD·`schema.sql` 표기 일치화, 스키마 변경 없음) |
+| 0.62 | 2026-11-06 | MinjeYu | 사용자 결정(2026-11-06) 반영: 운영은 화면이 백엔드를 직접 호출하는 다른 사이트이므로 운영 쿠키를 `SameSite=None; Secure; Partitioned`로(BE-08 `cookies.js` 설명에 명시, 설계서 v0.16 5.1). 완료 상태 변화 없음. 단일 출처 링크를 PRD v0.18·와이어프레임 v0.14·구조 설계 원칙 v0.25·아키텍처 다이어그램 v0.16·ERD v0.9에 맞춤 |
 
 **표기 범례** (도메인 정의서·PRD·사용자 시나리오·와이어프레임·구조 설계 원칙과 같음)
 
@@ -74,7 +75,7 @@
 - **미결정**: 결정하기 전에는 구현을 보류한다
 - 이 문서에서 원문에 없는 결정은 모두 **가정**이다. 가정과 문서 사이의 공백·모순은 8장(`XQ-xx`)에 모은다
 
-**단일 출처 원칙**: 엔티티 속성·상태 판정·BR·UC·AC는 [도메인 정의서 v0.13](./1-domain-definition.md), FR 우선순위·VR·ERR·NFR·KPI·R·일정·컷 라인은 [PRD v0.17](./2-prd.md), SC는 [사용자 시나리오 v0.8](./3-user-scenario.md), WF는 [와이어프레임 v0.13](./4-wireframe.md), 디렉토리·원칙(PR/DL/CN/TQ/SO)은 [프로젝트 구조 설계 원칙 v0.24](./5-project-principle.md), AD는 [아키텍처 다이어그램 v0.15](./6-arch-diagram.md), 테이블은 [ERD v0.8](./7-erd.md)와 [`schema.sql`](./schema.sql)에만 둔다. 이 문서는 규칙 원문을 복사하지 않고 ID로 참조한다. 이 문서에서 새로 만든 ID는 Task ID(`COM-xx`, `DB-xx`, `BE-xx`, `FE-xx`, `QA-xx`)와 확인 필요 `XQ-xx`뿐이다.
+**단일 출처 원칙**: 엔티티 속성·상태 판정·BR·UC·AC는 [도메인 정의서 v0.13](./1-domain-definition.md), FR 우선순위·VR·ERR·NFR·KPI·R·일정·컷 라인은 [PRD v0.18](./2-prd.md), SC는 [사용자 시나리오 v0.8](./3-user-scenario.md), WF는 [와이어프레임 v0.14](./4-wireframe.md), 디렉토리·원칙(PR/DL/CN/TQ/SO)은 [프로젝트 구조 설계 원칙 v0.25](./5-project-principle.md), AD는 [아키텍처 다이어그램 v0.16](./6-arch-diagram.md), 테이블은 [ERD v0.9](./7-erd.md)와 [`schema.sql`](./schema.sql)에만 둔다. 이 문서는 규칙 원문을 복사하지 않고 ID로 참조한다. 이 문서에서 새로 만든 ID는 Task ID(`COM-xx`, `DB-xx`, `BE-xx`, `FE-xx`, `QA-xx`)와 확인 필요 `XQ-xx`뿐이다.
 
 **범위**: 구현 작업의 분해·순서·일정·검증 방법만 정한다. 코드 구현, Git 커밋, 기존 문서 수정은 이 문서의 범위가 아니다. 문서 사이의 모순은 수정하지 않고 8장에 남긴다.
 
@@ -570,7 +571,7 @@ Task ID는 그룹 접두사와 번호다. 완료 조건·근거는 3장 상세�
 - **근거**: NFR-07, SO-03, SO-04, SO-12, SO-17, DL-02, BR-16, R-13, PRD 11장(인증 토큰 세부), 사용자 결정(2026-11-04)
 - **수행 작업**
   - `backend/src/lib/token.js`: JWT(HS384) 발급·검증(만료 15분, 클레임 `sub`·`iat`·`exp`·`jti`만, 검증은 `algorithms: ['HS384']`만 허용), 리프레시 토큰 생성(`crypto.randomBytes` 32바이트 이상)과 SHA-256 해시, 세션 토큰 묶음(액세스 JWT, 리프레시 값·해시·만료) 발급 순수 함수(DB를 모름, PQ-13). `jsonwebtoken`·`node:crypto`만 쓴다(DL-16)
-  - `cookies.js`(액세스 `HttpOnly`·`SameSite=Lax`, 리프레시 `HttpOnly`·`SameSite=Strict`·`Path` 한정, `Secure` 조건과 `Max-Age` 한 곳, 쿠키 2종 설정·삭제 함수. 파싱은 `cookie-parser`가 한다)
+  - `cookies.js`(액세스 `HttpOnly`·`SameSite=Lax`, 리프레시 `HttpOnly`·`SameSite=Strict`·`Path` 한정(개발·테스트. 운영은 둘 다 `SameSite=None; Secure; Partitioned`, 설계서 5.1), `Secure` 조건과 `Max-Age` 한 곳, 쿠키 2종 설정·삭제 함수. 파싱은 `cookie-parser`가 한다)
   - 단위 테스트: 만료 토큰·변조 서명·다른 JWT 식별자 거부, HS384가 아닌 알고리즘 거부, 리프레시 값·해시 성질
   - JWT 서명 키 길이 검사는 `config.js`(BE-01)가 하며 이 Task는 키를 `config.js`로만 받는다
 - **완료 조건**

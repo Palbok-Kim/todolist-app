@@ -12,6 +12,7 @@
 | 0.6 | 2026-11-05 | MinjeYu | PRD v0.13(VR-02 KISA 기준 변경)과 일치화: `users.password_hash` 설명의 VR-02 수치를 참조로 변경. 스키마 변경 없음 |
 | 0.7 | 2026-11-06 | MinjeYu | 사용자 결정(2026-11-06) 반영: CSRF 방어 제거. ER-07·저장하지 않는 값 표에서 CSRF 토큰 문구 삭제. 스키마 변경 없음 |
 | 0.8 | 2026-11-06 | MinjeYu | `schema.sql`·개발 DB와 대조해 표기 일치화(스키마 변경 없음): 3장 표에 CHECK 제약 이름 8개(`ck_refresh_tokens_token_hash_not_blank`·`ck_users_email_length`·`ck_users_name_length`·`ck_categories_name_length`·`ck_categories_name_trimmed`·`ck_todos_title_length`·`ck_todos_title_not_blank`·`ck_todos_description_length`)와 `ck_users_email_lower` 명시, 2장 다이어그램의 `todos.category_id`를 복합 FK로, 4.1 인덱스 표에 `uq_categories_id_user_id` 추가(6장 개수 9개). 아키텍처 다이어그램 참조를 v0.15로 |
+| 0.9 | 2026-11-06 | MinjeYu | 단일 출처 머리말의 참조를 PRD v0.18·구조 설계 원칙 v0.25·아키텍처 다이어그램 v0.16에 맞춤(쿠키 SameSite 운영 값 변경, 스키마 변경 없음) |
 
 **표기 범례** (도메인 정의서·PRD·구조 설계 원칙·아키텍처 다이어그램과 같음)
 - **확정**: 요구사항 원문 또는 사용자 의사결정(2026-11-04)에 근거한 결정
@@ -20,7 +21,7 @@
 - **미결정**: 결정하기 전에는 구현을 보류한다
 - 이 문서에서 원문에 없는 내용(타입 선택, 기본값, 제약 이름, 인덱스, FK 동작)은 모두 **가정**이다. 단 7장(`EQ-xx`)에서 위임 결정(2026-11-04)으로 확정한 항목은 구분 열에 '확정'으로 표시했다. 문서 사이의 공백·모순은 7장에 모은다
 
-**단일 출처 원칙**: 엔티티·속성의 의미, 상태 판정, BR·UC·AC·OI는 [도메인 정의서 v0.13](./1-domain-definition.md), FR·NFR·ERR·VR은 [PRD v0.17](./2-prd.md), PR·DL·CN·SO·PQ·TQ(명명 규칙 CN-03, CN-04 포함)는 [구조 설계 원칙 v0.24](./5-project-principle.md), 다이어그램 AD·AQ는 [아키텍처 다이어그램 v0.15](./6-arch-diagram.md)에만 둔다. 이 문서는 그 규칙의 **저장 형태**(컬럼, 타입, NULL, 제약, 관계, 인덱스 후보)만 정하며 규칙 원문은 복사하지 않고 ID로 참조한다. 이 문서에서 새로 만든 ID는 `ER-xx`(엔티티·관계 항목)와 `EQ-xx`(확인 필요)뿐이다. 인증 토큰 방식(JWT HS384 + Refresh Token)은 사용자 결정(2026-11-04)이며 이 문서는 리프레시 토큰의 저장 형태(ER-08)만 정한다.
+**단일 출처 원칙**: 엔티티·속성의 의미, 상태 판정, BR·UC·AC·OI는 [도메인 정의서 v0.13](./1-domain-definition.md), FR·NFR·ERR·VR은 [PRD v0.18](./2-prd.md), PR·DL·CN·SO·PQ·TQ(명명 규칙 CN-03, CN-04 포함)는 [구조 설계 원칙 v0.25](./5-project-principle.md), 다이어그램 AD·AQ는 [아키텍처 다이어그램 v0.16](./6-arch-diagram.md)에만 둔다. 이 문서는 그 규칙의 **저장 형태**(컬럼, 타입, NULL, 제약, 관계, 인덱스 후보)만 정하며 규칙 원문은 복사하지 않고 ID로 참조한다. 이 문서에서 새로 만든 ID는 `ER-xx`(엔티티·관계 항목)와 `EQ-xx`(확인 필요)뿐이다. 인증 토큰 방식(JWT HS384 + Refresh Token)은 사용자 결정(2026-11-04)이며 이 문서는 리프레시 토큰의 저장 형태(ER-08)만 정한다.
 
 **범위**: 논리·개념 수준의 ERD다. `CREATE TABLE` 같은 DDL과 마이그레이션 SQL은 쓰지 않는다(SO-10: `backend/migrations/`에서 작성). 타입은 PostgreSQL 17 기준 개념 타입이며, 길이는 다이어그램이 아니라 표에 쓴다. 테이블·컬럼·제약 이름은 CN-03을 따른다. [`schema.sql`](./schema.sql)은 이 ERD를 옮긴 DDL 초안이며 `BEGIN;`·`COMMIT;`을 포함하므로, `backend/migrations/001_init.sql`로 옮길 때 이 두 줄만 뺀다(8-plan.md XQ-03).
 
