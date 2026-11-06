@@ -42,7 +42,7 @@ cd frontend && npm run dev    # 화면 http://localhost:5173 (백엔드를 CORS�
 
 CORS 허용 출처는 `backend/.env`의 `CORS_ORIGINS`(기본 `http://localhost:5173`)로 정한다. 화면 포트를 바꾸면 이 값도 바꾼다.
 
-API 문서(Swagger UI)는 개발 환경(`NODE_ENV=development`, `npm run dev` 기본값)에서만 열린다: http://localhost:3000/api/docs. API와 같은 출처라 Try it out을 쓸 수 있고, 상태 변경 요청에는 `X-CSRF-Token` 헤더가 필요하다.
+API 문서(Swagger UI)는 개발 환경(`NODE_ENV=development`, `npm run dev` 기본값)에서만 열린다: http://localhost:3000/api/docs. API와 같은 출처라 Try it out을 쓸 수 있다.
 
 ## 3. 명령 모음
 

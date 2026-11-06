@@ -2,7 +2,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import { config } from '../config.js';
-import { createCsrfToken } from './csrfToken.js';
 import { toIsoTimestamp } from './today.js';
 
 // 초 단위. 환경 변수 ACCESS_TOKEN_TTL_MINUTES·REFRESH_TOKEN_TTL_DAYS(config.js, 기본 15분·7일)에서 온다
@@ -50,6 +49,5 @@ export function issueSessionTokens(userId, now = Date.now()) {
     refreshToken,
     refreshTokenHash,
     refreshExpiresAt: toIsoTimestamp(now + REFRESH_TTL_SECONDS * 1000),
-    csrfToken: createCsrfToken(jti),
   };
 }

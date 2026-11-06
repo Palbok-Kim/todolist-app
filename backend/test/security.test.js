@@ -7,7 +7,6 @@ import { config } from '../src/config.js';
 import { pool } from '../src/db/pool.js';
 import { ERR } from '../src/errors.js';
 import { COOKIE_NAMES } from '../src/lib/cookies.js';
-import { createCsrfToken } from '../src/lib/csrfToken.js';
 import { EMAIL_LIMIT, IP_LIMIT, reset, size } from '../src/lib/loginAttempts.js';
 import { startApp, sessionFrom } from './helpers/api.js';
 import { resetDb } from './helpers/db.js';
@@ -66,7 +65,6 @@ function bootConfig(overrides) {
     NODE_ENV: 'test',
     DATABASE_URL: config.databaseUrl,
     JWT_SECRET: config.jwtSecret,
-    CSRF_SECRET: config.csrfSecret,
     ...overrides,
   };
   const url = new URL('../src/config.js', import.meta.url).href;
@@ -198,7 +196,6 @@ test('NFR-10: production에서 로그인 제한 IP 예외 설정이 있으면 �
   const prod = {
     NODE_ENV: 'production',
     CORS_ORIGINS: 'https://app.example.com',
-    COOKIE_DOMAIN: 'example.com',
   };
   const refused = bootConfig({ ...prod, LOGIN_LIMIT_EXEMPT_IPS: '127.0.0.1' });
   assert.notEqual(refused.status, 0);
@@ -206,30 +203,7 @@ test('NFR-10: production에서 로그인 제한 IP 예외 설정이 있으면 �
   assert.equal(bootConfig(prod).status, 0, bootConfig(prod).stderr);
 });
 
-// NFR-15
-test('NFR-15: CSRF 헤더 없음·서명 변조·다른 JWT에 묶인 토큰은 403 CSRF_FAILED다', async () => {
-  const s = await signup();
-  const body = { timezone: 'UTC' };
-  const [nonce, sig] = s.csrfToken.split('.');
-  const tamperedSig = `${nonce}.${sig.slice(0, -1)}${sig.endsWith('A') ? 'B' : 'A'}`;
-  const foreign = createCsrfToken(randomUUID());
-  const withCsrf = (csrf) => ({
-    cookie: `${access(s.cookies[COOKIE_NAMES.access])}; ${COOKIE_NAMES.csrf}=${csrf}`,
-    csrfToken: csrf,
-  });
-  for (const session of [
-    { ...s, csrfToken: undefined },
-    withCsrf(tamperedSig),
-    withCsrf(foreign),
-  ]) {
-    const res = await call('/api/users/me', { method: 'PATCH', session, body });
-    assert.equal(res.status, 403);
-    assert.equal(res.body.error.code, ERR.CSRF_FAILED.code);
-  }
-  assert.equal((await call('/api/users/me', { session: s })).body.timezone, 'Asia/Seoul');
-});
-
-test('NFR-15: 로그아웃과 토큰 갱신은 CSRF 없이 성공한다', async () => {
+test('DL-05: 로그아웃과 토큰 갱신은 액세스 토큰 없이 리프레시 쿠키만으로 성공한다', async () => {
   const s = await signup();
   const refresh = await call('/api/auth/refresh', {
     method: 'POST',
@@ -245,37 +219,17 @@ test('NFR-15: 로그아웃과 토큰 갱신은 CSRF 없이 성공한다', async 
   assert.equal(logout.status, 200);
 });
 
-test('NFR-15: 갱신 직후 새 CSRF 토큰으로는 성공하고 갱신 전 CSRF 토큰은 403이다', async () => {
-  const s = await signup();
-  const refresh = await call('/api/auth/refresh', {
-    method: 'POST',
-    session: { cookie: `${COOKIE_NAMES.refresh}=${s.cookies[COOKIE_NAMES.refresh]}` },
-  });
-  const fresh = cookieMap(refresh.headers);
-  const newAccess = access(fresh[COOKIE_NAMES.access]);
-  const patch = (csrf) =>
-    call('/api/users/me', {
-      method: 'PATCH',
-      session: { cookie: `${newAccess}; ${COOKIE_NAMES.csrf}=${csrf}`, csrfToken: csrf },
-      body: { timezone: 'UTC' },
-    });
-  assert.equal((await patch(s.csrfToken)).status, 403);
-  assert.equal((await patch(fresh[COOKIE_NAMES.csrf])).status, 200);
-});
-
-// CORS: 허용 출처는 정확한 출처 목록이어야 하고 production은 쿠키 도메인까지 있어야 기동한다
-test('CORS: production은 CORS_ORIGINS·COOKIE_DOMAIN이 없거나 출처가 아니면 기동을 거부한다', () => {
+// CORS: 허용 출처는 정확한 출처 목록이어야 한다
+test('CORS: production은 CORS_ORIGINS가 없거나 출처가 아니면 기동을 거부한다', () => {
   const prod = {
     NODE_ENV: 'production',
     CORS_ORIGINS: 'https://app.example.com',
-    COOKIE_DOMAIN: 'example.com',
   };
   for (const [over, pattern] of [
     [{ CORS_ORIGINS: '' }, /CORS_ORIGINS/],
     [{ CORS_ORIGINS: '*' }, /CORS_ORIGINS/],
     [{ CORS_ORIGINS: 'https://app.example.com/' }, /CORS_ORIGINS/],
     [{ CORS_ORIGINS: 'https://app.example.com,app2.example.com' }, /CORS_ORIGINS/],
-    [{ COOKIE_DOMAIN: '' }, /COOKIE_DOMAIN/],
   ]) {
     const r = bootConfig({ ...prod, ...over });
     assert.notEqual(r.status, 0, JSON.stringify(over));
@@ -316,7 +270,6 @@ test('NFR-07: 토큰 유효 시간은 환경 변수로 바꿀 수 있고, 양의
         NODE_ENV: 'test',
         DATABASE_URL: config.databaseUrl,
         JWT_SECRET: config.jwtSecret,
-        CSRF_SECRET: config.csrfSecret,
         ACCESS_TOKEN_TTL_MINUTES: '5',
         REFRESH_TOKEN_TTL_DAYS: '1',
       },

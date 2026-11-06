@@ -8,7 +8,7 @@ import { config } from '../../src/config.js';
 import { COOKIE_NAMES, setSessionCookies, clearSessionCookies } from '../../src/lib/cookies.js';
 
 const BACKEND_DIR = fileURLToPath(new URL('../../', import.meta.url));
-const TOKENS = { accessToken: 'a', refreshToken: 'r', csrfToken: 'c' };
+const TOKENS = { accessToken: 'a', refreshToken: 'r' };
 
 const app = express();
 app.get('/set', (req, res) => {
@@ -46,11 +46,10 @@ async function cookiesOf(path) {
   }
 }
 
-test('SO-04: 쿠키 이름은 access_token·refresh_token·csrf_token이다', () => {
+test('SO-04: 쿠키 이름은 access_token·refresh_token이다', () => {
   assert.deepEqual(COOKIE_NAMES, {
     access: 'access_token',
     refresh: 'refresh_token',
-    csrf: 'csrf_token',
   });
 });
 
@@ -72,16 +71,7 @@ test('SO-04: 리프레시 쿠키는 HttpOnly·Strict·Path=/api/auth·Max-Age=60
   assert.equal(c['max-age'], '604800');
 });
 
-test('SO-04: CSRF 쿠키는 HttpOnly가 아니고 Lax·Path=/·Max-Age=900이다', async () => {
-  const c = (await cookiesOf('/set?secure=0')).csrf_token;
-  assert.equal(c.value, 'c');
-  assert.equal(c.httponly, undefined);
-  assert.equal(c.samesite.toLowerCase(), 'lax');
-  assert.equal(c.path, '/');
-  assert.equal(c['max-age'], '900');
-});
-
-test('SO-04: secure 인자에 따라 세 쿠키 모두 Secure가 붙거나 빠진다', async () => {
+test('SO-04: secure 인자에 따라 두 쿠키 모두 Secure가 붙거나 빠진다', async () => {
   const on = await cookiesOf('/set?secure=1');
   const off = await cookiesOf('/set?secure=0');
   for (const name of Object.values(COOKIE_NAMES)) {
@@ -96,9 +86,9 @@ test('SO-04: test 환경의 기본값은 Secure가 없다', async () => {
   for (const name of Object.values(COOKIE_NAMES)) assert.equal(c[name].secure, undefined);
 });
 
-test('SO-12: 삭제는 세 쿠키를 같은 Path로 만료시킨다', async () => {
+test('SO-12: 삭제는 두 쿠키를 같은 Path로 만료시킨다', async () => {
   const c = await cookiesOf('/clear');
-  const paths = { access_token: '/api', refresh_token: '/api/auth', csrf_token: '/' };
+  const paths = { access_token: '/api', refresh_token: '/api/auth' };
   for (const [name, path] of Object.entries(paths)) {
     assert.equal(c[name].path, path);
     const expired = c[name]['max-age'] === '0' || /1970/.test(c[name].expires ?? '');
@@ -121,50 +111,12 @@ test('SO-04: production에서만 cookieSecure가 true다', () => {
           NODE_ENV: nodeEnv,
           DATABASE_URL: 'postgres://x@localhost/x',
           JWT_SECRET: crypto.randomBytes(48).toString('base64url'),
-          CSRF_SECRET: crypto.randomBytes(48).toString('base64url'),
           TRUST_PROXY: 'loopback',
           CORS_ORIGINS: 'https://app.example.com',
-          COOKIE_DOMAIN: 'example.com',
         },
         encoding: 'utf8',
       },
     ).trim();
   assert.equal(run('production'), 'true');
   assert.equal(run('development'), 'false');
-});
-
-test('CORS: COOKIE_DOMAIN이 있으면 CSRF 쿠키에만 Domain이 붙는다', () => {
-  const out = execFileSync(
-    process.execPath,
-    [
-      '--input-type=module',
-      '-e',
-      `import express from 'express';
-       const { setSessionCookies } = await import('./src/lib/cookies.js');
-       const app = express();
-       app.get('/', (q, s) => { setSessionCookies(s, { accessToken: 'a', refreshToken: 'r', csrfToken: 'c' }, true); s.end(); });
-       const srv = app.listen(0, async () => {
-         const r = await fetch('http://127.0.0.1:' + srv.address().port);
-         console.log(JSON.stringify(r.headers.getSetCookie()));
-         srv.close();
-       });`,
-    ],
-    {
-      cwd: BACKEND_DIR,
-      env: {
-        NODE_ENV: 'production',
-        DATABASE_URL: 'postgres://x@localhost/x',
-        JWT_SECRET: crypto.randomBytes(48).toString('base64url'),
-        CSRF_SECRET: crypto.randomBytes(48).toString('base64url'),
-        CORS_ORIGINS: 'https://app.example.com',
-        COOKIE_DOMAIN: 'example.com',
-      },
-      encoding: 'utf8',
-    },
-  );
-  const lines = JSON.parse(out);
-  const of = (name) => lines.find((l) => l.startsWith(`${name}=`));
-  assert.match(of(COOKIE_NAMES.csrf), /Domain=example\.com/i);
-  assert.doesNotMatch(of(COOKIE_NAMES.access), /Domain=/i);
-  assert.doesNotMatch(of(COOKIE_NAMES.refresh), /Domain=/i);
 });

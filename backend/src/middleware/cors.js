@@ -11,11 +11,11 @@ export function cors(req, res, next) {
     res.set('Access-Control-Allow-Origin', origin);
     res.set('Access-Control-Allow-Credentials', 'true');
   }
-  // 사전 요청(preflight)은 인증·CSRF 전에 여기서 끝낸다. 허용하지 않은 출처는 헤더 없이 204라 브라우저가 막는다
+  // 사전 요청(preflight)은 인증 전에 여기서 끝낸다. 허용하지 않은 출처는 헤더 없이 204라 브라우저가 막는다
   if (req.method === 'OPTIONS' && req.get('Access-Control-Request-Method')) {
     if (allowed) {
       res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
-      res.set('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token');
+      res.set('Access-Control-Allow-Headers', 'Content-Type');
       res.set('Access-Control-Max-Age', '600');
     }
     return res.status(204).end();

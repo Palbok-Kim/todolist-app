@@ -10,6 +10,8 @@
 | 0.4 | 2026-11-04 | MinjeYu | 위임 결정(2026-11-04) 반영(EQ-10·EQ-11 확정), 도메인 정의서 v0.10·PRD v0.9·구조 설계 원칙 v0.5·아키텍처 다이어그램 v0.5와 일치화: 3.5의 `refresh_tokens` 컬럼·제약 구분을 가정에서 확정으로 전환, 폐기 후 10초 유예 판단이 `revoked_at`만 쓰므로 컬럼·제약·인덱스 변경이 없음을 3.5에 명시(동시 갱신 오판 방지, PRD NFR-07·OI-20), 계열 폐기는 미폐기 행만 갱신해 회전 시각이 유지됨을 명시, 6장 가정 요약 정리. `schema.sql` 변경 없음. 범위에 `schema.sql`과의 관계 한 줄 추가(8-plan.md XQ-03) |
 | 0.5 | 2026-11-04 | MinjeYu | 문서 간 일치화: 단일 출처 링크의 버전을 구조 설계 원칙 v0.6·아키텍처 다이어그램 v0.6에 맞춤 |
 | 0.6 | 2026-11-05 | MinjeYu | PRD v0.13(VR-02 KISA 기준 변경)과 일치화: `users.password_hash` 설명의 VR-02 수치를 참조로 변경. 스키마 변경 없음 |
+| 0.7 | 2026-11-06 | MinjeYu | 사용자 결정(2026-11-06) 반영: CSRF 방어 제거. ER-07·저장하지 않는 값 표에서 CSRF 토큰 문구 삭제. 스키마 변경 없음 |
+| 0.8 | 2026-11-06 | MinjeYu | `schema.sql`·개발 DB와 대조해 표기 일치화(스키마 변경 없음): 3장 표에 CHECK 제약 이름 8개(`ck_refresh_tokens_token_hash_not_blank`·`ck_users_email_length`·`ck_users_name_length`·`ck_categories_name_length`·`ck_categories_name_trimmed`·`ck_todos_title_length`·`ck_todos_title_not_blank`·`ck_todos_description_length`)와 `ck_users_email_lower` 명시, 2장 다이어그램의 `todos.category_id`를 복합 FK로, 4.1 인덱스 표에 `uq_categories_id_user_id` 추가(6장 개수 9개). 아키텍처 다이어그램 참조를 v0.15로 |
 
 **표기 범례** (도메인 정의서·PRD·구조 설계 원칙·아키텍처 다이어그램과 같음)
 - **확정**: 요구사항 원문 또는 사용자 의사결정(2026-11-04)에 근거한 결정
@@ -18,7 +20,7 @@
 - **미결정**: 결정하기 전에는 구현을 보류한다
 - 이 문서에서 원문에 없는 내용(타입 선택, 기본값, 제약 이름, 인덱스, FK 동작)은 모두 **가정**이다. 단 7장(`EQ-xx`)에서 위임 결정(2026-11-04)으로 확정한 항목은 구분 열에 '확정'으로 표시했다. 문서 사이의 공백·모순은 7장에 모은다
 
-**단일 출처 원칙**: 엔티티·속성의 의미, 상태 판정, BR·UC·AC·OI는 [도메인 정의서 v0.10](./1-domain-definition.md), FR·NFR·ERR·VR은 [PRD v0.9](./2-prd.md), PR·DL·CN·SO·PQ·TQ(명명 규칙 CN-03, CN-04 포함)는 [구조 설계 원칙 v0.6](./5-project-principle.md), 다이어그램 AD·AQ는 [아키텍처 다이어그램 v0.6](./6-arch-diagram.md)에만 둔다. 이 문서는 그 규칙의 **저장 형태**(컬럼, 타입, NULL, 제약, 관계, 인덱스 후보)만 정하며 규칙 원문은 복사하지 않고 ID로 참조한다. 이 문서에서 새로 만든 ID는 `ER-xx`(엔티티·관계 항목)와 `EQ-xx`(확인 필요)뿐이다. 인증 토큰 방식(JWT HS384 + Refresh Token)은 사용자 결정(2026-11-04)이며 이 문서는 리프레시 토큰의 저장 형태(ER-08)만 정한다.
+**단일 출처 원칙**: 엔티티·속성의 의미, 상태 판정, BR·UC·AC·OI는 [도메인 정의서 v0.13](./1-domain-definition.md), FR·NFR·ERR·VR은 [PRD v0.17](./2-prd.md), PR·DL·CN·SO·PQ·TQ(명명 규칙 CN-03, CN-04 포함)는 [구조 설계 원칙 v0.24](./5-project-principle.md), 다이어그램 AD·AQ는 [아키텍처 다이어그램 v0.15](./6-arch-diagram.md)에만 둔다. 이 문서는 그 규칙의 **저장 형태**(컬럼, 타입, NULL, 제약, 관계, 인덱스 후보)만 정하며 규칙 원문은 복사하지 않고 ID로 참조한다. 이 문서에서 새로 만든 ID는 `ER-xx`(엔티티·관계 항목)와 `EQ-xx`(확인 필요)뿐이다. 인증 토큰 방식(JWT HS384 + Refresh Token)은 사용자 결정(2026-11-04)이며 이 문서는 리프레시 토큰의 저장 형태(ER-08)만 정한다.
 
 **범위**: 논리·개념 수준의 ERD다. `CREATE TABLE` 같은 DDL과 마이그레이션 SQL은 쓰지 않는다(SO-10: `backend/migrations/`에서 작성). 타입은 PostgreSQL 17 기준 개념 타입이며, 길이는 다이어그램이 아니라 표에 쓴다. 테이블·컬럼·제약 이름은 CN-03을 따른다. [`schema.sql`](./schema.sql)은 이 ERD를 옮긴 DDL 초안이며 `BEGIN;`·`COMMIT;`을 포함하므로, `backend/migrations/001_init.sql`로 옮길 때 이 두 줄만 뺀다(8-plan.md XQ-03).
 
@@ -32,7 +34,7 @@
 | ER-04 | 관계 | `users` 1 : N `categories` | User – Category | 사용자마다 카테고리 1개 이상(기본 1개 포함), 4장 |
 | ER-05 | 관계 | `users` 1 : N `todos` | User – Todo | 4장 |
 | ER-06 | 관계 | `categories` 1 : N `todos` | Category – Todo | 할일은 항상 카테고리 1개, 4장 |
-| ER-07 | 비영속 | 테이블이 아닌 것 | — | 할일 상태, 로그인 실패 카운터, 액세스·CSRF 토큰, 3.4 |
+| ER-07 | 비영속 | 테이블이 아닌 것 | — | 할일 상태, 로그인 실패 카운터, 액세스 토큰, 3.4 |
 | ER-08 | 엔티티 | `refresh_tokens` | — (기술 테이블, 도메인 엔티티 아님) | 리프레시 토큰의 SHA-256 해시, 3.5 (사용자 결정(2026-11-04)) |
 | ER-09 | 관계 | `users` 1 : N `refresh_tokens` | User – (기술 테이블) | 사용자의 로그인 기기·세션마다 계열 1개, 4장 |
 
@@ -68,7 +70,7 @@ erDiagram
     todos {
         uuid id PK "EQ-01"
         uuid user_id FK "users.id"
-        uuid category_id FK "categories.id RESTRICT"
+        uuid category_id FK "복합 FK category_id user_id RESTRICT EQ-04"
         text title "BR-09 VR-05"
         text description "선택 VR-06"
         date start_date "BR-07 BR-08"
@@ -103,9 +105,9 @@ erDiagram
 | 컬럼 | 타입 | NULL | 제약·기본값 | 도메인 속성 / API 필드 | 근거 ID | 구분 |
 |------|------|------|-------------|------------------------|---------|------|
 | id | uuid | 불가 | PK, 기본값은 DB 생성(`gen_random_uuid()`) | id | 도메인 3장 | 컬럼 확정 / uuid 확정 (위임 결정(2026-11-04), EQ-01) |
-| email | text | 불가 | 고유(`uq_users_email`), 최대 254자, 소문자로 저장하므로 일반 고유로 대소문자 무시 중복을 막는다, `email = lower(email)` 검사 | email | VR-01, ERR-04, 도메인 3장 | 확정 (규칙) / 검사 방식 가정 |
+| email | text | 불가 | 고유(`uq_users_email`), 1~254자(`ck_users_email_length`), 소문자로 저장하므로 일반 고유로 대소문자 무시 중복을 막는다, `email = lower(email)` 검사(`ck_users_email_lower`) | email | VR-01, ERR-04, 도메인 3장 | 확정 (규칙) / 검사 방식 가정 |
 | password_hash | text | 불가 | 알고리즘·파라미터(N, r, p, maxmem)·salt·해시를 한 문자열에 함께 저장한다(포맷은 PRD 11장). 평문 저장 금지 | passwordHash (API 응답에 넣지 않는다) | NFR-06, 도메인 3장 | 확정 (저장 내용) / 단일 컬럼 가정 |
-| name | text | 불가 | 1~50자, 앞뒤 공백 제거 후 저장 | name | VR-03 | 확정 (컬럼) / 검증 값 가정(VR-03) |
+| name | text | 불가 | 1~50자(`ck_users_name_length`), 앞뒤 공백 제거 후 저장 | name | VR-03 | 확정 (컬럼) / 검증 값 가정(VR-03) |
 | timezone | text | 불가 | IANA 이름만 허용(검증은 앱에서만, 기준은 Node `Intl` 한 곳, EQ-06), 기본값 없음. DB는 빈 문자열만 거부하는 보강 검사 `ck_users_timezone_not_blank`를 둔다(EQ-03의 보강 원칙과 같음). 가입 때 대체값 `Asia/Seoul`은 앱이 넣는다 | timezone | VR-04, PRD 4.2, OI-02, OI-10 | 확정 (검증 위치·기준은 위임 결정(2026-11-04), EQ-06) |
 | created_at | timestamptz | 불가 | 기본값 `now()`, UTC로 저장 | createdAt | PRD 4.2, 6장, CN-06 | 컬럼 확정 / 기본값 가정 |
 | updated_at | timestamptz | 불가 | 기본값 `now()`, 수정 때 앱이 쓰기 SQL에서 `updated_at = now()`를 명시해 갱신(트리거 없음, EQ-02) | updatedAt | PRD 4.2, 6장, CN-06 | 컬럼 확정 / 갱신 방식 확정 (위임 결정(2026-11-04), EQ-02) |
@@ -119,7 +121,7 @@ erDiagram
 |------|------|------|-------------|------------------------|---------|------|
 | id | uuid | 불가 | PK | id | 도메인 3장 | 컬럼 확정 / uuid 확정 (위임 결정(2026-11-04), EQ-01) |
 | user_id | uuid | 불가 | FK → `users.id`, 삭제 동작 RESTRICT(EQ-05) | userId | BR-02, 도메인 3장 | 확정 (컬럼) / 삭제 동작 확정 (위임 결정(2026-11-04), EQ-05) |
-| name | text | 불가 | 1~30자, 앞뒤 공백을 제거한 입력 표기 그대로 저장. 같은 사용자 안 고유: `(user_id, lower(name))` 표현식 고유 인덱스(`uq_categories_user_id_lower_name`). 기본 카테고리 이름 '기본'도 대상 | name | BR-14, VR-07, ERR-04, PRD 11장 | 확정 (비교·저장 기준, 위임 결정(2026-11-04)) / DB 제약 방식 확정 (위임 결정(2026-11-04), EQ-03) |
+| name | text | 불가 | 1~30자(`ck_categories_name_length`), 앞뒤 공백을 제거한 입력 표기 그대로 저장. DB 보강 검사 `ck_categories_name_trimmed`: `name = btrim(name)`(공백 문자만 본다, EQ-03). 같은 사용자 안 고유: `(user_id, lower(name))` 표현식 고유 인덱스(`uq_categories_user_id_lower_name`). 기본 카테고리 이름 '기본'도 대상 | name | BR-14, VR-07, ERR-04, PRD 11장 | 확정 (비교·저장 기준, 위임 결정(2026-11-04)) / DB 제약 방식 확정 (위임 결정(2026-11-04), EQ-03) |
 | is_default | boolean | 불가 | 기본값 `false`. 사용자당 `true`는 최대 1개: 부분 고유 인덱스 `uq_categories_user_id_default`(`user_id` where `is_default`) | isDefault | BR-03, BR-05, 도메인 3장, SO-10 | 컬럼 확정 / 부분 고유 가정 |
 | created_at | timestamptz | 불가 | 기본값 `now()`, UTC | createdAt | PRD 4.2, 6장 | 컬럼 확정 / 기본값 가정 |
 | (복합 고유) | — | — | `(id, user_id)` 고유(`uq_categories_id_user_id`): `todos`의 복합 FK 대상(4장) | — | BR-02 | 확정 (위임 결정(2026-11-04), EQ-04) |
@@ -134,8 +136,8 @@ erDiagram
 | id | uuid | 불가 | PK | id | 도메인 3장 | 컬럼 확정 / uuid 확정 (위임 결정(2026-11-04), EQ-01) |
 | user_id | uuid | 불가 | FK → `users.id`, RESTRICT(EQ-05). 모든 조회·변경 SQL의 `user_id` 조건 대상 | userId | BR-02, NFR-09, DL-07 | 확정 (컬럼) / 삭제 동작 확정 (위임 결정(2026-11-04), EQ-05) |
 | category_id | uuid | 불가 | 복합 FK `(category_id, user_id)` → `categories(id, user_id)`, 삭제 동작 RESTRICT(4장). 미지정 입력은 앱이 기본 카테고리 id로 채운다 | categoryId | BR-04, BR-06, OI-04, AQ-08 | 컬럼 확정 / FK 동작 확정 (위임 결정(2026-11-04), EQ-04) |
-| title | text | 불가 | 1~100자, 앞뒤 공백 제거 후 저장, 공백만 불가(`btrim(title) <> ''` 검사, 보강용) | title | BR-09, VR-05 | 확정 (규칙) / DB 검사 보강 확정 (위임 결정(2026-11-04), EQ-03) |
-| description | text | 허용 | 최대 1000자. 앞뒤 공백 제거 후 비어 있으면 NULL로 저장하고 API는 null로 응답(EQ-08) | description | VR-06, 도메인 3장 | 확정 (선택 속성) / NULL 표현 확정 (위임 결정(2026-11-04), EQ-08) |
+| title | text | 불가 | 1~100자(`ck_todos_title_length`), 앞뒤 공백 제거 후 저장, 공백만 불가(`ck_todos_title_not_blank`: `btrim(title) <> ''`, 보강용) | title | BR-09, VR-05 | 확정 (규칙) / DB 검사 보강 확정 (위임 결정(2026-11-04), EQ-03) |
+| description | text | 허용 | 최대 1000자(`ck_todos_description_length`: NULL이거나 1~1000자). 앞뒤 공백 제거 후 비어 있으면 NULL로 저장하고 API는 null로 응답(EQ-08) | description | VR-06, 도메인 3장 | 확정 (선택 속성) / NULL 표현 확정 (위임 결정(2026-11-04), EQ-08) |
 | start_date | date | 불가 | `ck_todos_date_order`: `start_date <= end_date` | startDate | BR-07, BR-08, OI-01, OI-05, PRD 6장 | 확정 (DATE, BR-07) / NOT NULL은 가정 (OI-01) |
 | end_date | date | 불가 | 위와 같음 | endDate | BR-07, BR-08, OI-01, OI-05, PRD 6장 | 확정 (DATE, BR-07) / NOT NULL은 가정 (OI-01) |
 | completed | boolean | 불가 | 기본값 `false` | completed | 도메인 2·4장, OI-07 | 확정 |
@@ -152,7 +154,7 @@ erDiagram
 |------|-----------|---------|
 | 할일 상태(시작 전·진행 중·완료·기한 초과) | **컬럼도 테이블도 없다.** 조회 때 `completed`, `start_date`, `end_date`와 서버가 계산한 오늘(`users.timezone` 기준)로 판정한다. 판정 순서는 도메인 4장 | 도메인 4장, PR-06, DL-09, OI-02 |
 | 로그인 실패 카운터(IP별·계정별) | **테이블이 아니다.** 프로세스 메모리(`lib/loginAttempts.js`)로 시작한다. DB에 저장하지 않으므로 ERD에 없다. 공유 저장소 전환은 R-03(프로세스 다중화) 전에 PRD 11장에서 정한다 | NFR-10, PQ-10, CN-10 |
-| 액세스 토큰(JWT)·CSRF 토큰 | 저장하지 않는다(액세스 토큰 검증은 서명 확인만, 서버 세션 저장소 없음). 리프레시 토큰만 해시로 저장한다(3.5). 사용자 결정(2026-11-04)으로 이전의 '로그인 토큰 저장 안 함'을 대체했다 | NFR-07, NFR-15 |
+| 액세스 토큰(JWT) | 저장하지 않는다(액세스 토큰 검증은 서명 확인만, 서버 세션 저장소 없음). 리프레시 토큰만 해시로 저장한다(3.5). 사용자 결정(2026-11-04)으로 이전의 '로그인 토큰 저장 안 함'을 대체했다 | NFR-07 |
 | `schema_migrations` | 마이그레이션 러너의 적용 기록용 기술 테이블이다. 도메인 엔티티가 아니므로 다이어그램에서 뺐다 | SO-10 |
 
 ### 3.5 refresh_tokens (ER-08)
@@ -164,7 +166,7 @@ erDiagram
 | id | uuid | 불가 | PK, 기본값 `gen_random_uuid()` | EQ-01 | uuid 확정 (EQ-01) / 테이블 확정 (위임 결정(2026-11-04)) |
 | user_id | uuid | 불가 | FK → `users.id`, 삭제 동작 RESTRICT(EQ-05와 같음, 탈퇴는 범위 외). 인덱스 `idx_refresh_tokens_user_id`: 사용자의 모든 토큰 폐기(비밀번호 변경)와 만료 행 정리 | NFR-07, PRD 4.4, EQ-05 | 확정 (위임 결정(2026-11-04)) |
 | family_id | uuid | 불가 | 로그인(회원가입 포함)마다 새로 만들고 갱신으로 이어지는 토큰은 같은 값을 쓴다. 재사용 감지·로그아웃 때 계열을 한 번에 폐기한다. 별도 계열 테이블은 두지 않는다(EQ-10). 인덱스 `idx_refresh_tokens_family_id` | BR-16, NFR-07 | 확정 (위임 결정(2026-11-04), EQ-10) |
-| token_hash | text | 불가 | 고유(`uq_refresh_tokens_token_hash`), 비어 있지 않음. 리프레시 토큰 원문의 SHA-256 해시만 저장하고 원문은 저장하지 않는다. 입력이 32바이트 이상 무작위라 salt·느린 해시는 쓰지 않는다. 갱신은 이 값으로만 조회한다. 해시 표기(hex 등)는 PRD 11장 | NFR-07 | 확정 (위임 결정(2026-11-04)) |
+| token_hash | text | 불가 | 고유(`uq_refresh_tokens_token_hash`), 비어 있지 않음(`ck_refresh_tokens_token_hash_not_blank`). 리프레시 토큰 원문의 SHA-256 해시만 저장하고 원문은 저장하지 않는다. 입력이 32바이트 이상 무작위라 salt·느린 해시는 쓰지 않는다. 갱신은 이 값으로만 조회한다. 해시 표기(hex 등)는 PRD 11장 | NFR-07 | 확정 (위임 결정(2026-11-04)) |
 | expires_at | timestamptz | 불가 | UTC. 발급 시각 + 7일(갱신할 때마다 새 행이 새 만료를 가진다, 슬라이딩). `ck_refresh_tokens_expires_after_created`: `expires_at > created_at` | NFR-07, OI-18 | 확정 (위임 결정(2026-11-04)) |
 | revoked_at | timestamptz | 허용 | NULL이면 유효. 갱신(회전)·로그아웃·재사용 감지·비밀번호 변경 때 폐기 시각을 쓴다. `ck_refresh_tokens_revoked_after_created`: NULL이거나 `revoked_at >= created_at`. 폐기된 행은 만료 시각이 지나기 전에는 지우지 않는다(EQ-11) | BR-16, NFR-07 | 확정 (위임 결정(2026-11-04), EQ-11) |
 | created_at | timestamptz | 불가 | 기본값 `now()`, UTC | PRD 4.2 | 확정 (위임 결정(2026-11-04)) |
@@ -197,6 +199,7 @@ NFR-05는 할일 조회가 `user_id`로 시작하는 인덱스를 타라고 한�
 | `idx_todos_user_id_category_id` | `todos(user_id, category_id)` | 카테고리 필터, 카테고리별 할일 수, 삭제 때 이동 대상 찾기, FK 검사 | BR-06, BR-11, PRD 11장 |
 | `uq_categories_user_id_lower_name` | `categories(user_id, lower(name))` | 이름 중복 검사이자 `user_id` 선두 인덱스 | BR-14, SO-10 |
 | `uq_categories_user_id_default` | `categories(user_id)` where `is_default` | 기본 카테고리 조회와 사용자당 1개 보장 | BR-03, SO-10 |
+| `uq_categories_id_user_id` | `categories(id, user_id)` | 고유 제약이 만드는 인덱스. `todos` 복합 FK의 대상(3.2) | BR-02, EQ-04 |
 | `uq_users_email` | `users(email)` | 로그인 조회(DL-07의 예외), email 중복 | VR-01, DL-07 |
 | `uq_refresh_tokens_token_hash` | `refresh_tokens(token_hash)` | 갱신·로그아웃 때 해시로 조회와 잠금, 해시 중복 방지 | NFR-07 |
 | `idx_refresh_tokens_user_id` | `refresh_tokens(user_id)` | 비밀번호 변경 때 사용자의 모든 토큰 폐기, 로그인 때 만료 행 정리, FK 검사 | PRD 4.4, OI-21 |
@@ -241,7 +244,7 @@ NFR-05는 할일 조회가 `user_id`로 시작하는 인덱스를 타라고 한�
 | 3.2 | 기본 카테고리 부분 고유 (`lower(name)` 표현식 고유와 `updated_at` 없음은 EQ-03·EQ-02로 확정) |
 | 3.3 | `start_date`·`end_date` NOT NULL(OI-01) (`completed` 일관성 검사와 `description` NULL은 EQ-07·EQ-08로 확정) |
 | 3.5 | 새 가정 없음 (`refresh_tokens`의 컬럼·제약은 사용자 결정(2026-11-04)의 후속으로 EQ-10·EQ-11에서 위임 결정(2026-11-04)으로 확정) |
-| 4장 | 인덱스 8개 (기존 5개 + `refresh_tokens` 3개) (FK 동작과 복합 FK는 EQ-04·EQ-05로 확정) |
+| 4장 | 인덱스 9개 (기존 5개 + `refresh_tokens` 3개 + 복합 FK 대상 고유 1개, PK 제외) (FK 동작과 복합 FK는 EQ-04·EQ-05로 확정) |
 
 ## 7. 확인 필요 사항 (EQ)
 

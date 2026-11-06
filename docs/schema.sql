@@ -1,10 +1,10 @@
 -- TodoList 데이터베이스 스키마 (PostgreSQL 17)
--- 근거: docs/7-erd.md v0.6 (단일 출처). 규칙 원문은 ERD와 도메인 정의서·PRD를 따른다.
+-- 근거: docs/7-erd.md v0.8 (단일 출처). 규칙 원문은 ERD와 도메인 정의서·PRD를 따른다.
 -- 작성: MinjeYu, 2026-11-04
 --
 -- 범위
 --   - 테이블 4개(users, categories, todos, refresh_tokens), 제약, 인덱스만 정의한다.
---   - 할일 상태, 로그인 실패 카운터, 액세스·CSRF 토큰은 저장하지 않는다(ERD 3.4, ER-07).
+--   - 할일 상태, 로그인 실패 카운터, 액세스 토큰은 저장하지 않는다(ERD 3.4, ER-07).
 --   - 리프레시 토큰은 SHA-256 해시만 refresh_tokens에 저장한다(ER-08, 사용자 결정(2026-11-04), NFR-07).
 --   - schema_migrations는 마이그레이션 러너가 만든다(SO-10). 이 파일에는 없다.
 --   - updated_at은 트리거 없이 앱이 쓰기 SQL에서 `updated_at = now()`로 갱신한다(EQ-02).

@@ -4,7 +4,7 @@ import { login, logout, refresh, signup } from '../services/auth.service.js';
 
 export const authRouter = Router();
 
-// DL-05: 공개 라우트라 액세스 토큰·CSRF 없이 리프레시 쿠키만으로 호출한다. 실패해도 쿠키는 지우지 않는다(AD-14)
+// DL-05: 공개 라우트라 액세스 토큰 없이 리프레시 쿠키만으로 호출한다. 실패해도 쿠키는 지우지 않는다(AD-14)
 authRouter.post('/auth/refresh', async (req, res) => {
   setSessionCookies(res, await refresh(req.cookies?.[COOKIE_NAMES.refresh]));
   res.json({ status: 'ok' });

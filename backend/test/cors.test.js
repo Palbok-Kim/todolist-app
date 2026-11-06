@@ -36,17 +36,17 @@ const preflight = (origin, path = '/api/todos', method = 'POST') =>
     headers: {
       origin,
       'access-control-request-method': method,
-      'access-control-request-headers': 'content-type,x-csrf-token',
+      'access-control-request-headers': 'content-type',
     },
   });
 
-test('CORS: 허용 출처의 사전 요청은 인증 없이 204이고 쿠키·CSRF 헤더 사용을 허용한다', async () => {
+test('CORS: 허용 출처의 사전 요청은 인증 없이 204이고 쿠키·Content-Type 헤더 사용을 허용한다', async () => {
   const res = await preflight(APP);
   assert.equal(res.status, 204);
   assert.equal(res.headers.get('access-control-allow-origin'), APP);
   assert.equal(res.headers.get('access-control-allow-credentials'), 'true');
   assert.match(res.headers.get('access-control-allow-methods'), /PATCH/);
-  assert.match(res.headers.get('access-control-allow-headers'), /X-CSRF-Token/i);
+  assert.match(res.headers.get('access-control-allow-headers'), /^Content-Type$/i);
   assert.match(res.headers.get('vary'), /Origin/);
 });
 
@@ -76,26 +76,4 @@ test('CORS: 허용 출처의 본 요청(가입)은 출처를 되돌려 주고 �
   assert.equal(res.headers.get('access-control-allow-credentials'), 'true');
   const names = res.headers.getSetCookie().map((c) => c.split('=')[0]);
   for (const n of Object.values(COOKIE_NAMES)) assert.ok(names.includes(n), n);
-});
-
-test('CORS: 허용하지 않은 출처에서 쿠키를 실어 보내도 CSRF 헤더 없이는 상태 변경이 403이다', async () => {
-  const signup = await raw('/api/auth/signup', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      email: 'csrf@example.test',
-      password: 'correct horse battery staple 1!',
-      name: '홍길동',
-    }),
-  });
-  const cookie = signup.headers
-    .getSetCookie()
-    .map((c) => c.split(';')[0])
-    .join('; ');
-  const res = await raw('/api/categories', {
-    method: 'POST',
-    headers: { origin: EVIL, cookie, 'content-type': 'application/json' },
-    body: JSON.stringify({ name: '탈취' }),
-  });
-  assert.equal(res.status, 403);
 });

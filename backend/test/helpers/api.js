@@ -8,11 +8,7 @@ export async function startApp(target = app) {
   async function request(path, { method = 'GET', body, session } = {}) {
     const headers = {};
     if (body !== undefined) headers['content-type'] = 'application/json';
-    if (session) {
-      headers.cookie = session.cookie;
-      if (session.csrfToken && method !== 'GET' && method !== 'HEAD')
-        headers['x-csrf-token'] = session.csrfToken;
-    }
+    if (session) headers.cookie = session.cookie;
     const res = await fetch(baseUrl + path, {
       method,
       headers,
@@ -34,8 +30,7 @@ export async function startApp(target = app) {
 
 export function sessionFrom(headers) {
   const pairs = headers.getSetCookie().map((c) => c.split(';')[0]);
-  const csrf = pairs.find((p) => p.startsWith('csrf_token='));
-  return { cookie: pairs.join('; '), csrfToken: csrf?.slice('csrf_token='.length) };
+  return { cookie: pairs.join('; ') };
 }
 
 async function authenticate(api, path, input) {

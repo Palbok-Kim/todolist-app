@@ -160,11 +160,9 @@ test('BR-14: 이름 중복은 사용자마다 따로 본다', async () => {
   assert.equal((await createCall(b, '업무')).status, 201);
 });
 
-test('NFR-15: CSRF 헤더 없는 등록은 403이고, 인증 없으면 401이다', async () => {
-  const a = await register('a@example.test');
-  assert.equal((await createCall({ ...a, csrfToken: undefined }, '업무')).status, 403);
+test('AC-02: 인증 없는 등록은 401이다', async () => {
   assert.equal((await createCall(undefined, '업무')).status, 401);
-  assert.equal(await categoryCount(), 1);
+  assert.equal(await categoryCount(), 0);
 });
 
 const renameCall = (session, id, name) =>
@@ -306,13 +304,4 @@ test('SO-07: 삭제 트랜잭션의 FK 위반은 500이 아니라 404 NOT_FOUND�
     await pool.query('DROP TRIGGER IF EXISTS test_reinsert_todo ON categories');
     await pool.query('DROP FUNCTION IF EXISTS test_reinsert_todo()');
   }
-});
-
-test('NFR-15: CSRF 헤더 없는 수정·삭제는 403이다', async () => {
-  const a = await register('a@example.test');
-  const work = await addCategory(a.body.id, '업무');
-  const noCsrf = { ...a, csrfToken: undefined };
-  assert.equal((await renameCall(noCsrf, work, '바꿈')).status, 403);
-  assert.equal((await deleteCall(noCsrf, work)).status, 403);
-  assert.equal(await categoryCount(), 2);
 });

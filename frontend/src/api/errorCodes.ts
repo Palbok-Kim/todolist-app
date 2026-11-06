@@ -15,7 +15,6 @@ export const ERR = {
   // ERR-07
   INTERNAL_ERROR: 'INTERNAL_ERROR',
   // ERR-08
-  CSRF_FAILED: 'CSRF_FAILED',
 } as const;
 
 export type ErrorCode = (typeof ERR)[keyof typeof ERR];

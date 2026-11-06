@@ -152,14 +152,6 @@ test('AC-02: 인증 없이 조회·수정하면 401이다', async () => {
   assert.equal(res.body.error.code, ERR.UNAUTHORIZED.code);
 });
 
-test('NFR-15: CSRF 헤더 없는 수정은 403이고 저장 값이 그대로다', async () => {
-  const session = await register();
-  const res = await patchMe({ ...session, csrfToken: undefined }, { timezone: 'UTC' });
-  assert.equal(res.status, 403);
-  assert.equal(res.body.error.code, ERR.CSRF_FAILED.code);
-  assert.equal(await storedTimezone(), 'Asia/Seoul');
-});
-
 test('DL-06: 토큰은 유효해도 계정이 지워졌으면 조회·수정이 401이다', async () => {
   const session = await register();
   await resetDb(pool);

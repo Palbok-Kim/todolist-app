@@ -15,7 +15,6 @@ export const ERR = Object.freeze({
   // ERR-07
   INTERNAL_ERROR: { code: 'INTERNAL_ERROR', status: 500 },
   // ERR-08
-  CSRF_FAILED: { code: 'CSRF_FAILED', status: 403 },
 });
 
 export class AppError extends Error {

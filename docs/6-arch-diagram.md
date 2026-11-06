@@ -17,6 +17,8 @@
 | 0.11 | 2026-11-05 | MinjeYu | PRD v0.13(VR-02 KISA 기준 변경)과 일치화: AD-07 로그인 입력 검증 표의 '15자 미만' 표현을 VR-02 참조로, AQ-04 기록의 VR-02 값에 '당시' 표기. 머리말 참조 버전 갱신 |
 | 0.12 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: 배포 다이어그램의 백엔드 환경 파일을 `backend/.env`로(구조 설계 원칙 v0.20 SO-02) |
 | 0.13 | 2026-11-06 | MinjeYu | 최종 코드 기준 일치화: AD-13 로그아웃 시작 위치를 헤더 프로필 팝업으로(PRD v0.16 7장, 와이어프레임 v0.11 3.1) |
+| 0.14 | 2026-11-06 | MinjeYu | 사용자 결정(2026-11-06) 반영: CSRF 방어 제거. 2.2 미들웨어 순서(`csrf` 단계·ERR-08 삭제), 2.3 lib의 `csrfToken` 삭제, 회원가입·로그인·보호 요청·목록·로그아웃·토큰 갱신 시퀀스의 CSRF 쿠키·헤더·검사와 ERR-08 분기 삭제(세션 토큰 3종 → 2종), 4장 추적 표 갱신. 교차 사이트 요청 방어는 SameSite + CORS 허용 목록뿐임을 2.2에 한 줄 명시 |
+| 0.15 | 2026-11-06 | MinjeYu | 단일 출처·범위 문단의 ERD 참조를 v0.8로(ERD·`schema.sql` 표기 일치화, 스키마 변경 없음) |
 
 **표기 범례** (도메인 정의서·PRD·사용자 시나리오·와이어프레임·구조 설계 원칙과 같음)
 - **확정**: 요구사항 원문 또는 사용자 의사결정(2026-11-04)에 근거한 결정
@@ -25,9 +27,9 @@
 - **미결정**: 결정하기 전에는 구현을 보류한다
 - 이 문서에서 원문에 없는 내용은 모두 **가정**이며 각 다이어그램 아래 '가정'에 적고 4.2에 모은다. 문서 사이의 공백·모순은 4.3(`AQ-xx`)에 모은다
 
-**단일 출처 원칙**: 엔티티 속성·상태 판정·BR·UC·AC는 [도메인 정의서 v0.10](./1-domain-definition.md), FR·NFR·ERR·VR·KPI·R은 [PRD v0.13](./2-prd.md), SC는 [사용자 시나리오 v0.7](./3-user-scenario.md), WF는 [와이어프레임 v0.6](./4-wireframe.md), PR·DL·CN·TQ·SO·PQ와 디렉토리 구조는 [구조 설계 원칙 v0.14](./5-project-principle.md), 컬럼·타입·제약·인덱스 같은 데이터 모델(ERD, ER·EQ)은 [ERD v0.6](./7-erd.md)에만 둔다. 이 문서는 규칙 원문을 복사하지 않고 ID로 참조하며, 다이어그램 안의 짧은 문구는 해당 ID를 가리키는 표시일 뿐이다. 이 문서에서 새로 만든 ID는 다이어그램 `AD-xx`와 확인 필요 `AQ-xx`뿐이다.
+**단일 출처 원칙**: 엔티티 속성·상태 판정·BR·UC·AC는 [도메인 정의서 v0.13](./1-domain-definition.md), FR·NFR·ERR·VR·KPI·R은 [PRD v0.17](./2-prd.md), SC는 [사용자 시나리오 v0.8](./3-user-scenario.md), WF는 [와이어프레임 v0.13](./4-wireframe.md), PR·DL·CN·TQ·SO·PQ와 디렉토리 구조는 [구조 설계 원칙 v0.24](./5-project-principle.md), 컬럼·타입·제약·인덱스 같은 데이터 모델(ERD, ER·EQ)은 [ERD v0.8](./7-erd.md)에만 둔다. 이 문서는 규칙 원문을 복사하지 않고 ID로 참조하며, 다이어그램 안의 짧은 문구는 해당 ID를 가리키는 표시일 뿐이다. 이 문서에서 새로 만든 ID는 다이어그램 `AD-xx`와 확인 필요 `AQ-xx`뿐이다.
 
-**범위**: 구조와 흐름만 그린다. API 엔드포인트 경로, 요청·응답 필드 이름, 쿠키·헤더 이름, JWT·CSRF 토큰 구조, 리프레시 토큰 세부, scrypt 값, 카운터 저장 포맷, 컬럼 타입은 [ERD v0.5](./7-erd.md)가 단일 출처이므로 쓰지 않고, DDL은 후속 설계서(PRD 11장, PQ-01)에서 정하므로 쓰지 않는다. 필요한 곳은 '인증 쿠키', 'POST 로그인' 같은 일반 이름으로 쓰고 'PRD 11장 참조'로 표시한다.
+**범위**: 구조와 흐름만 그린다. API 엔드포인트 경로, 요청·응답 필드 이름, 쿠키·헤더 이름, JWT 구조, 리프레시 토큰 세부, scrypt 값, 카운터 저장 포맷, 컬럼 타입은 [ERD v0.8](./7-erd.md)가 단일 출처이므로 쓰지 않고, DDL은 후속 설계서(PRD 11장, PQ-01)에서 정하므로 쓰지 않는다. 필요한 곳은 '인증 쿠키', 'POST 로그인' 같은 일반 이름으로 쓰고 'PRD 11장 참조'로 표시한다.
 
 ## 1. 다이어그램 목록
 
@@ -100,36 +102,33 @@ flowchart LR
     MC --> M2["2 cookie-parser + JSON 파서"]
     M2 --> M3["3 공개 라우트: 회원가입, 로그인, 토큰 갱신, 로그아웃, 헬스, 개발 전용 /api/docs"]
     M3 -- "미매칭" --> M4["4 authenticate"]
-    M4 --> M5["5 csrf"]
-    M5 --> M6["6 보호 라우트: user, category, todo"]
-    M6 -- "미매칭" --> M7["7 not found"]
-    M7 --> M8["8 errorHandler"]
+    M4 --> M6["5 보호 라우트: user, category, todo"]
+    M6 -- "미매칭" --> M7["6 not found"]
+    M7 --> M8["7 errorHandler"]
     M3 -. "ERR-01, 02 갱신 실패, 03, 04, 06" .-> M8
     M4 -. "ERR-02" .-> M8
-    M5 -. "ERR-08" .-> M8
     M6 -. "ERR-01, 04, 05, 07" .-> M8
 ```
 
 | 항목 | 근거 ID |
 |------|---------|
-| 미들웨어 순서 고정, 인증을 CSRF보다 먼저 검사 | DL-05, PRD 11장(검사 순서, 위임 결정(2026-11-04)) |
+| 미들웨어 순서 고정 | DL-05, PRD 11장(검사 순서, 위임 결정(2026-11-04)) |
 | 인증 없이 열린 라우트는 회원가입·로그인·로그아웃과 토큰 갱신(액세스 토큰 대신 리프레시 쿠키로 확인)뿐(헬스는 운영 보조) | BR-01, BR-16, SO-14 |
-| 회원가입·로그인·토큰 갱신·로그아웃은 CSRF 대상 아님 | NFR-15 |
+| 교차 사이트 요청 방어는 SameSite 쿠키와 CORS 허용 목록뿐(JSON `Content-Type`이 사전 요청을 강제) | NFR-15, SO-08 |
 | 토큰 갱신은 만료된 액세스 토큰을 가진 사용자가 부르므로 `authenticate` 앞의 공개 그룹에 둠 | DL-05, NFR-07 |
 | `authenticate`는 JWT 검증(HS384만 허용)만, `req.user = { id }`만 채움 | DL-06, SO-17, NFR-07 |
 | 오류 응답은 `errorHandler` 한 곳, 내부 정보 미노출 | SO-07, ERR-07, NFR-11 |
 | 요청 로그 항목과 금지 값 | SO-06 |
-| `cors`는 로거 다음·파서와 인증·CSRF 앞(허용 출처에만 CORS 헤더, 사전 요청은 인증·CSRF 전에 종료) | SO-08 |
+| `cors`는 로거 다음·파서와 인증 앞(허용 출처에만 CORS 헤더, 사전 요청은 인증 전에 종료) | SO-08 |
 
 **가정**
-- 안전한 메서드(GET)는 `csrf`가 검사하지 않는다. NFR-15가 상태 변경 API(POST·PUT·PATCH·DELETE)만 대상으로 정했기 때문이다.
 - `/api`에 매칭되지 않는 경로는 `authenticate`를 거치므로 인증이 없으면 ERR-02, 있으면 `not found`가 ERR-05 형식으로 응답한다(`docs.test.js`의 운영·테스트 `/api/docs` 401도 이 경로).
 
 ### 2.3 백엔드 레이어와 lib 위치 (AD-03)
 
 ```mermaid
 flowchart TB
-    MW["middleware: requestLogger, authenticate, csrf, errorHandler"]
+    MW["middleware: requestLogger, authenticate, errorHandler"]
     RT["routes: auth, user, category, todo, health - HTTP 입출력만"]
     SV["services: auth, user, category, todo - BR 규칙, 검증 호출, 트랜잭션 경계"]
     VA["validation - VR, BR 검증 순수 함수"]
@@ -138,7 +137,6 @@ flowchart TB
     subgraph LIB["lib - 순수 도구"]
         LP["password - scrypt, timingSafeEqual"]
         LT["token - JWT HS384, 리프레시 토큰 생성과 SHA-256 해시"]
-        LC["csrfToken - CSRF 서명"]
         LK["cookies - 쿠키 속성"]
         LA["loginAttempts - 메모리 카운터 IP별 계정별"]
         LD["today - getToday"]
@@ -151,12 +149,10 @@ flowchart TB
     DQ --> PGX
     SV --> LP
     SV --> LT
-    SV --> LC
     SV --> LA
     SV --> LD
     SV --> LG
     MW --> LT
-    MW --> LC
     MW --> LG
     MW --> ER
     RT -- "쿠키 설정 - DL-02" --> LK
@@ -171,7 +167,7 @@ flowchart TB
 | routes는 HTTP 입출력만 / services는 BR·검증·트랜잭션, `express` 미사용 | DL-02, DL-03 |
 | SQL은 `src/db/`에만, `userId` 조건 필수, 트랜잭션은 service의 `withTransaction`만 | DL-04, DL-07, DL-08 |
 | 상태 판정 SQL 조각과 `getToday`는 서버 한 곳 | DL-09, PR-06 |
-| 쿠키 속성·JWT·CSRF 토큰·서명 비교 코드 위치. 쿠키 발급·삭제는 routes가 `lib/cookies.js`로, service는 토큰 문자열만 반환 | SO-12, PQ-12, DL-02 |
+| 쿠키 속성·JWT·서명 비교 코드 위치. 쿠키 발급·삭제는 routes가 `lib/cookies.js`로, service는 토큰 문자열만 반환 | SO-12, PQ-12, DL-02 |
 | 리프레시 토큰: 무작위 값·해시는 `lib/token.js`(순수), 행 저장·잠금·폐기는 `db/refreshToken.queries.js`, 갱신 트랜잭션은 `auth.service`. 별도 session service 없음 | SO-17, DL-08, PQ-13, ER-08 |
 | 로그인 실패 카운터: 메모리로 시작, `// LIMIT:` 주석, 만료 항목 정리·키 수 상한, 저장 위치는 PRD 11장 | NFR-10, PQ-10, CN-10, AQ-10 |
 | scrypt는 비동기 API, 파라미터·저장 포맷은 PRD 11장 | NFR-06 |
@@ -194,7 +190,7 @@ flowchart TB
     end
     CMP["components - Layout, Header, TopAlert, ConfirmDialog, FieldError"]
     ZS["store - Zustand UI 상태만: alertStore, menuStore, todoFilterStore, calendarStore"]
-    CLI["api/client.ts - fetch 유일: 쿠키 전송(`credentials: 'include'`), CSRF 헤더, 응답 파싱, ApiError, ERR-02 시 single-flight 갱신 후 1회 재시도"]
+    CLI["api/client.ts - fetch 유일: 쿠키 전송(`credentials: 'include'`), 응답 파싱, ApiError, ERR-02 시 single-flight 갱신 후 1회 재시도"]
     LB["lib - date.ts, validation.ts 순수 함수"]
     BEX["backend /api - CORS 직접 호출, VITE_API_BASE_URL"]
     PAGES --> FC
@@ -219,7 +215,7 @@ flowchart TB
 | 의존 방향 `pages → features → (api, components, lib)`, `store`는 UI 상태 전용, ESLint 검증 | DL-11, 2.2장 의존 표 |
 | 서버 상태는 TanStack Query에만, Zustand에 복사 금지, 변경 뒤 `invalidateQueries` | DL-12, PRD 6장 |
 | Zustand는 알림·모바일 메뉴·목록 필터·캘린더 위치만 | DL-13, PQ-04 |
-| `fetch`는 `client.ts` 한 곳, CSRF 헤더·ERR-02 처리(토큰 갱신 한 번, 동시 요청은 하나의 갱신 공유, 원 요청 1회 재시도). `api/`는 store를 import하지 않고 `onUnauthorized` 콜백만 노출, `main.tsx`가 연결 | DL-14, NFR-07, NFR-15, SC-03, SC-16, AQ-02 |
+| `fetch`는 `client.ts` 한 곳, ERR-02 처리(토큰 갱신 한 번, 동시 요청은 하나의 갱신 공유, 원 요청 1회 재시도). `api/`는 store를 import하지 않고 `onUnauthorized` 콜백만 노출, `main.tsx`가 연결 | DL-14, NFR-07, SC-03, SC-16, AQ-02 |
 | `pages/`는 조립만, WF 1:1 | DL-15, WF-01~WF-08, 6.4장 화면·도메인 매핑 |
 | 상태는 서버 `status`만 표시, 프런트 오늘 계산은 표시 전용 | PR-06, PQ-02, CN-09 |
 | 날짜는 `YYYY-MM-DD` 문자열, 시각 표시는 `lib/date.ts` 한 곳 | CN-06, CN-07 |
@@ -236,7 +232,7 @@ flowchart TB
 
 ## 3. 시퀀스 다이어그램
 
-공통 표기: 오류는 ERR ID로 쓰고, 오류가 나면 `errorHandler`가 PRD 4.3 형식으로 응답한다(SO-07, PR-08). 인증·CSRF 미들웨어는 3.3의 공통 흐름을 따르며 다른 다이어그램에서는 `MW`로 줄여 쓴다. HTTP 메서드는 일반 이름만 쓰고 경로는 설계서에서 정한다.
+공통 표기: 오류는 ERR ID로 쓰고, 오류가 나면 `errorHandler`가 PRD 4.3 형식으로 응답한다(SO-07, PR-08). 인증 미들웨어는 3.3의 공통 흐름을 따르며 다른 다이어그램에서는 `MW`로 줄여 쓴다. HTTP 메서드는 일반 이름만 쓰고 경로는 설계서에서 정한다.
 
 ### 3.1 회원가입 (AD-06)
 
@@ -246,13 +242,13 @@ sequenceDiagram
     participant CL as api/client.ts
     participant RT as auth.routes
     participant SV as auth.service
-    participant LB as lib password token csrfToken
+    participant LB as lib password token
     participant RQ as refreshToken.queries
     participant DB as PostgreSQL
 
     UI->>UI: 클라이언트 검증 VR-01 VR-02 VR-03, 비밀번호는 공백 제거 안 함
     UI->>CL: POST 회원가입 - email, name, 비밀번호, 브라우저 감지 시간대
-    CL->>RT: 요청 - 공개 라우트라 인증과 CSRF 검사 없음
+    CL->>RT: 요청 - 공개 라우트라 인증 검사 없음
     RT->>SV: signUp 호출
     SV->>SV: 서버 검증 VR-01 VR-02 VR-03 - 같은 규칙, 최종 판정은 서버
     alt 검증 실패
@@ -267,12 +263,12 @@ sequenceDiagram
         SV-->>UI: ROLLBACK 후 ERR-04 - email 필드 아래에 사유
     end
     SV->>DB: INSERT 기본 카테고리
-    SV->>LB: 세션 토큰 3종 생성 - user.id가 필요해 트랜잭션 안, I/O 없는 동기 계산
+    SV->>LB: 세션 토큰 2종 생성 - user.id가 필요해 트랜잭션 안, I/O 없는 동기 계산
     SV->>RQ: 새 계열로 리프레시 토큰 해시 저장
     RQ->>DB: INSERT refresh_tokens - 해시만 저장
     Note over SV,DB: COMMIT - 셋 중 하나라도 실패하면 ROLLBACK, 응답은 ERR-07
-    SV-->>RT: 사용자 정보와 토큰 3종
-    RT-->>CL: 성공 응답 + 액세스 리프레시 CSRF 쿠키 발급 - 자동 로그인
+    SV-->>RT: 사용자 정보와 토큰 2종
+    RT-->>CL: 성공 응답 + 액세스 리프레시 쿠키 발급 - 자동 로그인
     CL-->>UI: 성공
     UI->>UI: 할일 목록 WF-03으로 이동 - 빈 목록
 ```
@@ -281,13 +277,13 @@ sequenceDiagram
 |------|---------|
 | 프런트·백엔드 동일 검증, 서버가 최종 판정, 공백 비제거 | PRD 4.1, VR-01~03, PR-05, ERR-01, NFR-06 |
 | 시간대 자동 감지와 `Asia/Seoul` 대체(가입 시에만) | PRD 4.2, VR-04, OI-10, PQ-06 |
-| scrypt 해시는 트랜잭션 밖, 비동기. 세션 토큰(JWT·리프레시·CSRF)은 동기 계산이라 트랜잭션 안 | DL-08, NFR-06, R-04 |
+| scrypt 해시는 트랜잭션 밖, 비동기. 세션 토큰(JWT·리프레시)은 동기 계산이라 트랜잭션 안 | DL-08, NFR-06, R-04 |
 | User + 기본 카테고리 한 트랜잭션 | BR-03, DL-08, AC-01, UC-01 |
 | email 소문자 정규화·대소문자 무시 중복 → ERR-04 (pg 오류를 service가 번역) | VR-01, ERR-04, SO-07 |
-| 가입 직후 자동 로그인: 액세스·리프레시 쿠키 + CSRF 쿠키 발급, 가입은 CSRF 대상 아님 | NFR-07, NFR-15, SC-01, 위임 결정(2026-11-04), 사용자 결정(2026-11-04) |
+| 가입 직후 자동 로그인: 액세스·리프레시 쿠키 발급 | NFR-07, SC-01, 위임 결정(2026-11-04), 사용자 결정(2026-11-04) |
 | 리프레시 토큰 행 저장은 가입 트랜잭션 안(User + 기본 카테고리 + 리프레시 해시), 원문은 저장 안 함 | BR-03, DL-08, SO-17, ER-08, AQ-12 |
 | 이후 화면은 할일 목록 | SC-01 6, WF-02, WF-03 |
-| 쿠키 이름·속성, JWT·CSRF 토큰 구조. 쿠키 발급은 routes | SO-12, PRD 11장, DL-02 |
+| 쿠키 이름·속성, JWT 구조. 쿠키 발급은 routes | SO-12, PRD 11장, DL-02 |
 | 가입 요청 횟수 제한 없음(수용) | R-11, AQ-09 |
 
 **가정**
@@ -305,7 +301,7 @@ sequenceDiagram
     participant LA as lib/loginAttempts
     participant UQ as user.queries
     participant RQ as refreshToken.queries
-    participant LB as lib password token csrfToken
+    participant LB as lib password token
     participant DB as PostgreSQL
 
     UI->>RT: POST 로그인 - email, 비밀번호 - 공개 라우트
@@ -330,12 +326,12 @@ sequenceDiagram
             SV->>LA: 실패 기록 - IP별과 계정별 모두
             SV-->>UI: ERR-03 - 두 경우 같은 메시지
         else 일치
-            SV->>LB: JWT HS384 발급과 리프레시 토큰 값 생성 후 그 식별자에 묶어 CSRF 토큰 발급
+            SV->>LB: JWT HS384 발급과 리프레시 토큰 값 생성
             SV->>RQ: 새 계열로 리프레시 토큰 해시 저장 - 이 사용자의 만료 행 정리
             RQ->>DB: INSERT refresh_tokens - 해시만 저장, 만료 행 DELETE
             Note over SV,LA: 성공은 실패 횟수에 넣지 않음
-            SV-->>RT: 사용자 정보와 토큰 3종
-            RT-->>UI: 성공 응답 + 액세스 리프레시 CSRF 쿠키 발급
+            SV-->>RT: 사용자 정보와 토큰 2종
+            RT-->>UI: 성공 응답 + 액세스 리프레시 쿠키 발급
             UI->>UI: 할일 목록으로 이동
         end
     end
@@ -348,7 +344,7 @@ sequenceDiagram
 | 없는 email과 틀린 비밀번호는 같은 ERR-03, 응답 시간 은폐 방법은 11장 | ERR-03, AC-14, SO-07, PRD 11장 |
 | scrypt 비동기 + `timingSafeEqual` | NFR-06, SO-12 |
 | email 조회는 `userId` 조건 규칙의 유일한 예외 | DL-07 |
-| 로그인 성공 시 액세스·리프레시 쿠키 + CSRF 쿠키, 로그인은 CSRF 대상 아님 | NFR-07, NFR-15 |
+| 로그인 성공 시 액세스·리프레시 쿠키 발급 | NFR-07 |
 | 로그인마다 새 리프레시 계열(family)과 해시 행 1건 저장(NFR-16 측정에 포함), 만료 행 정리는 로그인 때 그 사용자의 행만(확정, OI-21) | NFR-16, OI-21, ER-08, SO-17 |
 | 로그인 성공 뒤 이동 위치는 할일 목록 | SC-03 4, WF-01 |
 | 로그인 입력 검증: 필수·email 형식·비밀번호 128자 초과만 ERR-01(실패로 세지 않음), VR-02 하한·문자 종류 미달은 ERR-03 경로 | PRD 4.1, ERR-01, AQ-04 |
@@ -370,23 +366,22 @@ sequenceDiagram
     participant CL as api/client.ts
     participant PM as requestLogger와 파서
     participant AU as authenticate
-    participant CS as csrf
     participant RT as routes
     participant SV as services
     participant Q as db queries
     participant EH as errorHandler
 
     UI->>CL: api.ts 함수 호출 - POST PUT PATCH DELETE
-    CL->>CL: CSRF 쿠키 값을 요청 헤더로 복사, 인증 쿠키는 브라우저가 전송
+    CL->>CL: 인증 쿠키는 브라우저가 전송
     CL->>PM: 요청
     PM->>AU: 로그 시작, 쿠키 JSON 파싱 후 전달
     AU->>AU: lib/token으로 JWT 서명과 만료 검증
     alt 쿠키 없음 또는 만료 또는 위조
-        AU-->>EH: ERR-02 - CSRF 검사는 하지 않음
+        AU-->>EH: ERR-02
         EH-->>CL: 401 ERR-02
         CL->>CL: 토큰 갱신을 한 번만 시도 - AD-14, 동시에 ERR-02를 받은 요청은 하나의 갱신을 공유
         alt 갱신 성공
-            CL->>PM: 새 CSRF 값을 헤더에 넣어 원 요청을 한 번만 재전송 - 이 흐름을 처음부터 다시 진행
+            CL->>PM: 원 요청을 한 번만 재전송 - 이 흐름을 처음부터 다시 진행
             Note over CL,PM: 재전송한 요청이 다시 ERR-02여도 갱신하지 않고 아래 실패 처리
         else 갱신 실패 ERR-02
             CL->>PM: 원 요청을 한 번만 재전송 - 갱신은 다시 하지 않음, 다른 탭이 갱신해 받은 새 쿠키가 브라우저에 이미 있을 수 있음
@@ -397,14 +392,7 @@ sequenceDiagram
             end
         end
     else 인증 통과
-        AU->>CS: req.user 에 id만 채우고 전달
-        CS->>CS: 쿠키와 헤더 일치, 서명, 현재 JWT 식별자 연계를 모두 확인
-        alt 하나라도 불일치
-            CS-->>EH: ERR-08
-            EH-->>CL: 403 ERR-08
-            CL-->>UI: 상단 알림 표시
-        else CSRF 통과
-            CS->>RT: 전달
+        AU->>RT: req.user 에 id만 채우고 전달
             RT->>SV: 서비스 호출 - userId는 req.user.id에서만, body params query의 userId는 읽지 않음
             SV->>SV: BR VR 검증
             alt 검증 실패
@@ -423,24 +411,19 @@ sequenceDiagram
                     CL-->>UI: 성공, 관련 쿼리 invalidateQueries
                 end
             end
-        end
     end
 ```
 
 | 단계 | 근거 ID |
 |------|---------|
-| 인증(ERR-02)을 CSRF(ERR-08)보다 먼저 검사 | DL-05, PRD 11장(검사 순서, 위임 결정(2026-11-04)), NFR-15 |
 | JWT 검증만 하고 `req.user = { id }`, HS384만 허용 | DL-06, SO-17, NFR-07 |
 | 액세스 토큰 만료의 ERR-02는 갱신 한 번 → 성공하면 원 요청 1회 재전송(사용자는 끊김을 보지 못함), 실패해도 원 요청을 1회 재전송(다른 탭이 받은 새 쿠키 대비)하고 그래도 ERR-02면 로그인 화면 이동 + 만료 안내(입력 보존 안 함) | SC-03, SC-16, WF-01, DL-14, AC-22, AC-23, BR-16, OI-20 |
-| Signed Double-Submit: 쿠키·헤더 일치, 서명, JWT 식별자 연계, 실패 시 ERR-08 | NFR-15, SO-12, SC-15 1b |
-| 클라이언트의 CSRF 헤더 처리는 `client.ts` 한 곳 | DL-14 |
 | `userId`는 `req.user.id`에서만, 쿼리마다 `user_id` 조건, 결과 없으면 service가 ERR-05 | DL-07, BR-02, NFR-09, ERR-05, SC-15, KPI-04 |
 | 서버 ERR-01 `fields`를 같은 입력란 아래에 표시 | PR-05, BR-15, ERR-01, CN-08 |
 | 뮤테이션 성공 뒤 관련 쿼리 무효화 | DL-12 |
 | 예상 못한 예외(미표시)는 `errorHandler`가 ERR-07로 바꾸고 서버 로그에만 상세 기록 | SO-07, NFR-11, ERR-07 |
 
 **가정**
-- GET 같은 읽기 요청은 같은 `authenticate`를 거치지만 `csrf`는 건너뛴다(2.2장 가정).
 - 오류는 service가 던지고 Express가 `errorHandler`로 넘기는 것을 `-->>EH`로 그렸다(Express 5의 비동기 오류 전달, PQ-05).
 - 입력을 보존하지 않는 동작은 SC-03 1a를 따른다. 갱신에 성공하면 요청이 그대로 다시 나가므로 입력은 보존된다(SC-16).
 - 갱신이 실패했을 때의 원 요청 1회 재전송과 갱신 성공 뒤 재전송은 확정이다(위임 결정(2026-11-04), PRD NFR-07, AQ-13).
@@ -462,7 +445,7 @@ sequenceDiagram
 
     UI->>ST: 카테고리와 상태 필터 읽기
     UI->>CL: GET 할일 목록 - 필터 조건 포함
-    CL->>RT: authenticate 통과 후 전달 - GET이라 CSRF 검사 없음
+    CL->>RT: authenticate 통과 후 전달
     RT->>SV: list 호출 - userId는 req.user.id, 필터
     SV->>SV: 상태 필터 값이 허용 목록에 있는지 확인
     alt 허용되지 않은 값
@@ -515,7 +498,7 @@ sequenceDiagram
     participant UI as CategoryManagePage와 features/category
     participant DG as ConfirmDialog
     participant CL as api/client.ts
-    participant MW as authenticate와 csrf
+    participant MW as authenticate
     participant RT as category.routes
     participant SV as category.service
     participant CQ as category.queries
@@ -529,7 +512,7 @@ sequenceDiagram
         DG-->>UI: 닫기 - 서버 요청 없음, 아무것도 바뀌지 않음
     else 사용자가 확인
         UI->>CL: DELETE 카테고리
-        CL->>MW: 요청 - 3.3의 공통 흐름, 실패 시 ERR-02 또는 ERR-08
+        CL->>MW: 요청 - 3.3의 공통 흐름, 실패 시 ERR-02
         MW->>RT: 통과
         RT->>SV: remove 호출 - userId, categoryId
         SV->>CQ: findById - userId, categoryId
@@ -586,7 +569,7 @@ sequenceDiagram
     UI->>DT: 표시 범위 계산 - 월요일 시작, 문자열 날짜만 사용
     DT-->>UI: 시작일과 종료일 - 월간은 앞뒤 달 날짜 칸 포함 그리드 전체
     UI->>CL: GET 기간 조회 - 시작일, 종료일
-    CL->>SV: authenticate 통과 후 todo.routes가 list 호출 - GET이라 CSRF 없음
+    CL->>SV: authenticate 통과 후 todo.routes가 list 호출
     SV->>SV: 기간 형식 YYYY-MM-DD, 시작일 이하 종료일, 최대 42일 확인
     alt 형식 오류
         SV-->>UI: ERR-01
@@ -636,7 +619,7 @@ sequenceDiagram
 sequenceDiagram
     participant UI as SettingsPage와 features/user
     participant CL as api/client.ts
-    participant MW as authenticate와 csrf
+    participant MW as authenticate
     participant SV as user.service
     participant UQ as user.queries
     participant TS as todo.service
@@ -645,7 +628,7 @@ sequenceDiagram
 
     UI->>UI: 드롭다운 목록은 Intl 지원 목록, 현재 값이 없으면 추가
     UI->>CL: 시간대 변경 요청 - 일반 이름, 경로는 설계서
-    CL->>MW: 요청 - 3.3의 공통 흐름, 실패 시 ERR-02 또는 ERR-08
+    CL->>MW: 요청 - 3.3의 공통 흐름, 실패 시 ERR-02
     MW->>SV: 통과 - userId, 시간대
     SV->>SV: VR-04 검증 - 오프셋 형식 거부, UTC 허용
     alt 허용되지 않은 값
@@ -695,13 +678,13 @@ sequenceDiagram
 
     UI->>CL: 로그아웃 선택 - 헤더 맨 오른쪽 프로필 팝업(데스크톱·모바일 공통)
     CL->>RT: POST 로그아웃 - 액세스 토큰이 없거나 만료여도 그대로 전송
-    Note over CL,RT: 공개 라우트 - authenticate와 csrf를 거치지 않음
+    Note over CL,RT: 공개 라우트 - authenticate를 거치지 않음
     opt 리프레시 쿠키가 있음
         RT->>SV: logout 호출 - 리프레시 토큰 값
         SV->>DB: 그 해시가 속한 계열의 리프레시 토큰을 모두 폐기
         Note over SV,DB: 실패해도 오류를 응답으로 올리지 않고 서버 로그만 남김
     end
-    RT->>RT: 액세스 리프레시 CSRF 쿠키를 삭제하도록 응답 헤더 설정
+    RT->>RT: 액세스 리프레시 쿠키를 삭제하도록 응답 헤더 설정
     RT-->>CL: 항상 성공 응답
     CL-->>UI: 성공
     UI->>UI: 로그인 화면 WF-01로 이동, 쿼리 캐시 비우기
@@ -720,8 +703,7 @@ sequenceDiagram
 | 단계 | 근거 ID |
 |------|---------|
 | 인증 없이 항상 쿠키 삭제·성공, 토큰이 없거나 만료여도 동일 | BR-01, AC-16, SC-04 1a, 위임 결정(2026-11-04) |
-| 로그아웃은 CSRF 대상 아님(강제 로그아웃 CSRF는 수용) | NFR-15 |
-| 액세스·리프레시·CSRF 쿠키 모두 삭제, 리프레시 쿠키가 있으면 그 계열을 서버에서 폐기(실패해도 쿠키는 삭제·성공) | NFR-07, NFR-15, BR-01, BR-16, SC-04 2, AC-16 |
+| 액세스·리프레시 쿠키 모두 삭제, 리프레시 쿠키가 있으면 그 계열을 서버에서 폐기(실패해도 쿠키는 삭제·성공) | NFR-07, BR-01, BR-16, SC-04 2, AC-16 |
 | 이후 접근은 ERR-02 → 갱신 실패 → 원 요청 1회 재전송도 ERR-02 → 로그인 요구 (DL-14, SC-03 2) | AC-16, AC-23, SC-03, WF-01 |
 | 로그아웃 버튼 위치 | PRD 7장, WF-00 |
 | 액세스 토큰은 서버 측 즉시 무효화 없음(최대 15분, 잔여 위험, 설계서에 명시할 항목), 리프레시 토큰은 즉시 폐기 | NFR-07, R-08 |
@@ -739,14 +721,14 @@ sequenceDiagram
     participant CL as api/client.ts
     participant RT as auth.routes
     participant SV as auth.service
-    participant LB as lib token csrfToken
+    participant LB as lib token
     participant RQ as refreshToken.queries
     participant DB as PostgreSQL
 
     UI->>CL: 보호 API 호출
     CL->>RT: 요청 - 만료된 액세스 토큰, AD-08에서 ERR-02
     Note over CL: 갱신은 한 번만 시도 - 동시에 ERR-02를 받은 요청은 진행 중인 갱신 하나를 공유 - single-flight
-    CL->>RT: POST 토큰 갱신 - 리프레시 쿠키만 전송, 공개 라우트라 authenticate와 csrf 없음
+    CL->>RT: POST 토큰 갱신 - 리프레시 쿠키만 전송, 공개 라우트라 authenticate 없음
     RT->>SV: refresh 호출 - 리프레시 토큰 값
     alt 리프레시 쿠키 없음
         SV-->>CL: ERR-02
@@ -771,14 +753,14 @@ sequenceDiagram
     else 만료됨
         SV-->>CL: ROLLBACK 후 ERR-02
     else 유효
-        SV->>LB: 새 세션 토큰 3종 생성 - JWT HS384, 새 리프레시 값과 해시, 새 식별자에 묶은 CSRF, I/O 없는 동기 계산
+        SV->>LB: 새 세션 토큰 2종 생성 - JWT HS384, 새 리프레시 값과 해시, I/O 없는 동기 계산
         SV->>RQ: 이전 행 폐기 - revoked_at 설정
         SV->>RQ: 같은 family_id로 새 행 저장 - 새 해시, 만료는 지금부터 7일
         RQ->>DB: UPDATE 이전 행, INSERT 새 행
         Note over SV,DB: COMMIT
-        SV-->>RT: 새 토큰 3종
-        RT-->>CL: 성공 응답 + 액세스 리프레시 CSRF 쿠키 재발급
-        CL->>CL: 원 요청을 새 CSRF 값으로 한 번만 재전송
+        SV-->>RT: 새 토큰 2종
+        RT-->>CL: 성공 응답 + 액세스 리프레시 쿠키 재발급
+        CL->>CL: 원 요청을 한 번만 재전송
         CL-->>UI: 원 요청 결과 - 사용자는 끊김을 보지 못함
     end
     opt 갱신이 ERR-02로 실패
@@ -793,13 +775,13 @@ sequenceDiagram
 
 | 단계 | 근거 ID |
 |------|---------|
-| 토큰 갱신은 공개 라우트, 액세스 토큰 없이 리프레시 쿠키로 호출, CSRF 검사 제외 | NFR-07, NFR-15, DL-05, BR-16 |
+| 토큰 갱신은 공개 라우트, 액세스 토큰 없이 리프레시 쿠키로 호출 | NFR-07, DL-05, BR-16 |
 | 받은 값의 해시는 트랜잭션 밖, 새 값 생성은 트랜잭션 안의 동기 계산, 해시로만 조회, DB에는 원문이 없음 | DL-08, SO-17, ER-08, EQ-11 |
 | 행 잠금(`FOR UPDATE`)으로 같은 토큰의 동시 갱신을 직렬화 | NFR-07, DL-08 |
 | 회전: 이전 행 폐기 + 같은 계열의 새 행 저장(만료 7일 슬라이딩), 한 트랜잭션 | BR-16, OI-18, ER-08, AC-22 |
 | 폐기 후 유예 10초(설정값) 이내의 폐기된 토큰은 계열 폐기 없이 거부만(`revoked_at`만 사용, 스키마 변경 없음). 유예를 넘긴 폐기된 토큰이 오면 재사용 감지로 계열 전체 폐기 후 ERR-02 | BR-16, AC-24, OI-20, SO-17, ER-09, EQ-10 |
 | 없음·만료·폐기·재사용은 모두 ERR-02 | PRD 4.3 ERR-02, AC-23 |
-| 성공 시 새 액세스·리프레시·CSRF 쿠키 재발급, 새 CSRF는 새 JWT 식별자에 연계 | NFR-07, NFR-15, SO-12 |
+| 성공 시 새 액세스·리프레시 쿠키 재발급 | NFR-07, SO-12 |
 | 프런트 single-flight와 원 요청 1회 재전송, 갱신이 실패해도 원 요청 1회 재전송 후 ERR-02면 `onUnauthorized` | DL-14, SC-16, PQ-14, R-14 |
 | 갱신 요청은 로그인 실패 제한(NFR-10)과 무관 | NFR-10, NFR-07 |
 
@@ -816,26 +798,26 @@ sequenceDiagram
 | AD | 다이어그램 | 도메인 정의서 (BR/UC/AC/OI) | PRD (FR/NFR/ERR/VR) | 시나리오·와이어프레임 | 구조 원칙 (PR/DL/CN/SO/PQ) |
 |----|------------|------------------------------|---------------------|-----------------------|----------------------------|
 | AD-01 | 컨텍스트·배포 | — | NFR-07, NFR-08, NFR-09, NFR-10, PRD 6장, OI-12 | — | SO-08, SO-09, SO-14, SO-16, PQ-05, PQ-07 |
-| AD-02 | 미들웨어 순서 | BR-01, BR-16 | NFR-07, NFR-15, ERR-02, ERR-08, PRD 11장 | SC-03, SC-16 | DL-05, DL-06, SO-06, SO-07, SO-17 |
-| AD-03 | 백엔드 레이어·lib | BR-02, BR-16 | NFR-06, NFR-07, NFR-10, NFR-15 | — | DL-01~DL-04, DL-07~DL-10, SO-12, SO-16, SO-17, PQ-10, PQ-12, PQ-13 |
-| AD-04 | 프런트 구조 | — | NFR-07, NFR-15 | WF-01~WF-08, SC-03, SC-16 | DL-11~DL-15, PR-06, PQ-02, PQ-04, PQ-14, CN-06, CN-07 |
+| AD-02 | 미들웨어 순서 | BR-01, BR-16 | NFR-07, NFR-15, ERR-02, PRD 11장 | SC-03, SC-16 | DL-05, DL-06, SO-06, SO-07, SO-17 |
+| AD-03 | 백엔드 레이어·lib | BR-02, BR-16 | NFR-06, NFR-07, NFR-10 | — | DL-01~DL-04, DL-07~DL-10, SO-12, SO-16, SO-17, PQ-10, PQ-12, PQ-13 |
+| AD-04 | 프런트 구조 | — | NFR-07 | WF-01~WF-08, SC-03, SC-16 | DL-11~DL-15, PR-06, PQ-02, PQ-04, PQ-14, CN-06, CN-07 |
 | AD-05 | 7-erd.md로 이관 (추적은 [7-erd.md](./7-erd.md) 5장) | — | — | — | — |
-| AD-06 | 회원가입 | UC-01, AC-01, BR-03 | FR-01, VR-01~04, NFR-06, NFR-07, NFR-15, ERR-01, ERR-04, OI-10, R-11, PRD 11장 | SC-01, WF-02 | DL-02, DL-08, PR-05, PQ-06, SO-17 |
-| AD-07 | 로그인 | UC-02, AC-14, AC-15, BR-01, BR-16 | FR-01, PRD 4.1, NFR-06, NFR-07, NFR-10, NFR-15, NFR-16, ERR-01, ERR-03, ERR-06 | SC-02, SC-03, WF-01 | DL-02, DL-07, SO-07, SO-12, SO-16, SO-17, PQ-10 |
-| AD-08 | 보호된 요청 공통 | BR-01, BR-02, BR-15, BR-16, AC-02, AC-09, AC-22, AC-23 | NFR-07, NFR-09, NFR-15, ERR-01, ERR-02, ERR-05, ERR-07, ERR-08 | SC-03, SC-15, SC-16 | DL-05~DL-07, DL-12, DL-14, PR-05, SO-07 |
+| AD-06 | 회원가입 | UC-01, AC-01, BR-03 | FR-01, VR-01~04, NFR-06, NFR-07, ERR-01, ERR-04, OI-10, R-11, PRD 11장 | SC-01, WF-02 | DL-02, DL-08, PR-05, PQ-06, SO-17 |
+| AD-07 | 로그인 | UC-02, AC-14, AC-15, BR-01, BR-16 | FR-01, PRD 4.1, NFR-06, NFR-07, NFR-10, NFR-16, ERR-01, ERR-03, ERR-06 | SC-02, SC-03, WF-01 | DL-02, DL-07, SO-07, SO-12, SO-16, SO-17, PQ-10 |
+| AD-08 | 보호된 요청 공통 | BR-01, BR-02, BR-15, BR-16, AC-02, AC-09, AC-22, AC-23 | NFR-07, NFR-09, ERR-01, ERR-02, ERR-05, ERR-07 | SC-03, SC-15, SC-16 | DL-05~DL-07, DL-12, DL-14, PR-05, SO-07 |
 | AD-09 | 목록·필터 | UC-06, AC-07, AC-08, AC-09, BR-02, BR-11, 4장 | FR-05, NFR-05, OI-15 | SC-09, WF-03 | PR-06, DL-09, DL-10, CN-09 |
 | AD-10 | 카테고리 삭제 | UC-04, AC-03, AC-04, BR-05, BR-06, OI-04 | FR-02, ERR-01, ERR-05, PRD 11장 | SC-13, WF-08 | DL-03, DL-08, DL-12, SO-07 |
 | AD-11 | 캘린더 | UC-09, AC-12, AC-18, BR-12, OI-06, OI-08 | FR-08, NFR-05, NFR-12, ERR-01, PRD 11장 | SC-10, SC-11, WF-05, WF-06 | CN-06, DL-13, PR-06 |
 | AD-12 | 시간대 변경 | UC-03, AC-13, OI-02, OI-03 | FR-03, VR-04, ERR-01 | SC-12, WF-07 | DL-06, DL-09, DL-12, CN-07, PQ-06, TQ-03 |
-| AD-13 | 로그아웃 | UC-02, AC-16, BR-01, BR-16 | NFR-07, NFR-15, ERR-02, R-08 | SC-04, WF-00 | DL-02, SO-12, SO-17 |
-| AD-14 | 토큰 리프레시 | UC-02, AC-22, AC-23, AC-24, BR-16 | FR-01, NFR-07, NFR-15, ERR-02, R-12, R-13, R-14, OI-18~OI-21 | SC-03, SC-16, WF-01 | DL-05, DL-08, DL-14, SO-12, SO-17, PQ-13, PQ-14 |
+| AD-13 | 로그아웃 | UC-02, AC-16, BR-01, BR-16 | NFR-07, ERR-02, R-08 | SC-04, WF-00 | DL-02, SO-12, SO-17 |
+| AD-14 | 토큰 리프레시 | UC-02, AC-22, AC-23, AC-24, BR-16 | FR-01, NFR-07, ERR-02, R-12, R-13, R-14, OI-18~OI-21 | SC-03, SC-16, WF-01 | DL-05, DL-08, DL-14, SO-12, SO-17, PQ-13, PQ-14 |
 
 ### 4.2 새로 둔 가정 요약
 
 | 위치 | 가정 |
 |------|------|
 | AD-01 | 로컬 프로세스 3개 직접 실행(사용자 결정(2026-11-04): Docker 미사용), 화면↔API는 프록시 없이 CORS(사용자 결정(2026-11-05)), 운영은 같은 사이트 서브도메인 점선 표시(PQ-07 변경안)이며 구성은 범위 밖 |
-| AD-02 | GET은 `csrf` 검사 제외, 매칭되지 않는 경로는 ERR-05 형식, 토큰 갱신은 공개 라우트(사용자 결정(2026-11-04)의 후속, 위임 결정(2026-11-04)으로 확정) |
+| AD-02 | 매칭되지 않는 경로는 ERR-05 형식, 토큰 갱신은 공개 라우트(사용자 결정(2026-11-04)의 후속, 위임 결정(2026-11-04)으로 확정) |
 | AD-03 | 클라이언트 IP는 routes가 service에 인자로 전달 (쿠키 설정 주체는 AQ-01로 확정, 가정 아님), 세션 토큰 묶음 발급은 `lib/token.js` 순수 함수 (PQ-13) |
 | AD-04 | 새 가정 없음 (사용자 정보 조회와 `onUnauthorized` 콜백은 AQ-03·AQ-02로 확정) |
 | AD-06 | 시간대 대체와 email 정규화는 service 쪽 (가입 요청 횟수 제한 없음은 R-11로 수용 확정), 리프레시 행 저장은 가입 트랜잭션 안 (AQ-12로 확정) |
@@ -854,7 +836,7 @@ sequenceDiagram
 
 | # | 구분 | 원문 ID | 공백·모순 | 결정 | 영향 AD |
 |---|------|---------|-----------|------|---------|
-| AQ-01 | 확정 (위임 결정(2026-11-04)) | DL-01 표, DL-02, DL-03, SO-12 | 인증·CSRF 쿠키를 `Set-Cookie`로 발급·삭제하려면 `res`와 `lib/cookies.js`가 필요하다. 그런데 routes는 `lib/`를 import할 수 없고, services는 `res`를 모르며, middleware는 services를 호출할 수 없다. 쿠키를 설정하는 주체가 문서상 없다 | services는 토큰 문자열만 돌려주고 쿠키 발급·삭제는 routes가 `lib/cookies.js`로 한다. DL-01 표에 'routes는 `lib/cookies.js`만 import 가능'을 예외로 둔다 (반영: 5번 DL-01·DL-02, 2.1장 표, 6.2장 디렉토리) | AD-03, AD-06, AD-07, AD-13 |
+| AQ-01 | 확정 (위임 결정(2026-11-04)) | DL-01 표, DL-02, DL-03, SO-12 | 인증 쿠키를 `Set-Cookie`로 발급·삭제하려면 `res`와 `lib/cookies.js`가 필요하다. 그런데 routes는 `lib/`를 import할 수 없고, services는 `res`를 모르며, middleware는 services를 호출할 수 없다. 쿠키를 설정하는 주체가 문서상 없다 | services는 토큰 문자열만 돌려주고 쿠키 발급·삭제는 routes가 `lib/cookies.js`로 한다. DL-01 표에 'routes는 `lib/cookies.js`만 import 가능'을 예외로 둔다 (반영: 5번 DL-01·DL-02, 2.1장 표, 6.2장 디렉토리) | AD-03, AD-06, AD-07, AD-13 |
 | AQ-02 | 확정 (위임 결정(2026-11-04)) | DL-14, 2.2장 의존 표 | DL-14는 `api/client.ts`가 ERR-02 때 로그인 화면 이동과 만료 안내를 맡는다고 하지만, 같은 문서의 표는 `api/`가 `store/`를 import하지 못하게 한다(만료 안내는 `alertStore`가 자연스러움) | `client.ts`는 `onUnauthorized` 콜백 등록 함수만 노출하고 `main.tsx`가 `alertStore`와 router를 연결한다 (반영: 5번 DL-14, 6.3장 `main.tsx`) | AD-04, AD-08 |
 | AQ-03 | 확정 (위임 결정(2026-11-04)) | PRD 4.2, 6장, PQ-02, CN-07, WF-07, DL-12 | 프런트는 인증 여부 판정(`RequireAuth`), 사용자 timezone(캘린더 오늘 강조·'마지막 수정' 변환·설정 현재 값), name·email을 서버에서 읽어야 하나, 현재 사용자 조회 경로와 가입·로그인 응답의 사용자 정보 포함 여부가 문서에 없다. 또 DL-12는 시간대 변경 뒤 할일·캘린더 쿼리 무효화를 명시하지 않았다 | PRD 11장에 '현재 사용자 조회'를 추가하고 `RequireAuth`·`features/user`가 쓴다. 가입·로그인 성공 응답도 사용자 정보를 담는다. DL-12에 '시간대 변경 성공 뒤 사용자·할일·캘린더 쿼리 무효화'를 추가한다 (반영: PRD 11장, 5번 DL-12) | AD-04, AD-06, AD-07, AD-12 |
 | AQ-04 | 확정 (위임 결정(2026-11-04)) | PRD 4.1, VR-02, NFR-06, NFR-10, ERR-01, ERR-03 | 로그인 입력에 VR-02(당시 15~128자)를 적용하는지 불명하다. 적용하면 15자 미만 비밀번호가 ERR-01이 되어 ERR-03과 응답이 갈린다. 적용하지 않으면 길이 상한 없는 입력이 scrypt에 들어간다 | 로그인은 필수 값, email 형식(254자), 비밀번호 128자 초과만 ERR-01로 거부하고 15자 미만은 검증 없이 ERR-03으로 처리한다. 이 ERR-01 거부는 실패 횟수에 넣지 않고 제한 확인보다 먼저 한다 (반영: PRD 4.1·4.3, SC-02 1a, WF-01) | AD-07 |

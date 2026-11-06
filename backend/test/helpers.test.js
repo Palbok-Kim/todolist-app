@@ -107,14 +107,13 @@ test('TQ-03: shiftDate는 UTC 기준으로 월·윤년·연 경계를 넘는다'
   assert.equal(shiftDate('2026-11-04', 0), '2026-11-04');
 });
 
-test('api 헬퍼: 세션 쿠키·CSRF 헤더·본문 파싱·실패 처리', async () => {
+test('api 헬퍼: 세션 쿠키·본문 파싱·실패 처리', async () => {
   const stub = express();
   stub.use(express.json());
   const issue = (status) => (req, res) => {
     if (req.body?.email === 'fail') return res.status(401).json({ error: {} });
     res.cookie('access_token', 'a1', { httpOnly: true, path: '/' });
     res.cookie('refresh_token', 'r1', { httpOnly: true, path: '/api/auth' });
-    res.cookie('csrf_token', 'c1', { path: '/' });
     res.status(status).json({ ok: true });
   };
   stub.post('/api/auth/signup', issue(201));
@@ -123,7 +122,6 @@ test('api 헬퍼: 세션 쿠키·CSRF 헤더·본문 파싱·실패 처리', asy
   const echo = (req, res) =>
     res.json({
       cookie: req.headers.cookie ?? null,
-      csrf: req.headers['x-csrf-token'] ?? null,
       body: req.body ?? null,
     });
   stub.get('/echo', echo);
@@ -133,22 +131,19 @@ test('api 헬퍼: 세션 쿠키·CSRF 헤더·본문 파싱·실패 처리', asy
   const api = await startApp(stub);
   try {
     for (const session of [await signup(api, {}), await login(api, {})]) {
-      for (const pair of ['access_token=a1', 'refresh_token=r1', 'csrf_token=c1']) {
+      for (const pair of ['access_token=a1', 'refresh_token=r1']) {
         assert.ok(session.cookie.includes(pair), pair);
       }
       assert.doesNotMatch(session.cookie, /Path|HttpOnly/i);
-      assert.equal(session.csrfToken, 'c1');
       assert.deepEqual(session.body, { ok: true });
     }
     const session = await login(api, {});
 
     const get = await api.request('/echo', { session });
     assert.equal(get.status, 200);
-    assert.ok(get.body.cookie.includes('csrf_token=c1'));
-    assert.equal(get.body.csrf, null);
+    assert.ok(get.body.cookie.includes('access_token=a1'));
 
     const post = await api.request('/echo', { method: 'POST', body: { a: 1 }, session });
-    assert.equal(post.body.csrf, 'c1');
     assert.deepEqual(post.body.body, { a: 1 });
 
     const anon = await api.request('/echo');

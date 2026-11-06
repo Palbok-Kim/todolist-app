@@ -244,18 +244,6 @@ test('BR-10: 단건 조회는 status를 주고, 삭제하면 204이며 이후 �
   assert.equal(await todoCount(), 0);
 });
 
-test('NFR-15: CSRF 헤더 없는 등록·삭제는 403이고 데이터가 바뀌지 않는다', async () => {
-  const a = await register();
-  const todo = (await create(a, base)).body;
-  const noCsrf = { ...a, csrfToken: undefined };
-  assert.equal((await create(noCsrf, base)).status, 403);
-  assert.equal(
-    (await req(`/api/todos/${todo.id}`, { method: 'DELETE', session: noCsrf })).status,
-    403,
-  );
-  assert.equal(await todoCount(), 1);
-});
-
 test('AC-02: 인증 없이 등록·조회하면 401이다', async () => {
   assert.equal((await create(undefined, base)).status, 401);
   assert.equal((await req(`/api/todos/${randomUUID()}`)).status, 401);
@@ -371,11 +359,4 @@ test('BR-02: 내 카테고리로는 옮겨지고, 남의·없는 카테고리나
   assert.equal((await patch(a, 'abc', { title: 'x' })).status, 404);
   assert.equal((await patch(a, randomUUID(), { title: 'x' })).status, 404);
   assert.equal((await req(`/api/todos/${todo.id}`, { session: a })).body.title, base.title);
-});
-
-test('NFR-15: CSRF 헤더 없는 수정은 403이다', async () => {
-  const a = await register();
-  const todo = (await create(a, base)).body;
-  const res = await patch({ ...a, csrfToken: undefined }, todo.id, { completed: true });
-  assert.equal(res.status, 403);
 });

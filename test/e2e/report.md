@@ -139,3 +139,21 @@
 - 실제 15분 액세스 만료·7일 리프레시 만료는 쿠키 삭제·값 교체로 재현했다
 - Safari·Firefox, 영어·일본어, 라이트 밖 테마는 이번 범위에서 보지 않았다
 - 재테스트 중 한 번, 세션 만료 직후 재로그인에서 `/users/me`가 401로 돌아와 다시 로그인 화면으로 간 적이 있다. 같은 순서로 6회 다시 해 보았으나 재현되지 않았다(테스트가 쿠키를 직접 바꾸는 과정의 타이밍 문제로 추정, 원인 미확인)
+
+## 9. CSRF 제거 후 기능 재테스트 (2026-11-06)
+
+사용자 결정으로 CSRF 토큰(`csrf_token` 쿠키·`X-CSRF-Token` 헤더·`CSRF_SECRET`·`COOKIE_DOMAIN`·`CSRF_FAILED`)을 코드와 문서에서 제거한 뒤, 상태를 바꾸는 요청을 모두 다시 확인했다. 교차 사이트 요청은 이제 SameSite 쿠키와 CORS 허용 목록으로만 막는다(NFR-15).
+
+| 항목 | 결과 | 근거 |
+| ---- | ---- | ---- |
+| 자동 테스트 | 통과 | 백엔드 `npm test` 239/239(CSRF 전용 테스트 20개 삭제), 프런트엔드 Vitest 105/105, lint·타입 검사 통과 |
+| SC-01 가입 → 자동 로그인, 발급 쿠키 | 통과 | 쿠키는 `access_token`·`refresh_token` 2종, `csrf_token` 없음 |
+| SC-05·06·07·08 할일 등록·수정·완료·삭제 | 통과 | POST 201, PATCH 200, DELETE 204 ![](screenshots/NOCSRF-01-todo-updated.png) |
+| SC-13 카테고리 등록·이름 변경·삭제 (설정 화면) | 통과 | POST 201, PATCH 200, DELETE 204 ![](screenshots/NOCSRF-02-categories.png) |
+| FR-11 캘린더 사이드바 카테고리 등록 | 통과 | POST 201, 체크 목록에 추가됨 |
+| SC-14·SC-12 이름 변경, 시간대 `UTC`, 비밀번호 변경 | 통과 | PATCH 200 ×2, PUT 200 ![](screenshots/NOCSRF-03-settings.png) |
+| AC-22 액세스 쿠키 삭제 뒤 저장 → 자동 갱신 뒤 성공 | 통과 | refresh 200 뒤 POST 201, 쿠키 2종 재발급 |
+| SC-04 로그아웃 → SC-02 새 비밀번호로 로그인 | 통과 | 로그아웃 뒤 쿠키 0, 로그인 200 ![](screenshots/NOCSRF-04-relogin.png) |
+| 모든 상태 변경 요청에 `X-CSRF-Token` 헤더 없음, 403 응답 없음 | 통과 | 요청 15건 확인 |
+| NFR-15 다른 출처(`http://127.0.0.1:3000`)에서 쿠키를 실은 JSON POST | 통과(차단) | 사전 요청에 CORS 허용이 없어 브라우저가 본 요청을 보내지 않음, 카테고리 생성 안 됨 |
+| Swagger UI `/api/docs` | 통과 | 0.4.3, 18개 작업, 명세 오류 없음 |

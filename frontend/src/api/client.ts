@@ -27,12 +27,6 @@ export function setOnUnauthorized(cb: () => void): void {
   onUnauthorized = cb;
 }
 
-// 재전송 때 새 쿠키 값이 실리도록 보내는 순간마다 읽는다(DL-14)
-function readCsrfToken(): string | undefined {
-  const hit = document.cookie.split('; ').find((c) => c.startsWith('csrf_token='));
-  return hit?.slice('csrf_token='.length);
-}
-
 async function parse<T>(res: Response): Promise<T> {
   if (res.status === 204) return undefined as T;
   const isJson = res.headers.get('content-type')?.includes('application/json');
@@ -53,10 +47,6 @@ async function parse<T>(res: Response): Promise<T> {
 async function send<T>(method: Method, path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
-  if (method !== 'GET') {
-    const token = readCsrfToken();
-    if (token) headers['X-CSRF-Token'] = token;
-  }
   let res: Response;
   const started = performance.now();
   try {

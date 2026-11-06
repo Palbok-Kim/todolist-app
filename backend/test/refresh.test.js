@@ -7,7 +7,6 @@ import { pool } from '../src/db/pool.js';
 import { ERR } from '../src/errors.js';
 import { COOKIE_NAMES } from '../src/lib/cookies.js';
 import { reset, size } from '../src/lib/loginAttempts.js';
-import { createCsrfToken } from '../src/lib/csrfToken.js';
 import { startApp } from './helpers/api.js';
 import { resetDb } from './helpers/db.js';
 
@@ -91,32 +90,23 @@ const pushRevokedPast = (refresh, seconds) =>
     [sha256(refresh), seconds],
   );
 
-test('AC-22: 만료된 액세스 토큰과 유효한 리프레시 쿠키로 갱신하면 200이고 새 쿠키 3개로 상태 변경이 성공한다', async () => {
+test('AC-22: 만료된 액세스 토큰과 유효한 리프레시 쿠키로 갱신하면 200이고 새 쿠키 2개로 상태 변경이 성공한다', async () => {
   const { userId, refresh } = await signupUser();
-  const jti = 'expired-jti';
   const expired = jwt.sign({}, config.jwtSecret, {
     algorithm: 'HS384',
     subject: userId,
-    jwtid: jti,
+    jwtid: 'expired-jti',
     expiresIn: -10,
   });
-  const staleCsrf = createCsrfToken(jti);
-  const res = await refreshCall(
-    refresh,
-    `; ${COOKIE_NAMES.access}=${expired}; ${COOKIE_NAMES.csrf}=${staleCsrf}`,
-  );
+  const res = await refreshCall(refresh, `; ${COOKIE_NAMES.access}=${expired}`);
   assert.equal(res.status, 200);
   assert.deepEqual(res.body, { status: 'ok' });
   const fresh = cookiesOf(res.headers);
   for (const name of Object.values(COOKIE_NAMES)) assert.ok(fresh[name], name);
   assert.notEqual(fresh[COOKIE_NAMES.access], expired);
   assert.notEqual(fresh[COOKIE_NAMES.refresh], refresh);
-  assert.notEqual(fresh[COOKIE_NAMES.csrf], staleCsrf);
 
-  const session = {
-    cookie: `${COOKIE_NAMES.access}=${fresh[COOKIE_NAMES.access]}; ${COOKIE_NAMES.csrf}=${fresh[COOKIE_NAMES.csrf]}`,
-    csrfToken: fresh[COOKIE_NAMES.csrf],
-  };
+  const session = { cookie: `${COOKIE_NAMES.access}=${fresh[COOKIE_NAMES.access]}` };
   const patched = await call('/api/users/me', {
     method: 'PATCH',
     session,
@@ -206,7 +196,7 @@ test('OI-20: 같은 값으로 동시에 2건 갱신하면 1건만 성공하고, 
   assert.equal((await refreshCall(winner)).status, 200);
 });
 
-test('NFR-10: 갱신은 액세스 토큰·CSRF 없이 처리되고 실패를 반복해도 로그인 실패 횟수에 들어가지 않는다', async () => {
+test('NFR-10: 갱신은 액세스 토큰 없이 처리되고 실패를 반복해도 로그인 실패 횟수에 들어가지 않는다', async () => {
   const { refresh } = await signupUser();
   for (let i = 0; i < 12; i++) assertDenied(await refreshCall(`bad-${i}`));
   assert.deepEqual(size(), { ip: 0, email: 0 });

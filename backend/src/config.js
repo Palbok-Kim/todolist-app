@@ -62,7 +62,6 @@ function corsOrigins() {
   return list;
 }
 
-// 화면(app.example.com)이 CSRF 쿠키를 읽도록 상위 도메인(example.com)에 둔다. 개발은 localhost가 포트와 무관하게 공유된다
 // NFR-07: 기본은 액세스 15분·리프레시 7일. 리프레시가 액세스보다 길어야 갱신이 의미가 있다
 // 액세스는 분, 리프레시는 일 단위로 받고 내부에서는 초로 쓴다
 const accessTtlSeconds = positiveInt('ACCESS_TOKEN_TTL_MINUTES', 15) * 60;
@@ -70,20 +69,15 @@ const refreshTtlSeconds = positiveInt('REFRESH_TOKEN_TTL_DAYS', 7) * 86_400;
 if (refreshTtlSeconds <= accessTtlSeconds)
   fail('REFRESH_TOKEN_TTL_DAYS는 ACCESS_TOKEN_TTL_MINUTES보다 길어야 한다');
 
-const cookieDomain = env.COOKIE_DOMAIN || null;
-if (nodeEnv === 'production' && !cookieDomain) fail('production에서 COOKIE_DOMAIN이 없다');
-
 export const config = Object.freeze({
   nodeEnv,
   port: positiveInt('PORT', 3000),
   databaseUrl: required('DATABASE_URL'),
   pgPoolMax: positiveInt('PG_POOL_MAX', 10), // NFR-05
   jwtSecret: secret('JWT_SECRET'),
-  csrfSecret: secret('CSRF_SECRET'),
   trustProxy,
   cookieSecure: nodeEnv === 'production', // SO-04, NFR-07, NFR-09(운영은 HTTPS)
   corsOrigins: corsOrigins(),
-  cookieDomain,
   accessTtlSeconds,
   refreshTtlSeconds,
   refreshReuseGraceMs: 10_000, // SO-17, AQ-13

@@ -7,19 +7,18 @@ import { requestLogger } from './middleware/requestLogger.js';
 import { cors } from './middleware/cors.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { authenticate } from './middleware/authenticate.js';
-import { csrf } from './middleware/csrf.js';
 import { healthRouter } from './routes/health.routes.js';
 import { authRouter } from './routes/auth.routes.js';
 import { userRouter } from './routes/user.routes.js';
 import { categoryRouter } from './routes/category.routes.js';
 import { todoRouter } from './routes/todo.routes.js';
 
-// 미들웨어·라우트 순서(DL-05): 공개 라우트 → 인증 → CSRF → 보호 라우트 → 404 → 에러 핸들러
+// 미들웨어·라우트 순서(DL-05): 공개 라우트 → 인증 → 보호 라우트 → 404 → 에러 핸들러
 export const app = express();
 app.set('trust proxy', config.trustProxy); // SO-16
 
 app.use(requestLogger);
-app.use(cors); // 사전 요청은 인증·CSRF보다 먼저 응답한다
+app.use(cors); // 사전 요청은 인증보다 먼저 응답한다
 app.use(cookieParser());
 app.use(express.json());
 // 개발용 API 문서(swagger.yaml). API와 같은 출처(localhost:3000)에서 열어 Try it out을 쓴다. development에서만 연다
@@ -30,8 +29,8 @@ if (config.nodeEnv === 'development') {
 }
 app.use('/api', healthRouter);
 app.use('/api', authRouter);
-// DL-05: 인증이 CSRF보다 먼저. 액세스 쿠키 Path=/api라 /api 아래에만 적용
-app.use('/api', authenticate, csrf);
+// DL-05: 액세스 쿠키 Path=/api라 /api 아래에만 적용
+app.use('/api', authenticate);
 app.use('/api', userRouter);
 app.use('/api', categoryRouter);
 app.use('/api', todoRouter);

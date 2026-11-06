@@ -1,19 +1,19 @@
 # =============================================================================
 # TodoList API 명세 (OpenAPI 3.0.3)
 # -----------------------------------------------------------------------------
-# 현재 버전   : 0.4.2
+# 현재 버전   : 0.4.3
 # 작성자      : MinjeYu
 # 최종 수정일 : 2026-11-06
 #
 # 근거 문서 (단일 출처, docs/ 아래. 규칙 원문은 복사하지 않고 ID로 참조한다, PR-01)
-#   - 1-domain-definition.md  v0.12  (엔티티, 상태 판정, BR, UC, AC)
-#   - 2-prd.md                v0.16  (FR 우선순위, VR, ERR, NFR, 11장 후속 설계 항목)
-#   - 3-user-scenario.md      v0.7   (SC)
-#   - 4-wireframe.md          v0.12  (WF, 화면이 요구하는 데이터)
-#   - 5-project-principle.md  v0.23  (/api 접두사, CN-04~09, DL-05, SO-07, SO-12, SO-14)
-#   - 6-arch-diagram.md       v0.13  (AD-06~AD-14 시퀀스)
-#   - 7-erd.md                v0.6, schema.sql (필드 이름·타입·NULL·길이)
-#   - 8-plan.md               v0.59  (COM-01 범위, BE-12~BE-24 완료 조건)
+#   - 1-domain-definition.md  v0.13  (엔티티, 상태 판정, BR, UC, AC)
+#   - 2-prd.md                v0.17  (FR 우선순위, VR, ERR, NFR, 11장 후속 설계 항목)
+#   - 3-user-scenario.md      v0.8   (SC)
+#   - 4-wireframe.md          v0.13  (WF, 화면이 요구하는 데이터)
+#   - 5-project-principle.md  v0.24  (/api 접두사, CN-04~09, DL-05, SO-07, SO-12, SO-14)
+#   - 6-arch-diagram.md       v0.14  (AD-06~AD-14 시퀀스)
+#   - 7-erd.md                v0.7, schema.sql (필드 이름·타입·NULL·길이)
+#   - 8-plan.md               v0.60  (COM-01 범위, BE-12~BE-24 완료 조건)
 #
 # 이력 갱신 규칙: 이력을 추가할 때 이 주석 표와 info.description의 '변경 이력' 표를 둘 다 갱신하고, info.version은 SemVer로 올린다(호환 깨짐 major, 엔드포인트·필드 추가 minor, 설명 수정 patch).
 #
@@ -30,13 +30,14 @@
 # | 0.4.0 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: VR-02 비밀번호 규칙을 KISA 기준(3종류 이상 8자 이상 또는 2종류 이상 10자 이상, 최대 128자)으로 변경(PRD v0.13). `Password` minLength 15 → 8, 비밀번호 변경·로그인 설명의 '15자' 표현 수정 |
 # | 0.4.1 | 2026-11-05 | MinjeYu | 코드 리뷰 반영: 근거 문서 버전 갱신(실행 계획 v0.46) |
 # | 0.4.2 | 2026-11-06 | MinjeYu | 구현 대조 반영: 비밀번호 예시를 VR-02(KISA)에 맞는 값으로(가입·로그인·비밀번호 변경), `ErrorResponse.fields`는 ERR-01·ERR-04(409)에 있음, `currentPassword` maxLength 128, PATCH /users/me의 name은 구현됨(컷 가정 삭제), 개발 밖 `/api/docs`와 없는 `/api/*` 경로는 인증 전이라 401, 근거 문서 버전 갱신 |
+# | 0.4.3 | 2026-11-06 | MinjeYu | 사용자 결정(2026-11-06) 반영: CSRF 방어 제거. `csrfCookie`·`csrfHeader` 보안 스킴, 상태 변경 operation의 CSRF security·403 응답(`CsrfFailed`), ERR-08(`CSRF_FAILED`), 세션 쿠키 3종 → 2종, CORS `Allow-Headers`를 `Content-Type`으로, 근거 문서 버전 갱신 |
 #
 # 표기: description의 '가정 (설계서 COM-01에서 확정)'은 문서가 정하지 않아 이 명세에서 새로 둔 값이다.
 # =============================================================================
 openapi: 3.0.3
 info:
   title: TodoList API
-  version: 0.4.2
+  version: 0.4.3
   contact:
     name: MinjeYu
   description: |
@@ -59,6 +60,7 @@ info:
     | 0.4.0 | 2026-11-05 | MinjeYu | 사용자 결정(2026-11-05) 반영: VR-02 비밀번호 규칙을 KISA 기준(3종류 이상 8자 이상 또는 2종류 이상 10자 이상, 최대 128자)으로 변경(PRD v0.13). `Password` minLength 15 → 8, 비밀번호 변경·로그인 설명의 '15자' 표현 수정 |
     | 0.4.1 | 2026-11-05 | MinjeYu | 코드 리뷰 반영: 근거 문서 버전 갱신(실행 계획 v0.46) |
     | 0.4.2 | 2026-11-06 | MinjeYu | 구현 대조 반영: 비밀번호 예시를 VR-02(KISA)에 맞는 값으로(가입·로그인·비밀번호 변경), `ErrorResponse.fields`는 ERR-01·ERR-04(409)에 있음, `currentPassword` maxLength 128, PATCH /users/me의 name은 구현됨(컷 가정 삭제), 개발 밖 `/api/docs`와 없는 `/api/*` 경로는 인증 전이라 401, 근거 문서 버전 갱신 |
+    | 0.4.3 | 2026-11-06 | MinjeYu | 사용자 결정(2026-11-06) 반영: CSRF 방어 제거. `csrfCookie`·`csrfHeader` 보안 스킴, 상태 변경 operation의 CSRF security·403 응답(`CsrfFailed`), ERR-08(`CSRF_FAILED`), 세션 쿠키 3종 → 2종, CORS `Allow-Headers`를 `Content-Type`으로, 근거 문서 버전 갱신 |
 
     이력 갱신 규칙: 파일 상단 주석 표와 이 표를 함께 갱신한다. SemVer(호환 깨짐 major, 엔드포인트·필드 추가 minor, 설명 수정 patch).
 
@@ -72,9 +74,8 @@ info:
     - **오류**: 모든 오류는 `{ "error": { "code", "message", "fields?" } }`(PRD 4.3). 클라이언트는 `error.code`로만 분기한다(PR-08). `message`·`fields[].message`는 한국어다(CN-08).
     - **목록**: 페이지네이션 없이 전체를 `{ "items": [...] }`로 돌려준다(OI-15). 필드로 감싼 이유는 나중에 페이지 정보를 하위 호환으로 추가하기 위함이다(가정).
     - **인증**: 액세스 토큰(JWT HS384, 기본 15분 `ACCESS_TOKEN_TTL_MINUTES`)은 HttpOnly 쿠키, 리프레시 토큰(불투명 값, 기본 7일 슬라이딩 `REFRESH_TOKEN_TTL_DAYS`, 회전·재사용 감지·폐기 후 10초 유예)은 경로 한정 HttpOnly 쿠키다(NFR-07). 요청 헤더 `Authorization`은 쓰지 않는다.
-    - **CORS**: 화면과 API는 다른 출처다(운영은 같은 사이트의 다른 서브도메인). 환경 변수 `CORS_ORIGINS`에 적은 출처만 `Access-Control-Allow-Origin`(그 출처 그대로)·`Access-Control-Allow-Credentials: true`를 받는다. `*`는 쓰지 않는다. 사전 요청(OPTIONS)은 인증·CSRF 전에 204로 응답하고 허용 출처에만 `GET, POST, PUT, PATCH, DELETE`와 `Content-Type, X-CSRF-Token` 헤더를 허용한다. 클라이언트는 `credentials: 'include'`로 호출한다.
-    - **CSRF**: POST·PUT·PATCH·DELETE는 Signed Double-Submit(쿠키 값 = 헤더 값, HMAC 서명, 현재 JWT `jti` 연계)을 요구한다(NFR-15). 예외: 회원가입·로그인·토큰 갱신·로그아웃.
-    - **검사 순서**: 인증(401 ERR-02) → CSRF(403 ERR-08) → 검증(400) → 소유권(404)(DL-05, AD-08). 예외: `/todos/{todoId}`의 GET·PATCH·DELETE는 경로 ID 형식 오류를 본문 검증보다 먼저 404로 응답한다. 액세스 토큰이 만료된 상태 변경 요청은 ERR-02이고 저장되지 않으므로, 클라이언트는 `POST /auth/refresh` 뒤 원 요청을 한 번만 재전송한다(DL-14).
+    - **CORS**: 화면과 API는 다른 출처다(운영은 같은 사이트의 다른 서브도메인). 환경 변수 `CORS_ORIGINS`에 적은 출처만 `Access-Control-Allow-Origin`(그 출처 그대로)·`Access-Control-Allow-Credentials: true`를 받는다. `*`는 쓰지 않는다. 사전 요청(OPTIONS)은 인증 전에 204로 응답하고 허용 출처에만 `GET, POST, PUT, PATCH, DELETE`와 `Content-Type` 헤더를 허용한다. 클라이언트는 `credentials: 'include'`로 호출한다. 교차 사이트 요청 방어는 쿠키의 SameSite와 이 CORS 허용 목록만으로 한다(JSON `Content-Type`이 사전 요청을 강제, NFR-15).
+    - **검사 순서**: 인증(401 ERR-02) → 검증(400) → 소유권(404)(DL-05, AD-08). 예외: `/todos/{todoId}`의 GET·PATCH·DELETE는 경로 ID 형식 오류를 본문 검증보다 먼저 404로 응답한다. 액세스 토큰이 만료된 상태 변경 요청은 ERR-02이고 저장되지 않으므로, 클라이언트는 `POST /auth/refresh` 뒤 원 요청을 한 번만 재전송한다(DL-14).
     - **ERR-02 클라이언트 처리**: 보호 API가 401을 받으면 갱신을 한 번(single-flight) 시도하고, 성공·실패와 관계없이 원 요청을 한 번만 재전송한 뒤에도 401이면 로그인을 요구한다(PRD 4.3 ERR-02, NFR-07, DL-14).
 
     ## 할일 상태(status)
@@ -101,7 +102,6 @@ info:
     | ERR-05 | `NOT_FOUND` | 404 | 없는 리소스, 다른 사용자의 리소스, 다른 사용자의(또는 없는) categoryId, uuid 형식 오류 |
     | ERR-06 | `TOO_MANY_REQUESTS` | 429 | 로그인 실패 제한 중의 로그인 시도 |
     | ERR-07 | `INTERNAL_ERROR` | 500 | 서버 내부 오류(내부 정보 미포함) |
-    | ERR-08 | `CSRF_FAILED` | 403 | 상태 변경 요청의 CSRF 검증 실패 |
 
     ## 새로 둔 가정 (설계서 COM-01에서 확정)
 
@@ -109,10 +109,8 @@ info:
     |------|--------------|------|
     | 개발 서버 주소 | `http://localhost:3000/api` (백엔드 직접 호출, 화면 `http://localhost:5173`에서 CORS) | PRD 6장, SO-08 |
     | 경로 | `/auth/*`, `/users/me`, `/users/me/password`, `/categories`, `/todos`, `/calendar/todos`, `/health` | PQ-05, SO-14 |
-    | 쿠키 이름 | `access_token`, `refresh_token`, `csrf_token` | PRD 11장, SO-12 |
-    | CSRF 헤더 이름 | `X-CSRF-Token` | PRD 11장 |
-    | 쿠키 `Path` | 액세스 `/api`, 리프레시 `/api/auth`(인증 API 공통 접두사, OI-19), CSRF `/`(화면 스크립트가 읽어야 함) | NFR-07, OI-19 |
-    | CSRF 쿠키 `SameSite` | `Lax` | 문서 없음 |
+    | 쿠키 이름 | `access_token`, `refresh_token` | PRD 11장, SO-12 |
+    | 쿠키 `Path` | 액세스 `/api`, 리프레시 `/api/auth`(인증 API 공통 접두사, OI-19) | NFR-07, OI-19 |
     | 캘린더 파라미터 이름 | `from`, `to` (8-plan.md BE-20) | PRD 11장, AQ-07 |
     | 오류 `fields` 형태 | `[{ "field", "message" }]` | PRD 4.3, CN-08 |
     | 성공 본문 | 로그아웃·갱신·비밀번호 변경은 200 `{ "status": "ok" }`, 삭제는 204 | 8-plan.md BE-13·BE-24(200) |
@@ -128,7 +126,6 @@ info:
     - **SQ-05 할일 수정의 categoryId=null**: BR-04(미지정 시 기본)는 UC-05·UC-07 모두 적용이라고 하나, 부분 수정(PATCH)에서 '미지정'이 '생략(유지)'인지 'null(기본으로 이동)'인지 문서에 없다. 추천: 생략은 유지, null은 허용하지 않음(400). 화면 드롭다운은 빈 선택지가 없다(PRD 7장).
     - **SQ-06 카테고리 목록 정렬**: WF-08·WF-04 드롭다운·WF-03 필터의 순서가 문서에 없다. 추천: 기본 카테고리 먼저, 그다음 `createdAt` 오름차순.
     - **SQ-07 헬스 실패 응답**: 확정(사용자 요청 2026-11-05, SO-14 v0.11). DB 연결 실패는 503 `{ "status": "error", "db": "down" }`이고 ERR 형식이 아니다. 기동 확인은 `curl`로 2xx만 성공으로 본다(9-design.md D-07).
-    - **SQ-08 CSRF·액세스 쿠키의 Path·SameSite**: NFR-07·SO-12는 리프레시 쿠키 Path만 한정하고 CSRF 쿠키의 `SameSite`·`Path`는 정하지 않았다. 추천: 표의 가정값.
     - **SQ-09 PRD 4.3 표의 구분**: ERR 표 전체가 '가정'이지만 8-plan.md의 테스트가 code·HTTP 값에 의존한다. 추천: 설계서에서 확정으로 전환.
   license:
     name: Proprietary
@@ -159,14 +156,14 @@ paths:
       operationId: signUp
       summary: 회원가입 (자동 로그인)
       description: |
-        회원가입 후 로그인과 같이 액세스·리프레시·CSRF 쿠키를 발급해 자동 로그인한다(NFR-07 (5)).
+        회원가입 후 로그인과 같이 액세스·리프레시 쿠키를 발급해 자동 로그인한다(NFR-07 (5)).
         User + 기본 카테고리 + 리프레시 토큰 행을 한 트랜잭션으로 만든다(BR-03, DL-08, AQ-12).
-        - 인증·CSRF 대상이 아니다(NFR-15, DL-05). 요청 횟수 제한 없음(R-11).
+        - 인증 대상이 아니다(DL-05). 요청 횟수 제한 없음(R-11).
         - email은 소문자로 정규화해 저장하고 대소문자 무시로 중복 검사한다(VR-01). 중복은 409.
         - `timezone`이 없거나 VR-04를 통과하지 못하면 오류 없이 `Asia/Seoul`로 저장한다(PRD 4.2, 가입 때만).
         - 응답 본문은 사용자 정보이고 `passwordHash`는 없다(PRD 11장 현재 사용자 조회).
 
-        경로는 가정 (설계서 COM-01에서 확정). 근거: FR-01, UC-01, AC-01, BR-03, VR-01~04, NFR-06, NFR-07, NFR-15, AD-06, BE-12.
+        경로는 가정 (설계서 COM-01에서 확정). 근거: FR-01, UC-01, AC-01, BR-03, VR-01~04, NFR-06, NFR-07, AD-06, BE-12.
       x-priority: P0
       x-source-ids: [FR-01, UC-01, AC-01, BR-03, VR-01, VR-02, VR-03, VR-04, NFR-06, NFR-07, NFR-15, ERR-01, ERR-04, OI-10, R-11, AD-06, AQ-12, BE-12]
       security: []
@@ -185,7 +182,7 @@ paths:
                   timezone: Asia/Seoul
       responses:
         '201':
-          description: 가입 성공. 세션 쿠키 3종을 발급한다.
+          description: 가입 성공. 세션 쿠키 2종을 발급한다.
           headers:
             Set-Cookie:
               $ref: '#/components/headers/SetCookieSession'
@@ -214,7 +211,7 @@ paths:
         - IP별(15분 10회)·계정별(15분 5회) 실패가 한도에 이르면 다음 시도부터 429. 제한 중에는 비밀번호를 검증하지 않으므로 올바른 비밀번호도 거부된다(NFR-10, AC-15). 수치는 가정.
         - 없는 email과 틀린 비밀번호는 같은 401 `INVALID_CREDENTIALS`와 같은 문구다(ERR-03, AC-14).
         - 성공하면 새 계열의 리프레시 토큰을 발급하고 그 사용자의 만료 행을 정리한다(OI-21). 성공은 실패 횟수에 넣지 않는다.
-        - 인증·CSRF 대상이 아니다(NFR-15).
+        - 인증 대상이 아니다.
 
         경로는 가정 (설계서 COM-01에서 확정). 근거: FR-01, UC-02, AC-14, AC-15, NFR-07, NFR-10, NFR-16, AD-07, BE-13.
       x-priority: P0
@@ -233,7 +230,7 @@ paths:
                   password: Correct horse 1!
       responses:
         '200':
-          description: 로그인 성공. 세션 쿠키 3종을 발급한다.
+          description: 로그인 성공. 세션 쿠키 2종을 발급한다.
           headers:
             Set-Cookie:
               $ref: '#/components/headers/SetCookieSession'
@@ -259,9 +256,9 @@ paths:
       operationId: logOut
       summary: 로그아웃
       description: |
-        토큰이 없거나 만료돼도 항상 성공하고 액세스·리프레시·CSRF 쿠키를 모두 삭제한다(BR-01, AC-16).
+        토큰이 없거나 만료돼도 항상 성공하고 액세스·리프레시 쿠키를 모두 삭제한다(BR-01, AC-16).
         리프레시 쿠키가 있으면 그 토큰 계열을 서버에서 폐기한다. 폐기에 실패해도 서버 로그만 남기고 쿠키는 지우며 성공으로 응답한다.
-        - 공개 라우트이고 CSRF 대상이 아니다(NFR-15, DL-05). 강제 로그아웃 CSRF는 수용한다.
+        - 공개 라우트다(DL-05).
         - 잔여 위험: 액세스 토큰은 서버가 즉시 무효화하지 않으므로 탈취된 경우 만료(최대 15분) 전까지 쓰일 수 있다(R-08).
 
         경로는 가정 (설계서 COM-01에서 확정). 근거: UC-02, BR-01, BR-16, AC-16, NFR-07, NFR-15, AD-13, BE-13.
@@ -272,7 +269,7 @@ paths:
         - {}
       responses:
         '200':
-          description: 항상 성공. 세 쿠키를 삭제한다.
+          description: 항상 성공. 두 쿠키를 삭제한다.
           headers:
             Set-Cookie:
               $ref: '#/components/headers/SetCookieClear'
@@ -290,8 +287,8 @@ paths:
       operationId: refreshSession
       summary: 토큰 갱신 (리프레시 토큰 회전)
       description: |
-        액세스 토큰 없이 리프레시 쿠키만으로 호출한다. 인증 미들웨어 앞의 공개 라우트이고 CSRF 대상이 아니다(NFR-07 (4), NFR-15, DL-05).
-        - 성공: 이전 리프레시 토큰을 폐기하고 같은 계열의 새 토큰(만료 지금부터 7일)과 새 액세스 토큰, 새 `jti`에 묶은 새 CSRF 토큰을 쿠키로 발급한다(BR-16, OI-18). 응답 본문에는 토큰을 넣지 않는다.
+        액세스 토큰 없이 리프레시 쿠키만으로 호출한다. 인증 미들웨어 앞의 공개 라우트다(NFR-07 (4), DL-05).
+        - 성공: 이전 리프레시 토큰을 폐기하고 같은 계열의 새 토큰(만료 지금부터 7일)과 새 액세스 토큰을 쿠키로 발급한다(BR-16, OI-18). 응답 본문에는 토큰을 넣지 않는다.
         - 401 `UNAUTHORIZED`(ERR-02): 쿠키 없음, 모르는 값, 만료, 폐기. 회전으로 폐기된 지 10초(설정값) 이내의 값은 계열을 유지한 채 거부만 하고, 10초를 넘긴 값은 재사용으로 보고 계열 전체를 폐기한 뒤 거부한다(OI-20, AC-24). 실패 응답에서 리프레시 쿠키는 지우지 않는다(AD-14).
         - 같은 값의 동시 갱신은 하나만 성공하고 나머지는 401이다. 클라이언트는 갱신 요청 자체를 재시도하지 않는다(DL-14).
         - 로그인 실패 제한(NFR-10) 대상이 아니다.
@@ -303,7 +300,7 @@ paths:
         - refreshTokenCookie: []
       responses:
         '200':
-          description: 갱신 성공. 세 쿠키를 새 값으로 재발급한다.
+          description: 갱신 성공. 두 쿠키를 새 값으로 재발급한다.
           headers:
             Set-Cookie:
               $ref: '#/components/headers/SetCookieSession'
@@ -359,8 +356,6 @@ paths:
       x-source-ids: [FR-03, UC-03, AC-13, AC-19, BR-15, VR-03, VR-04, OI-03, PQ-06, AD-12, BE-15, BE-23]
       security:
         - accessTokenCookie: []
-          csrfCookie: []
-          csrfHeader: []
       requestBody:
         required: true
         content:
@@ -396,8 +391,6 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/CsrfFailed'
         '500':
           $ref: '#/components/responses/InternalError'
 
@@ -410,15 +403,13 @@ paths:
         PRD 4.4. FR-03의 P1 부분이며 컷 라인 1에서 가장 먼저 빠진다(PRD 8장).
         - 현재 비밀번호가 틀리면 400 `VALIDATION_ERROR`이고 `fields`의 필드는 `currentPassword`다(AC-21). 이 실패는 로그인 실패 횟수에 넣지 않는다.
         - 새 비밀번호는 VR-02(`Password` 스키마). 두 값 모두 공백을 제거하지 않는다.
-        - 성공하면 그 사용자의 모든 리프레시 토큰을 폐기하고 현재 세션에 새 액세스·리프레시·CSRF 쿠키를 발급해 현재 기기의 로그인을 유지한다(AC-20, BR-16). 다른 기기는 액세스 토큰 만료(최대 15분) 뒤 로그인을 요구받는다(R-08).
+        - 성공하면 그 사용자의 모든 리프레시 토큰을 폐기하고 현재 세션에 새 액세스·리프레시 쿠키를 발급해 현재 기기의 로그인을 유지한다(AC-20, BR-16). 다른 기기는 액세스 토큰 만료(최대 15분) 뒤 로그인을 요구받는다(R-08).
 
         경로·메서드는 가정 (설계서 COM-01에서 확정). 근거: FR-03, UC-03, AC-20, AC-21, PRD 4.4, VR-02, NFR-06, BR-16, BE-23.
       x-priority: P1
       x-source-ids: [FR-03, UC-03, AC-20, AC-21, OI-03, VR-02, NFR-06, NFR-07, BR-16, R-08, BE-23]
       security:
         - accessTokenCookie: []
-          csrfCookie: []
-          csrfHeader: []
       requestBody:
         required: true
         content:
@@ -432,7 +423,7 @@ paths:
                   newPassword: 'New  passphrase 2 '
       responses:
         '200':
-          description: 변경 성공. 현재 세션에 새 쿠키 3종을 발급한다.
+          description: 변경 성공. 현재 세션에 새 쿠키 2종을 발급한다.
           headers:
             Set-Cookie:
               $ref: '#/components/headers/SetCookieSession'
@@ -461,8 +452,6 @@ paths:
                           message: 현재 비밀번호가 올바르지 않습니다.
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/CsrfFailed'
         '500':
           $ref: '#/components/responses/InternalError'
 
@@ -516,8 +505,6 @@ paths:
       x-source-ids: [FR-02, UC-04, BR-14, BR-15, VR-07, ERR-01, ERR-04, BE-21]
       security:
         - accessTokenCookie: []
-          csrfCookie: []
-          csrfHeader: []
       requestBody:
         required: true
         content:
@@ -542,8 +529,6 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/CsrfFailed'
         '409':
           $ref: '#/components/responses/Conflict'
         '500':
@@ -566,8 +551,6 @@ paths:
       x-source-ids: [FR-02, UC-04, AC-03, BR-02, BR-05, BR-14, BR-15, VR-07, BE-22]
       security:
         - accessTokenCookie: []
-          csrfCookie: []
-          csrfHeader: []
       requestBody:
         required: true
         content:
@@ -596,8 +579,6 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/CsrfFailed'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
@@ -620,8 +601,6 @@ paths:
       x-source-ids: [FR-02, UC-04, AC-03, AC-04, BR-02, BR-05, BR-06, OI-04, AQ-08, AD-10, BE-22]
       security:
         - accessTokenCookie: []
-          csrfCookie: []
-          csrfHeader: []
       responses:
         '204':
           description: 삭제 성공 (본문 없음)
@@ -629,8 +608,6 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/CsrfFailed'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -711,8 +688,6 @@ paths:
       x-source-ids: [FR-02, FR-04, UC-05, AC-05, AC-06, BR-02, BR-04, BR-07, BR-08, BR-09, BR-15, VR-05, VR-06, BE-17]
       security:
         - accessTokenCookie: []
-          csrfCookie: []
-          csrfHeader: []
       requestBody:
         required: true
         content:
@@ -747,8 +722,6 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/CsrfFailed'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -799,8 +772,6 @@ paths:
       x-source-ids: [FR-07, UC-07, AC-10, AC-17, BR-02, BR-04, BR-07, BR-08, BR-09, BR-13, BR-15, VR-05, VR-06, OI-07, BE-18]
       security:
         - accessTokenCookie: []
-          csrfCookie: []
-          csrfHeader: []
       requestBody:
         required: true
         content:
@@ -846,8 +817,6 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/CsrfFailed'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -864,15 +833,11 @@ paths:
       x-source-ids: [FR-06, UC-08, AC-11, BR-02, BR-10, BE-17]
       security:
         - accessTokenCookie: []
-          csrfCookie: []
-          csrfHeader: []
       responses:
         '204':
           description: 삭제 성공 (본문 없음)
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/CsrfFailed'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -985,39 +950,23 @@ components:
         불투명 리프레시 토큰(32바이트 이상 무작위, DB에는 SHA-256 해시만, 기본 7일 슬라이딩). `HttpOnly; SameSite=Strict; Path=/api/auth; Max-Age=604800`(기본값), 운영 HTTPS에서 `Secure`.
         `Path`는 갱신·로그아웃을 모두 포함하는 인증 API 공통 접두사 하나이며 그 아래의 회원가입·로그인 요청에도 전송되지만 쓰지 않는다(NFR-07, OI-19).
         토큰 갱신과 로그아웃만 읽는다. 쿠키 이름과 `/api/auth` 값은 가정 (설계서 COM-01에서 확정).
-    csrfCookie:
-      type: apiKey
-      in: cookie
-      name: csrf_token
-      description: |
-        Signed Double-Submit의 쿠키 쪽 값(현재 JWT `jti`에 묶어 서버 비밀 키로 HMAC 서명). HttpOnly가 아니다. `SameSite=Lax; Path=/; Max-Age=900`(액세스 수명과 같음, NFR-15, PRD 11장). `COOKIE_DOMAIN`을 설정하면(운영 필수) `Domain=<COOKIE_DOMAIN>`을 붙여 화면 서브도메인의 JS가 읽게 한다. 액세스·리프레시 쿠키에는 Domain이 없다(API 호스트 전용).
-        로그인·회원가입·토큰 갱신·비밀번호 변경 때 발급, 로그아웃 때 삭제. 쿠키 이름·`SameSite`·`Path`는 가정 (설계서 COM-01에서 확정, SQ-08).
-    csrfHeader:
-      type: apiKey
-      in: header
-      name: X-CSRF-Token
-      description: |
-        상태 변경 요청(POST·PUT·PATCH·DELETE)에 `csrf_token` 쿠키 값을 그대로 담는다. 쿠키·헤더 일치, 서명, 현재 JWT `jti` 연계 중 하나라도 틀리면 403 `CSRF_FAILED`(ERR-08). 인증(ERR-02)을 먼저 검사한다(DL-05).
-        회원가입·로그인·토큰 갱신·로그아웃은 대상이 아니다. 헤더 이름은 가정 (설계서 COM-01에서 확정).
 
   headers:
     SetCookieSession:
       description: |
-        세션 쿠키 3종을 발급한다(Set-Cookie 헤더 3개). 운영 HTTPS에서는 세 쿠키 모두 `Secure`를 붙인다(로컬 HTTP 제외, NFR-07, SO-04).
+        세션 쿠키 2종을 발급한다(Set-Cookie 헤더 2개). 운영 HTTPS에서는 두 쿠키 모두 `Secure`를 붙인다(로컬 HTTP 제외, NFR-07, SO-04).
         - `access_token=<JWT>; Path=/api; HttpOnly; SameSite=Lax; Max-Age=900`
         - `refresh_token=<opaque>; Path=/api/auth; HttpOnly; SameSite=Strict; Max-Age=604800`
-        - `csrf_token=<signed>; Path=/; SameSite=Lax; Max-Age=900` (+ `Domain=<COOKIE_DOMAIN>`, 설정 시)
 
-        이름·Path(리프레시 제외)·CSRF SameSite는 가정 (설계서 COM-01에서 확정). Max-Age는 PRD 11장의 기본값(액세스·CSRF 15분, 리프레시 7일)이며 `ACCESS_TOKEN_TTL_MINUTES`·`REFRESH_TOKEN_TTL_DAYS`로 바꿀 수 있다.
+        이름·Path(리프레시 제외)는 가정 (설계서 COM-01에서 확정). Max-Age는 PRD 11장의 기본값(액세스 15분, 리프레시 7일)이며 `ACCESS_TOKEN_TTL_MINUTES`·`REFRESH_TOKEN_TTL_DAYS`로 바꿀 수 있다.
       schema:
         type: string
       example: access_token=eyJhbGciOiJIUzM4NCJ9...; Path=/api; HttpOnly; SameSite=Lax; Max-Age=900
     SetCookieClear:
       description: |
-        세션 쿠키 3종을 삭제한다(발급 때와 같은 이름·Path, 과거 `Expires`, BR-01, NFR-15). Express 5 `res.clearCookie`는 `Max-Age`를 보내지 않는다.
+        세션 쿠키 2종을 삭제한다(발급 때와 같은 이름·Path, 과거 `Expires`, BR-01). Express 5 `res.clearCookie`는 `Max-Age`를 보내지 않는다.
         - `access_token=; Path=/api; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
         - `refresh_token=; Path=/api/auth; HttpOnly; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
-        - `csrf_token=; Path=/; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT` (+ 발급 때와 같은 `Domain`, 설정 시)
       schema:
         type: string
       example: refresh_token=; Path=/api/auth; HttpOnly; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT
@@ -1346,7 +1295,7 @@ components:
 
     ErrorCode:
       type: string
-      enum: [VALIDATION_ERROR, UNAUTHORIZED, INVALID_CREDENTIALS, CONFLICT, NOT_FOUND, TOO_MANY_REQUESTS, INTERNAL_ERROR, CSRF_FAILED]
+      enum: [VALIDATION_ERROR, UNAUTHORIZED, INVALID_CREDENTIALS, CONFLICT, NOT_FOUND, TOO_MANY_REQUESTS, INTERNAL_ERROR]
       description: PRD 4.3 ERR-01~08의 code. 백엔드 `errors.js`, 프런트 `api/errorCodes.ts`의 상수와 같다(CN-05).
 
     FieldError:
@@ -1422,18 +1371,6 @@ components:
                 error:
                   code: INVALID_CREDENTIALS
                   message: 이메일 또는 비밀번호가 올바르지 않습니다.
-    CsrfFailed:
-      description: ERR-08 `CSRF_FAILED` - CSRF 헤더 없음, 쿠키·헤더 불일치, 서명 오류, 다른 JWT에 묶인 토큰(NFR-15)
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          examples:
-            csrf:
-              value:
-                error:
-                  code: CSRF_FAILED
-                  message: 요청을 확인할 수 없습니다. 페이지를 새로고침해 주세요.
     NotFound:
       description: ERR-05 `NOT_FOUND` - 없는 리소스, 다른 사용자의 리소스, 다른 사용자의(또는 없는) categoryId, uuid 형식 오류. 경우를 구분하지 않는다(BR-02, SO-07).
       content:

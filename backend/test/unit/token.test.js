@@ -12,7 +12,6 @@ import {
   hashRefreshToken,
   issueSessionTokens,
 } from '../../src/lib/token.js';
-import { createCsrfToken, verifyCsrfToken } from '../../src/lib/csrfToken.js';
 
 const USER_ID = '11111111-2222-4333-8444-555555555555';
 const b64 = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64url');
@@ -115,7 +114,6 @@ test('NFR-07: issueSessionTokens는 서로 연결된 세션 토큰 묶음을 돌
   const s = issueSessionTokens(USER_ID, now);
   assert.deepEqual(Object.keys(s).sort(), [
     'accessToken',
-    'csrfToken',
     'jti',
     'refreshExpiresAt',
     'refreshToken',
@@ -124,45 +122,4 @@ test('NFR-07: issueSessionTokens는 서로 연결된 세션 토큰 묶음을 돌
   assert.equal(s.refreshExpiresAt, new Date(now + 604800000).toISOString());
   assert.deepEqual(verifyAccessToken(s.accessToken), { sub: USER_ID, jti: s.jti });
   assert.equal(hashRefreshToken(s.refreshToken), s.refreshTokenHash);
-  assert.equal(verifyCsrfToken({ cookie: s.csrfToken, header: s.csrfToken, jti: s.jti }), true);
-});
-
-test('NFR-15: 정상 CSRF 토큰은 통과한다', () => {
-  const t = createCsrfToken('jti-1');
-  assert.equal(verifyCsrfToken({ cookie: t, header: t, jti: 'jti-1' }), true);
-});
-
-test('NFR-15: 서명이 변조된 CSRF 토큰은 실패한다', () => {
-  const [nonce, sig] = createCsrfToken('jti-1').split('.');
-  const bad = `${nonce}.${tamper(sig)}`;
-  assert.equal(verifyCsrfToken({ cookie: bad, header: bad, jti: 'jti-1' }), false);
-});
-
-test('NFR-15: 다른 JWT 식별자로 만든 CSRF 토큰은 실패한다', () => {
-  const t = createCsrfToken('jti-other');
-  assert.equal(verifyCsrfToken({ cookie: t, header: t, jti: 'jti-1' }), false);
-});
-
-test('NFR-15: 쿠키와 헤더가 다르면 실패한다', () => {
-  const a = createCsrfToken('jti-1');
-  const b = createCsrfToken('jti-1');
-  assert.equal(verifyCsrfToken({ cookie: a, header: b, jti: 'jti-1' }), false);
-});
-
-test('NFR-15: 헤더가 없으면 실패한다', () => {
-  const t = createCsrfToken('jti-1');
-  assert.equal(verifyCsrfToken({ cookie: t, header: undefined, jti: 'jti-1' }), false);
-});
-
-test('NFR-15: 점으로 정확히 두 조각이 아니면 실패한다', () => {
-  for (const v of ['noDotValue', 'a.b.c']) {
-    assert.equal(verifyCsrfToken({ cookie: v, header: v, jti: 'jti-1' }), false);
-  }
-});
-
-test('NFR-15: 서명 길이가 다르면 실패한다', () => {
-  const [nonce, sig] = createCsrfToken('jti-1').split('.');
-  for (const v of [`${nonce}.${sig}AA`, `${nonce}.${sig.slice(0, -4)}`]) {
-    assert.equal(verifyCsrfToken({ cookie: v, header: v, jti: 'jti-1' }), false);
-  }
 });

@@ -16,8 +16,10 @@
 | 0.10 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: 6장 `VITE_API_BASE_URL`을 운영 빌드 필수로(없으면 빌드 실패), 개발 기본값은 개발 서버에서만, 값 위치는 `frontend/.env`·예시 `frontend/.env.example` |
 | 0.11 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: 6장 환경 변수 파일을 디렉토리별로(`backend/.env`·`frontend/.env`, 루트는 공용 도구 키만, SO-02 v0.20) |
 | 0.12 | 2026-11-06 | MinjeYu | 최종 코드 기준 일치화: 2장에 표에 없는 `/api/*` 경로(인증 전 401, 인증 후 404)와 개발 전용 `/api/docs` 명시, 리프레시 갱신 만료를 설정값(`REFRESH_TOKEN_TTL_DAYS`, 기본 7일)으로. API 표·결정·검사 순서는 코드와 일치 확인 |
+| 0.13 | 2026-11-06 | MinjeYu | 사용자 결정(2026-11-06) 반영: CSRF 방어 제거. 2장 API 표에서 CSRF 열·403 삭제와 세션 쿠키 3종 → 2종, 검사 순서에서 CSRF 단계 삭제, 5.1 `csrf_token` 쿠키·`Domain` 삭제, 5.3 `CSRF_SECRET` 삭제, 5.4를 'SameSite + CORS 허용 목록뿐'으로 교체, 6장 `CSRF_SECRET`·`COOKIE_DOMAIN` 행 삭제와 CORS `Allow-Headers: Content-Type`. 단일 출처 머리말의 참조 버전 갱신 |
+| 0.14 | 2026-11-06 | MinjeYu | 단일 출처 참조를 ERD v0.8·아키텍처 다이어그램 v0.15에 맞춤(ERD·`schema.sql` 표기 일치화, 스키마 변경 없음) |
 
-**단일 출처 원칙**: 규칙 원문은 도메인 정의서 v0.10, PRD v0.13, 구조 설계 원칙 v0.14, 아키텍처 다이어그램 v0.11, ERD v0.6에만 있고 이 문서는 ID로 참조한다(PR-01). 이 문서는 PRD 11장이 넘긴 **구현 값·이름·절차**만 정한다. 요청·응답 필드의 상세 스키마는 [`backend/swagger.yaml`](../backend/swagger.yaml)이 단일 출처이며, 이 문서의 2장은 경로·메서드·상태 코드 목록이다.
+**단일 출처 원칙**: 규칙 원문은 도메인 정의서 v0.13, PRD v0.17, 구조 설계 원칙 v0.24, 아키텍처 다이어그램 v0.15, ERD v0.8에만 있고 이 문서는 ID로 참조한다(PR-01). 이 문서는 PRD 11장이 넘긴 **구현 값·이름·절차**만 정한다. 요청·응답 필드의 상세 스키마는 [`backend/swagger.yaml`](../backend/swagger.yaml)이 단일 출처이며, 이 문서의 2장은 경로·메서드·상태 코드 목록이다.
 
 **구분**: 이 문서의 결정은 모두 위임 결정(2026-11-04)에 따른 **확정**이다. 측정 후 조정할 수 있는 값은 '조정 가능'으로 표시한다.
 
@@ -39,32 +41,32 @@
 
 ## 2. API 엔드포인트
 
-필드 상세는 `swagger.yaml`. 'CSRF'가 예인 요청은 `X-CSRF-Token` 헤더가 필요하다. 모든 보호 API는 인증 실패 시 401(ERR-02), 서버 오류 시 500(ERR-07)이 가능하다. 표에 없는 `/api/*` 경로는 인증 미들웨어 뒤에서 처리되므로 인증 실패면 401, 인증되면 404(ERR-05)다. 개발 환경(`NODE_ENV=development`)에서만 `GET /api/docs`(Swagger UI)와 `GET /api/docs/swagger.yaml`을 연다(그 밖의 환경에서는 위 규칙대로 401).
+필드 상세는 `swagger.yaml`. 모든 보호 API는 인증 실패 시 401(ERR-02), 서버 오류 시 500(ERR-07)이 가능하다. 표에 없는 `/api/*` 경로는 인증 미들웨어 뒤에서 처리되므로 인증 실패면 401, 인증되면 404(ERR-05)다. 개발 환경(`NODE_ENV=development`)에서만 `GET /api/docs`(Swagger UI)와 `GET /api/docs/swagger.yaml`을 연다(그 밖의 환경에서는 위 규칙대로 401).
 
-| 기능 | 메서드 | 경로 | 인증 | CSRF | 성공 | 오류 상태 코드 |
-|------|--------|------|------|------|------|----------------|
-| 회원가입 | POST | `/api/auth/signup` | 없음 | 아니오 | 201 + 세션 쿠키 3종 | 400, 409 |
-| 로그인 | POST | `/api/auth/login` | 없음 | 아니오 | 200 + 세션 쿠키 3종 | 400, 401(ERR-03), 429 |
-| 토큰 갱신 | POST | `/api/auth/refresh` | 리프레시 쿠키 | 아니오 | 200 + 세션 쿠키 3종 | 401(ERR-02) |
-| 로그아웃 | POST | `/api/auth/logout` | 없음(리프레시 쿠키 선택) | 아니오 | 200 + 쿠키 삭제 | — |
-| 내 정보 조회 | GET | `/api/users/me` | 액세스 | — | 200 | 401 |
-| 내 정보 수정(이름·시간대) | PATCH | `/api/users/me` | 액세스 | 예 | 200 | 400, 401, 403 |
-| 비밀번호 변경 | PUT | `/api/users/me/password` | 액세스 | 예 | 200 + 세션 쿠키 3종 | 400, 401, 403 |
-| 카테고리 목록 | GET | `/api/categories` | 액세스 | — | 200 | 401 |
-| 카테고리 등록 | POST | `/api/categories` | 액세스 | 예 | 201 | 400, 401, 403, 409 |
-| 카테고리 수정 | PATCH | `/api/categories/{categoryId}` | 액세스 | 예 | 200 | 400, 401, 403, 404, 409 |
-| 카테고리 삭제 | DELETE | `/api/categories/{categoryId}` | 액세스 | 예 | 204 | 400, 401, 403, 404 |
-| 할일 목록(필터) | GET | `/api/todos?categoryId&status` | 액세스 | — | 200 | 400, 401, 404 |
-| 할일 등록 | POST | `/api/todos` | 액세스 | 예 | 201 | 400, 401, 403, 404 |
-| 할일 조회 | GET | `/api/todos/{todoId}` | 액세스 | — | 200 | 401, 404 |
-| 할일 수정(완료 표시 포함) | PATCH | `/api/todos/{todoId}` | 액세스 | 예 | 200 | 400, 401, 403, 404 |
-| 할일 삭제 | DELETE | `/api/todos/{todoId}` | 액세스 | 예 | 204 | 401, 403, 404 |
-| 캘린더 기간 조회 | GET | `/api/calendar/todos?from&to` | 액세스 | — | 200 | 400, 401 |
-| 헬스 체크 | GET | `/api/health` | 없음 | — | 200 | 503 |
+| 기능 | 메서드 | 경로 | 인증 | 성공 | 오류 상태 코드 |
+|------|--------|------|------|------|----------------|
+| 회원가입 | POST | `/api/auth/signup` | 없음 | 201 + 세션 쿠키 2종 | 400, 409 |
+| 로그인 | POST | `/api/auth/login` | 없음 | 200 + 세션 쿠키 2종 | 400, 401(ERR-03), 429 |
+| 토큰 갱신 | POST | `/api/auth/refresh` | 리프레시 쿠키 | 200 + 세션 쿠키 2종 | 401(ERR-02) |
+| 로그아웃 | POST | `/api/auth/logout` | 없음(리프레시 쿠키 선택) | 200 + 쿠키 삭제 | — |
+| 내 정보 조회 | GET | `/api/users/me` | 액세스 | 200 | 401 |
+| 내 정보 수정(이름·시간대) | PATCH | `/api/users/me` | 액세스 | 200 | 400, 401 |
+| 비밀번호 변경 | PUT | `/api/users/me/password` | 액세스 | 200 + 세션 쿠키 2종 | 400, 401 |
+| 카테고리 목록 | GET | `/api/categories` | 액세스 | 200 | 401 |
+| 카테고리 등록 | POST | `/api/categories` | 액세스 | 201 | 400, 401, 409 |
+| 카테고리 수정 | PATCH | `/api/categories/{categoryId}` | 액세스 | 200 | 400, 401, 404, 409 |
+| 카테고리 삭제 | DELETE | `/api/categories/{categoryId}` | 액세스 | 204 | 400, 401, 404 |
+| 할일 목록(필터) | GET | `/api/todos?categoryId&status` | 액세스 | 200 | 400, 401, 404 |
+| 할일 등록 | POST | `/api/todos` | 액세스 | 201 | 400, 401, 404 |
+| 할일 조회 | GET | `/api/todos/{todoId}` | 액세스 | 200 | 401, 404 |
+| 할일 수정(완료 표시 포함) | PATCH | `/api/todos/{todoId}` | 액세스 | 200 | 400, 401, 404 |
+| 할일 삭제 | DELETE | `/api/todos/{todoId}` | 액세스 | 204 | 401, 404 |
+| 캘린더 기간 조회 | GET | `/api/calendar/todos?from&to` | 액세스 | 200 | 400, 401 |
+| 헬스 체크 | GET | `/api/health` | 없음 | 200 | 503 |
 
 - **현재 사용자 조회**(AQ-03): `GET /api/users/me`가 `User`(`id`, `email`, `name`, `timezone`, `createdAt`, `updatedAt`)를 돌려준다. 회원가입·로그인 성공 본문도 같은 `User`이고 `passwordHash`는 어떤 응답에도 없다.
 - **캘린더 계약**(AQ-07): 파라미터는 `from`·`to`(`YYYY-MM-DD`, SQ-01. CN-06의 `*Date` 규칙은 JSON 필드에만 적용). 조회 조건은 BR-12, 응답 항목은 서버가 계산한 `status`를 포함한다. 형식 오류, `from > to`, 양 끝 포함 42일 초과(`to - from > 41일`, SQ-02)는 ERR-01이다.
-- **검사 순서**: 토큰 갱신·회원가입·로그인·로그아웃·헬스는 인증 미들웨어 앞의 공개 라우트다. 보호 라우트는 인증(ERR-02) → CSRF(ERR-08) → 검증(ERR-01) → 소유권(ERR-05) 순서다(DL-05, AD-08). 예외: `/api/todos/{todoId}`의 GET·PATCH·DELETE는 경로 ID가 uuid 형식이 아니면 본문 검증보다 먼저 404(ERR-05)다(`todo.service.js`, swagger 공통 규약).
+- **검사 순서**: 토큰 갱신·회원가입·로그인·로그아웃·헬스는 인증 미들웨어 앞의 공개 라우트다. 보호 라우트는 인증(ERR-02) → 검증(ERR-01) → 소유권(ERR-05) 순서다(DL-05, AD-08). 예외: `/api/todos/{todoId}`의 GET·PATCH·DELETE는 경로 ID가 uuid 형식이 아니면 본문 검증보다 먼저 404(ERR-05)다(`todo.service.js`, swagger 공통 규약).
 
 ## 3. 비밀번호 해시 (NFR-06, NFR-16, R-04)
 
@@ -103,13 +105,12 @@
 |------|----|----------|----------|------|---------|
 | `access_token` | JWT(HS384) | 예 | Lax | `/api` | 900 (15분) |
 | `refresh_token` | 불투명 값 32바이트 base64url | 예 | Strict | `/api/auth` | 604800 (7일) |
-| `csrf_token` | 5.4의 서명 토큰 | 아니오(스크립트가 읽음) | Lax | `/` | 900 (15분) |
 
-- Max-Age는 6장 `ACCESS_TOKEN_TTL_MINUTES`·`REFRESH_TOKEN_TTL_DAYS`에서 정하며 위 값은 기본값이다. `csrf_token`은 액세스 수명과 같다.
-- `Secure`는 `config.js`의 `cookieSecure`(`NODE_ENV=production`일 때만 `true`)로 세 쿠키에 함께 붙인다(SO-04).
-- `Domain`은 `csrf_token`에만 `COOKIE_DOMAIN`(6장)으로 붙인다. 화면(다른 서브도메인) JS가 `document.cookie`로 읽어 `X-CSRF-Token` 헤더로 보내야 하기 때문이다(SO-12). `access_token`·`refresh_token`은 `Domain` 없이 API 호스트 전용이다. 개발은 `COOKIE_DOMAIN`을 비우며 localhost 쿠키는 포트와 무관하게 공유된다.
+- Max-Age는 6장 `ACCESS_TOKEN_TTL_MINUTES`·`REFRESH_TOKEN_TTL_DAYS`에서 정하며 위 값은 기본값이다.
+- `Secure`는 `config.js`의 `cookieSecure`(`NODE_ENV=production`일 때만 `true`)로 두 쿠키에 함께 붙인다(SO-04).
+- `access_token`·`refresh_token`은 `Domain` 없이 API 호스트 전용이다. localhost 쿠키는 포트와 무관하게 공유된다(SO-12).
 - 리프레시 쿠키 `Path=/api/auth`는 갱신(`/api/auth/refresh`)과 로그아웃(`/api/auth/logout`)을 함께 포함하는 인증 API 공통 접두사다. 쿠키 Path는 하나뿐이라 **같은 접두사 아래의 회원가입·로그인 요청에도 리프레시 쿠키가 전송되지만 서버는 그 요청에서 읽지 않는다**(OI-19).
-- 삭제는 발급 때와 같은 이름·Path(`csrf_token`은 같은 `Domain`)에 과거 `Expires`를 보낸다(Express 5 `res.clearCookie`는 `Max-Age`를 보내지 않는다, BR-01).
+- 삭제는 발급 때와 같은 이름·Path에 과거 `Expires`를 보낸다(Express 5 `res.clearCookie`는 `Max-Age`를 보내지 않는다, BR-01).
 
 ### 5.2 JWT 액세스 토큰
 
@@ -120,19 +121,16 @@
 
 | 항목 | 결정 |
 |------|------|
-| 환경 변수 | `JWT_SECRET`(JWT 서명), `CSRF_SECRET`(CSRF HMAC). **분리한다**: 한쪽 유출이 다른 쪽 위조로 이어지지 않게 한다 |
+| 환경 변수 | `JWT_SECRET`(JWT 서명) |
 | 형식·생성 | base64url 문자열. `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"` |
-| 길이 검사 | `config.js`가 `Buffer.from(value, 'base64url').length`(디코딩 후 바이트)가 48 미만이면 모든 환경에서 기동을 거부한다. `CSRF_SECRET`도 같은 검사를 한다 |
+| 길이 검사 | `config.js`가 `Buffer.from(value, 'base64url').length`(디코딩 후 바이트)가 48 미만이면 모든 환경에서 기동을 거부한다 |
 | 자리표시자 | `.env.example`의 값은 `change-me`를 8번 이어 쓴 72자다(base64url 문자만 있어 디코딩하면 54바이트라 개발 환경이 길이 검사를 통과한다). `production`에서 값에 `change-me`가 들어 있으면 기동을 거부한다 |
-| 정기 교체 | 두 키를 **함께** 바꾸고 재시작한다. 발급된 액세스 토큰은 서명 불일치로 ERR-02가 되고, 프런트가 리프레시 토큰(서명이 아니라 DB 해시로 검증)으로 갱신해 새 액세스·CSRF 토큰을 받으므로 사용자는 로그인 유지된다. `CSRF_SECRET`만 바꾸면 403이 되어 갱신으로 복구되지 않으므로 단독 교체하지 않는다 |
+| 정기 교체 | 키를 바꾸고 재시작한다. 발급된 액세스 토큰은 서명 불일치로 ERR-02가 되고, 프런트가 리프레시 토큰(서명이 아니라 DB 해시로 검증)으로 갱신해 새 액세스 토큰을 받으므로 사용자는 로그인 유지된다 |
 | 유출 시 | 위 교체에 더해 `UPDATE refresh_tokens SET revoked_at = now() WHERE revoked_at IS NULL`로 모든 리프레시 토큰을 폐기해 전원 재로그인시킨다 |
 
-### 5.4 CSRF 토큰 (NFR-15)
+### 5.4 교차 사이트 요청 방어 (NFR-15)
 
-- 구조: `<nonce>.<sig>`. `nonce` = `randomBytes(16)` base64url, `sig` = `HMAC-SHA256(CSRF_SECRET, jti + "." + nonce)` base64url.
-- 헤더 이름: `X-CSRF-Token`.
-- 검증(`lib/csrfToken.js`): 쿠키 값과 헤더 값이 같고, 현재 액세스 토큰의 `jti`로 다시 계산한 `sig`가 `timingSafeEqual`로 같아야 한다. 하나라도 틀리면 ERR-08.
-- 발급 시점: 로그인·회원가입·토큰 갱신·비밀번호 변경 성공 때 새 `jti`에 묶어 재발급한다.
+- 쿠키의 SameSite(5.1)와 CORS 허용 목록(6장 `CORS_ORIGINS`)만 쓴다. JSON `Content-Type`이 사전 요청(preflight)을 강제하므로 허용 목록 밖 출처는 상태 변경 요청을 보내지 못한다. 별도의 요청 토큰은 없다.
 
 ### 5.5 리프레시 토큰 저장·갱신 (BR-16, OI-18, OI-20, OI-21, AQ-11, AQ-13)
 
@@ -143,15 +141,15 @@
 | 흐름 | 처리 |
 |------|------|
 | 로그인·회원가입 | 새 `family_id`로 행 INSERT. 세션 토큰은 로그인은 트랜잭션 전, 회원가입은 `user.id`가 필요해 트랜잭션 안에서 만든다(I/O 없는 동기 계산, scrypt 해시는 트랜잭션 밖). 로그인은 같은 트랜잭션에서 그 사용자의 `expires_at < now()` 행을 삭제한다(`// LIMIT:` 로그인하지 않는 사용자의 만료 행은 남는다) |
-| 갱신 | 트랜잭션: 해시로 `SELECT ... FOR UPDATE` → (1) 없음·만료: ERR-02 (2) `revoked_at` 있음, `now() - revoked_at ≤ 유예`: 아무것도 바꾸지 않고 ERR-02 (3) `revoked_at` 있음, 유예 초과: `revokeFamily` 후 **COMMIT하고** ERR-02 (4) 유효: `revokeById` + 같은 `family_id`로 새 행 INSERT(만료 = now + 리프레시 수명 `REFRESH_TOKEN_TTL_DAYS`, 기본 7일) 후 COMMIT, 새 쿠키 3종 발급. 받은 값의 해시는 트랜잭션 전에 계산하고, 새 세션 토큰(`issueSessionTokens`: JWT·리프레시 값과 해시·CSRF)은 I/O 없는 동기 계산이라 트랜잭션 안 INSERT 직전에 만든다(DL-08) |
-| 로그아웃 | 리프레시 쿠키가 있으면 해시로 찾은 행의 계열을 `revokeFamily`. 실패해도 쿠키 3종은 지운다 |
-| 비밀번호 변경 | 트랜잭션: `password_hash` 갱신 + `revokeAllForUser` + 새 계열 INSERT, 이후 현재 세션에 새 쿠키 3종 |
+| 갱신 | 트랜잭션: 해시로 `SELECT ... FOR UPDATE` → (1) 없음·만료: ERR-02 (2) `revoked_at` 있음, `now() - revoked_at ≤ 유예`: 아무것도 바꾸지 않고 ERR-02 (3) `revoked_at` 있음, 유예 초과: `revokeFamily` 후 **COMMIT하고** ERR-02 (4) 유효: `revokeById` + 같은 `family_id`로 새 행 INSERT(만료 = now + 리프레시 수명 `REFRESH_TOKEN_TTL_DAYS`, 기본 7일) 후 COMMIT, 새 쿠키 2종 발급. 받은 값의 해시는 트랜잭션 전에 계산하고, 새 세션 토큰(`issueSessionTokens`: JWT·리프레시 값과 해시)은 I/O 없는 동기 계산이라 트랜잭션 안 INSERT 직전에 만든다(DL-08) |
+| 로그아웃 | 리프레시 쿠키가 있으면 해시로 찾은 행의 계열을 `revokeFamily`. 실패해도 쿠키 2종은 지운다 |
+| 비밀번호 변경 | 트랜잭션: `password_hash` 갱신 + `revokeAllForUser` + 새 계열 INSERT, 이후 현재 세션에 새 쿠키 2종 |
 
 (3)의 COMMIT 후 거부: 오류를 던져 롤백하면 계열 폐기가 사라지므로, service는 폐기를 커밋한 뒤 ERR-02를 던진다.
 
 ### 5.6 프런트 갱신 처리 (DL-14)
 
-`api/client.ts`가 DL-14를 그대로 구현한다. API 기준 주소는 `VITE_API_BASE_URL`(개발 기본 `http://localhost:3000/api`)이고 CSRF 쿠키는 `document.cookie`로 읽는다. 갱신 요청은 `POST /api/auth/refresh`(본문 없음, `credentials: 'include'`, 모든 요청이 같다), 진행 중 Promise 하나로 single-flight. 갱신 성공·실패와 관계없이 원 요청을 한 번만 재전송하고, 그 결과도 ERR-02면 `onUnauthorized`를 호출한다. 갱신 요청과 재전송 요청에는 다시 갱신하지 않는다.
+`api/client.ts`가 DL-14를 그대로 구현한다. API 기준 주소는 `VITE_API_BASE_URL`(개발 기본 `http://localhost:3000/api`)이다. 갱신 요청은 `POST /api/auth/refresh`(본문 없음, `credentials: 'include'`, 모든 요청이 같다), 진행 중 Promise 하나로 single-flight. 갱신 성공·실패와 관계없이 원 요청을 한 번만 재전송하고, 그 결과도 ERR-02면 `onUnauthorized`를 호출한다. 갱신 요청과 재전송 요청에는 다시 갱신하지 않는다.
 
 ## 6. 환경 변수
 
@@ -162,13 +160,12 @@
 | 키 | 사용처 | 비고 |
 |----|--------|------|
 | `DATABASE_URL` | `backend` (`config.js`), `scripts/` | 로컬 설치 PostgreSQL 17 (`localhost:5432`) |
-| `JWT_SECRET`, `CSRF_SECRET` | `backend` | 5.3 |
-| `ACCESS_TOKEN_TTL_MINUTES`, `REFRESH_TOKEN_TTL_DAYS` | `backend` (`config.js`가 읽고 `lib/token.js`·`lib/cookies.js`가 그 값을 쓴다) | 액세스 토큰 유효 시간(분)·리프레시 토큰 유효 시간(일). 기본 15분·7일로 NFR-07 값이다. 내부에서는 초로 바꿔 쓴다. 양의 정수만, 리프레시가 액세스보다 길지 않으면 기동 거부. 액세스 값은 CSRF 쿠키 `Max-Age`에도 쓴다(5.1) |
+| `JWT_SECRET` | `backend` | 5.3 |
+| `ACCESS_TOKEN_TTL_MINUTES`, `REFRESH_TOKEN_TTL_DAYS` | `backend` (`config.js`가 읽고 `lib/token.js`·`lib/cookies.js`가 그 값을 쓴다) | 액세스 토큰 유효 시간(분)·리프레시 토큰 유효 시간(일). 기본 15분·7일로 NFR-07 값이다. 내부에서는 초로 바꿔 쓴다. 양의 정수만, 리프레시가 액세스보다 길지 않으면 기동 거부. |
 | `NODE_ENV` | `backend` | `development`/`test`/`production`만(SO-04) |
 | `PORT` | `backend` | 기본 3000 |
 | `TRUST_PROXY` | `backend` | 개발은 비움(앞단 프록시 없음, 불신). 운영은 리버스 프록시 주소만. `true` 거부. 4장 |
-| `CORS_ORIGINS` | `backend` | 쉼표 구분 허용 출처, 각 값은 `scheme://host[:port]` 정확한 출처(`*`·경로·슬래시 끝은 기동 거부). 개발·테스트 기본 `http://localhost:5173`, production 필수. 허용 출처에만 `Access-Control-Allow-Origin`(그 출처)·`Allow-Credentials: true`, 항상 `Vary: Origin`. 사전 요청(OPTIONS + `Access-Control-Request-Method`)은 인증·CSRF 전에 204로 끝내고 허용 출처에만 `Allow-Methods: GET, POST, PUT, PATCH, DELETE`, `Allow-Headers: Content-Type, X-CSRF-Token`, `Max-Age: 600`을 붙인다. 허용하지 않은 출처는 CORS 헤더 없음. `*`는 쓰지 않는다(SO-08) |
-| `COOKIE_DOMAIN` | `backend` | CSRF 쿠키에만 붙는 `Domain`(상위 도메인, 예 `example.com`). 개발은 비움, production 필수(없으면 기동 실패). 5.1 |
+| `CORS_ORIGINS` | `backend` | 쉼표 구분 허용 출처, 각 값은 `scheme://host[:port]` 정확한 출처(`*`·경로·슬래시 끝은 기동 거부). 개발·테스트 기본 `http://localhost:5173`, production 필수. 허용 출처에만 `Access-Control-Allow-Origin`(그 출처)·`Allow-Credentials: true`, 항상 `Vary: Origin`. 사전 요청(OPTIONS + `Access-Control-Request-Method`)은 인증 전에 204로 끝내고 허용 출처에만 `Allow-Methods: GET, POST, PUT, PATCH, DELETE`, `Allow-Headers: Content-Type`, `Max-Age: 600`을 붙인다. 허용하지 않은 출처는 CORS 헤더 없음. `*`는 쓰지 않는다(SO-08) |
 | `VITE_API_BASE_URL` | `frontend` | API 기준 주소. 개발 서버(`npm run dev`)는 없으면 `http://localhost:3000/api`를 쓴다. 운영 빌드(`npm run build`)는 필수이고 없으면 `vite.config.ts`가 빌드를 멈춘다(번들이 localhost를 가리키지 않게). Vite는 `frontend/`의 `.env`만 읽으므로 값은 `frontend/.env`에 두고 예시는 `frontend/.env.example`에 있다. 공개 값(SO-02) |
 | `UV_THREADPOOL_SIZE` | `backend` | 3장 |
 | `SEED_PASSWORD` | `seed.js` | 시드 계정 비밀번호(SO-11) |

@@ -146,10 +146,9 @@ test('VR-02: 새 비밀번호 2종류 9자·129자, 현재 비밀번호 누락�
   assert.equal((await loginSession(OLD)).res.status, 200);
 });
 
-test('NFR-15: CSRF 헤더 없는 변경은 403, 인증 없으면 401이고 비밀번호가 그대로다', async () => {
-  const current = await signupSession();
+test('AC-02: 인증 없는 변경은 401이고 비밀번호가 그대로다', async () => {
+  await signupSession();
   const body = { currentPassword: OLD, newPassword: NEW };
-  assert.equal((await change({ ...current, csrfToken: undefined }, body)).status, 403);
   assert.equal((await change(undefined, body)).status, 401);
   assert.equal((await loginSession(OLD)).res.status, 200);
 });
