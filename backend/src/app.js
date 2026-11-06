@@ -15,6 +15,7 @@ import { todoRouter } from './routes/todo.routes.js';
 
 // 미들웨어·라우트 순서(DL-05): 공개 라우트 → 인증 → 보호 라우트 → 404 → 에러 핸들러
 export const app = express();
+export default app; // Vercel은 이 파일의 기본 export를 요청 핸들러로 쓴다
 app.set('trust proxy', config.trustProxy); // SO-16
 
 app.use(requestLogger);
