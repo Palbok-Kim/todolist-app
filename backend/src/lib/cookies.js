@@ -10,9 +10,23 @@ export const COOKIE_NAMES = {
 const accessMs = ACCESS_TTL_SECONDS * 1000;
 const refreshMs = REFRESH_TTL_SECONDS * 1000;
 
+// 운영은 화면(todolist-ymj.vercel.app)과 API가 다른 사이트(vercel.app은 공개 접미사)라 None + Partitioned(CHIPS).
+// 개발(http)은 None을 쓸 수 없고 localhost끼리 같은 사이트라 Lax·Strict
 const attrs = (secure) => ({
-  access: { httpOnly: true, sameSite: 'lax', path: '/api', secure },
-  refresh: { httpOnly: true, sameSite: 'strict', path: '/api/auth', secure },
+  access: {
+    httpOnly: true,
+    sameSite: secure ? 'none' : 'lax',
+    partitioned: secure,
+    path: '/api',
+    secure,
+  },
+  refresh: {
+    httpOnly: true,
+    sameSite: secure ? 'none' : 'strict',
+    partitioned: secure,
+    path: '/api/auth',
+    secure,
+  },
 });
 
 export function setSessionCookies(

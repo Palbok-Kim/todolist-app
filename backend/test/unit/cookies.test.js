@@ -80,6 +80,31 @@ test('SO-04: secure 인자에 따라 두 쿠키 모두 Secure가 붙거나 빠�
   }
 });
 
+test('SO-04: 운영(secure)은 다른 사이트 호출용으로 두 쿠키 모두 SameSite=None·Partitioned다', async () => {
+  const on = await cookiesOf('/set?secure=1');
+  const off = await cookiesOf('/set?secure=0');
+  for (const name of Object.values(COOKIE_NAMES)) {
+    assert.equal(on[name].samesite.toLowerCase(), 'none', name);
+    assert.equal(on[name].partitioned, true, name);
+    assert.equal(off[name].partitioned, undefined, name);
+  }
+});
+
+test('SO-12: 운영 쿠키 삭제도 Partitioned를 붙여 같은 쿠키를 지운다', async () => {
+  const server = express()
+    .get('/', (req, res) => {
+      clearSessionCookies(res, true);
+      res.end();
+    })
+    .listen(0);
+  try {
+    const res = await fetch(`http://127.0.0.1:${server.address().port}/`);
+    for (const line of res.headers.getSetCookie()) assert.match(line, /Partitioned/i);
+  } finally {
+    server.close();
+  }
+});
+
 test('SO-04: test 환경의 기본값은 Secure가 없다', async () => {
   assert.equal(config.cookieSecure, false);
   const c = await cookiesOf('/default');
