@@ -27,7 +27,7 @@
 | [docs/6-arch-diagram.md](docs/6-arch-diagram.md)           | v0.15           | 기술 아키텍처 다이어그램(mermaid): AD, 시퀀스 다이어그램           |
 | [docs/7-erd.md](docs/7-erd.md)                             | v0.8            | ERD: 테이블·컬럼·제약·인덱스 (물리 이름·타입의 단일 출처)          |
 | [docs/8-plan.md](docs/8-plan.md)                           | v0.61           | 실행 계획(WBS): COM, DB, BE, FE, QA Task와 일정                    |
-| [docs/9-design.md](docs/9-design.md)                       | v0.14           | 설계서: PRD 11장 구현 값, API 엔드포인트 표, 토큰·쿠키·키 관리     |
+| [docs/9-design.md](docs/9-design.md)                       | v0.15           | 설계서: PRD 11장 구현 값, API 엔드포인트 표, 토큰·쿠키·키 관리     |
 | [docs/style-guide.md](docs/style-guide.md)                 | v0.6            | 스타일 가이드: 색·글꼴·간격 토큰, 컴포넌트·캘린더·반응형 시각 규칙 |
 | [docs/schema.sql](docs/schema.sql)                         | 7-erd v0.8 기준 | PostgreSQL 17 DDL                                                  |
 | [backend/swagger.yaml](backend/swagger.yaml)               | 0.4.3           | API 명세(OpenAPI 3.0.3)                                            |

@@ -18,6 +18,7 @@
 | 0.12 | 2026-11-06 | MinjeYu | 최종 코드 기준 일치화: 2장에 표에 없는 `/api/*` 경로(인증 전 401, 인증 후 404)와 개발 전용 `/api/docs` 명시, 리프레시 갱신 만료를 설정값(`REFRESH_TOKEN_TTL_DAYS`, 기본 7일)으로. API 표·결정·검사 순서는 코드와 일치 확인 |
 | 0.13 | 2026-11-06 | MinjeYu | 사용자 결정(2026-11-06) 반영: CSRF 방어 제거. 2장 API 표에서 CSRF 열·403 삭제와 세션 쿠키 3종 → 2종, 검사 순서에서 CSRF 단계 삭제, 5.1 `csrf_token` 쿠키·`Domain` 삭제, 5.3 `CSRF_SECRET` 삭제, 5.4를 'SameSite + CORS 허용 목록뿐'으로 교체, 6장 `CSRF_SECRET`·`COOKIE_DOMAIN` 행 삭제와 CORS `Allow-Headers: Content-Type`. 단일 출처 머리말의 참조 버전 갱신 |
 | 0.14 | 2026-11-06 | MinjeYu | 단일 출처 참조를 ERD v0.8·아키텍처 다이어그램 v0.15에 맞춤(ERD·`schema.sql` 표기 일치화, 스키마 변경 없음) |
+| 0.15 | 2026-11-06 | MinjeYu | Vercel 배포 반영: 6장 `VITE_API_BASE_URL` 운영 값 `/api`와 `frontend/vercel.json` rewrite(API 같은 출처 프록시, SPA 새로고침 대체) |
 
 **단일 출처 원칙**: 규칙 원문은 도메인 정의서 v0.13, PRD v0.17, 구조 설계 원칙 v0.24, 아키텍처 다이어그램 v0.15, ERD v0.8에만 있고 이 문서는 ID로 참조한다(PR-01). 이 문서는 PRD 11장이 넘긴 **구현 값·이름·절차**만 정한다. 요청·응답 필드의 상세 스키마는 [`backend/swagger.yaml`](../backend/swagger.yaml)이 단일 출처이며, 이 문서의 2장은 경로·메서드·상태 코드 목록이다.
 
@@ -166,7 +167,7 @@
 | `PORT` | `backend` | 기본 3000 |
 | `TRUST_PROXY` | `backend` | 개발은 비움(앞단 프록시 없음, 불신). 운영은 리버스 프록시 주소만. `true` 거부. 4장 |
 | `CORS_ORIGINS` | `backend` | 쉼표 구분 허용 출처, 각 값은 `scheme://host[:port]` 정확한 출처(`*`·경로·슬래시 끝은 기동 거부). 개발·테스트 기본 `http://localhost:5173`, production 필수. 허용 출처에만 `Access-Control-Allow-Origin`(그 출처)·`Allow-Credentials: true`, 항상 `Vary: Origin`. 사전 요청(OPTIONS + `Access-Control-Request-Method`)은 인증 전에 204로 끝내고 허용 출처에만 `Allow-Methods: GET, POST, PUT, PATCH, DELETE`, `Allow-Headers: Content-Type`, `Max-Age: 600`을 붙인다. 허용하지 않은 출처는 CORS 헤더 없음. `*`는 쓰지 않는다(SO-08) |
-| `VITE_API_BASE_URL` | `frontend` | API 기준 주소. 개발 서버(`npm run dev`)는 없으면 `http://localhost:3000/api`를 쓴다. 운영 빌드(`npm run build`)는 필수이고 없으면 `vite.config.ts`가 빌드를 멈춘다(번들이 localhost를 가리키지 않게). Vite는 `frontend/`의 `.env`만 읽으므로 값은 `frontend/.env`에 두고 예시는 `frontend/.env.example`에 있다. 공개 값(SO-02) |
+| `VITE_API_BASE_URL` | `frontend` | API 기준 주소. 개발 서버(`npm run dev`)는 없으면 `http://localhost:3000/api`를 쓴다. 운영 빌드(`npm run build`)는 필수이고 없으면 `vite.config.ts`가 빌드를 멈춘다(번들이 localhost를 가리키지 않게). Vite는 `frontend/`의 `.env`만 읽으므로 값은 `frontend/.env`에 두고 예시는 `frontend/.env.example`에 있다. 공개 값(SO-02). 운영(Vercel)은 `/api`로 두고 `frontend/vercel.json` rewrite가 백엔드로 넘긴다. 화면과 API가 같은 출처가 되어 SameSite 쿠키가 붙는다(`*.vercel.app`은 공개 접미사라 하위 도메인끼리도 다른 사이트) |
 | `UV_THREADPOOL_SIZE` | `backend` | 3장 |
 | `SEED_PASSWORD` | `seed.js` | 시드 계정 비밀번호(SO-11) |
 | `PG_POOL_MAX` | `backend` | pg 풀 크기, 기본 10. 조정 가능(NFR-05) |
