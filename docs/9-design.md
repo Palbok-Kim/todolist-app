@@ -15,6 +15,7 @@
 | 0.9 | 2026-11-05 | MinjeYu | 단일 출처 머리말의 참조 버전을 현재 값(PRD v0.13·사용자 시나리오 v0.7·와이어프레임 v0.6·아키텍처 다이어그램 v0.11·ERD v0.6)에 맞춤. 내용 변경 없음 |
 | 0.10 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: 6장 `VITE_API_BASE_URL`을 운영 빌드 필수로(없으면 빌드 실패), 개발 기본값은 개발 서버에서만, 값 위치는 `frontend/.env`·예시 `frontend/.env.example` |
 | 0.11 | 2026-11-05 | MinjeYu | 사용자 요청(2026-11-05) 반영: 6장 환경 변수 파일을 디렉토리별로(`backend/.env`·`frontend/.env`, 루트는 공용 도구 키만, SO-02 v0.20) |
+| 0.12 | 2026-11-06 | MinjeYu | 최종 코드 기준 일치화: 2장에 표에 없는 `/api/*` 경로(인증 전 401, 인증 후 404)와 개발 전용 `/api/docs` 명시, 리프레시 갱신 만료를 설정값(`REFRESH_TOKEN_TTL_DAYS`, 기본 7일)으로. API 표·결정·검사 순서는 코드와 일치 확인 |
 
 **단일 출처 원칙**: 규칙 원문은 도메인 정의서 v0.10, PRD v0.13, 구조 설계 원칙 v0.14, 아키텍처 다이어그램 v0.11, ERD v0.6에만 있고 이 문서는 ID로 참조한다(PR-01). 이 문서는 PRD 11장이 넘긴 **구현 값·이름·절차**만 정한다. 요청·응답 필드의 상세 스키마는 [`backend/swagger.yaml`](../backend/swagger.yaml)이 단일 출처이며, 이 문서의 2장은 경로·메서드·상태 코드 목록이다.
 
@@ -38,7 +39,7 @@
 
 ## 2. API 엔드포인트
 
-필드 상세는 `swagger.yaml`. 'CSRF'가 예인 요청은 `X-CSRF-Token` 헤더가 필요하다. 모든 보호 API는 인증 실패 시 401(ERR-02), 서버 오류 시 500(ERR-07)이 가능하다.
+필드 상세는 `swagger.yaml`. 'CSRF'가 예인 요청은 `X-CSRF-Token` 헤더가 필요하다. 모든 보호 API는 인증 실패 시 401(ERR-02), 서버 오류 시 500(ERR-07)이 가능하다. 표에 없는 `/api/*` 경로는 인증 미들웨어 뒤에서 처리되므로 인증 실패면 401, 인증되면 404(ERR-05)다. 개발 환경(`NODE_ENV=development`)에서만 `GET /api/docs`(Swagger UI)와 `GET /api/docs/swagger.yaml`을 연다(그 밖의 환경에서는 위 규칙대로 401).
 
 | 기능 | 메서드 | 경로 | 인증 | CSRF | 성공 | 오류 상태 코드 |
 |------|--------|------|------|------|------|----------------|
@@ -142,7 +143,7 @@
 | 흐름 | 처리 |
 |------|------|
 | 로그인·회원가입 | 새 `family_id`로 행 INSERT. 세션 토큰은 로그인은 트랜잭션 전, 회원가입은 `user.id`가 필요해 트랜잭션 안에서 만든다(I/O 없는 동기 계산, scrypt 해시는 트랜잭션 밖). 로그인은 같은 트랜잭션에서 그 사용자의 `expires_at < now()` 행을 삭제한다(`// LIMIT:` 로그인하지 않는 사용자의 만료 행은 남는다) |
-| 갱신 | 트랜잭션: 해시로 `SELECT ... FOR UPDATE` → (1) 없음·만료: ERR-02 (2) `revoked_at` 있음, `now() - revoked_at ≤ 유예`: 아무것도 바꾸지 않고 ERR-02 (3) `revoked_at` 있음, 유예 초과: `revokeFamily` 후 **COMMIT하고** ERR-02 (4) 유효: `revokeById` + 같은 `family_id`로 새 행 INSERT(만료 = now + 7일) 후 COMMIT, 새 쿠키 3종 발급. 받은 값의 해시는 트랜잭션 전에 계산하고, 새 세션 토큰(`issueSessionTokens`: JWT·리프레시 값과 해시·CSRF)은 I/O 없는 동기 계산이라 트랜잭션 안 INSERT 직전에 만든다(DL-08) |
+| 갱신 | 트랜잭션: 해시로 `SELECT ... FOR UPDATE` → (1) 없음·만료: ERR-02 (2) `revoked_at` 있음, `now() - revoked_at ≤ 유예`: 아무것도 바꾸지 않고 ERR-02 (3) `revoked_at` 있음, 유예 초과: `revokeFamily` 후 **COMMIT하고** ERR-02 (4) 유효: `revokeById` + 같은 `family_id`로 새 행 INSERT(만료 = now + 리프레시 수명 `REFRESH_TOKEN_TTL_DAYS`, 기본 7일) 후 COMMIT, 새 쿠키 3종 발급. 받은 값의 해시는 트랜잭션 전에 계산하고, 새 세션 토큰(`issueSessionTokens`: JWT·리프레시 값과 해시·CSRF)은 I/O 없는 동기 계산이라 트랜잭션 안 INSERT 직전에 만든다(DL-08) |
 | 로그아웃 | 리프레시 쿠키가 있으면 해시로 찾은 행의 계열을 `revokeFamily`. 실패해도 쿠키 3종은 지운다 |
 | 비밀번호 변경 | 트랜잭션: `password_hash` 갱신 + `revokeAllForUser` + 새 계열 INSERT, 이후 현재 세션에 새 쿠키 3종 |
 
