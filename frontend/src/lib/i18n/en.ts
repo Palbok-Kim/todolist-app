@@ -108,6 +108,8 @@ export const en: Record<string, string> = {
   '카테고리 관리 ›': 'Manage categories ›',
   '할일을 찾을 수 없습니다': 'Todo not found',
   목록으로: 'Back to list',
+  '페이지를 찾을 수 없습니다': 'Page not found',
+  새로고침: 'Reload',
   '할일 목록': 'Todo list',
   '대상을 찾을 수 없습니다.': 'The requested item was not found.',
   '로그인이 필요합니다.': 'Login required.',
